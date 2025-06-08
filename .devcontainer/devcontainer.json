@@ -3,7 +3,9 @@
   "vscode": {
     "extensions": [
       "ms-vscode.live-server",
-      "slevesque.vscode-zipexplorer"
+      "slevesque.vscode-zipexplorer",
+      "GitHub.copilot",
+      "GitHub.copilot-chat"
     ]
   }
 },
