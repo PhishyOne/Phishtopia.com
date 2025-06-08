@@ -1,0 +1,7 @@
+{
+"forwardPorts": [3000, 3001],
+"portsAttributes": {
+  "3000": { "label": "Codespace", "onAutoForward": "openBrowser", "visibility": "public" },
+  "3001": { "label": "Preview", "onAutoForward": "notify", "visibility": "public" }
+}
+}
