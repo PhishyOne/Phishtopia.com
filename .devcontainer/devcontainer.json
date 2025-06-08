@@ -1,4 +1,12 @@
 {
+"customizations": {
+  "vscode": {
+    "extensions": [
+      "ms-vscode.live-server",
+      "slevesque.vscode-zipexplorer"
+    ]
+  }
+},
 "forwardPorts": [3000, 3001],
 "portsAttributes": {
   "3000": { "label": "Codespace", "onAutoForward": "openBrowser", "visibility": "public" },
