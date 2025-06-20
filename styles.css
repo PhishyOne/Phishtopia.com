@@ -15,10 +15,6 @@ h1, h2, h3, p {
   color: white;
 }
 
-.content > h3, p {
-  background-color: rgba(255, 255, 255, 0.5);
-}
-
 #background-video {
   position: fixed;
   top: 0;
@@ -36,12 +32,16 @@ h1, h2, h3, p {
   color: white;
 }
 
-.content > img {
+.content > h3, p {
+  background-color: rgba(255, 255, 255, 0.5);
+}
 
+.content > img {
   max-width: 100vw;
   max-height: 100vh;
   width: 100%;
   height: auto;
   object-fit: contain;
+  border-radius: 10px;
 }
 
