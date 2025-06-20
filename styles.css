@@ -38,6 +38,8 @@ h1, h2, h3, p {
 
 img.content {
   max-width: 100%;
-  height: auto;
+  height: 250px;
+  object-fit: cover;
+  border-radius: 0.5em;
 }
 
