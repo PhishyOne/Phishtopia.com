@@ -1,16 +1,43 @@
-.video-container {
-  position: relative;
-  height: 100vh;
-  width: 100vw;
-  overflow: hidden;
+/* styles.css */
+
+html, body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  overflow-x: hidden;
+}
+
+h1, h2, h3, p {
+  background-color: rgba(0, 0, 255, 0.5); 
+  display: inline-block; 
+  padding: 0.25em 0.5em;
+  border-radius: 0.3em; 
+  color: white;
+}
+
+.content > h3, p {
+  background-color: rgba(255, 255, 255, 0.5);
 }
 
 #background-video {
-  position: absolute;
+  position: fixed;
   top: 0;
   left: 0;
-  width: 100%;
-  height: 100%;
+  width: 100vw;
+  height: 100vh;
   object-fit: cover;
   z-index: -1;
 }
+
+.content {
+  position: relative;
+  z-index: 1;
+  padding: 2rem;
+  color: white;
+}
+
+img.content {
+  max-width: 100%;
+  height: 250px;
+}
+
