@@ -13,5 +13,6 @@
   "portsAttributes": {
     "3000": { "visibility": "public" },
     "3001": { "visibility": "public" }
-  }
+},
+"postAttachCommand": "/bin/bash .devcontainer/setup.sh"
 }
