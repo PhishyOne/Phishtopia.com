@@ -34,7 +34,7 @@ h1, h2, h3, p {
   max-width: 90vw;
   height: auto;
   display: block;
-  margin: 0 auto 2rem auto; 
+  margin: 0 0 2rem 0; 
   object-fit: contain;
   border-radius: 10px;
 }
