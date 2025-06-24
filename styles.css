@@ -1,5 +1,9 @@
 /* styles.css */
 
+/*General Styles*/
+* {
+  text-align: left;
+}
 html, body {
   margin: 0;
   padding: 0;
@@ -14,6 +18,7 @@ h1, h2, h3, p {
   color: white;
 }
 
+/*Page Background*/
 #background-video {
   position: fixed;
   top: 0;
@@ -24,17 +29,18 @@ h1, h2, h3, p {
   z-index: -1;
 }
 
+/*****Main Content*****/
 .content {
   position: relative;
   z-index: 1;
-  padding: 2rem;
+  padding: 1rem;
   color: white;
 }
 .content img {
   max-width: 90vw;
   height: auto;
   display: block;
-  margin: 0 auto 2rem auto; 
+  margin-bottom: 2rem;
   object-fit: contain;
   border-radius: 10px;
 }
@@ -43,18 +49,26 @@ h1, h2, h3, p {
     font-size: 1.2rem;
   }
 }
+
+/********Footer********/
 .footer {
-  position: relative;
+  position: fixed;
   bottom: 0;
   left: 0;
   width: 100%;
   font-size: 0.95rem;
   padding: 1rem 0.5rem;
+  z-index: 2; /* Ensure footer is above the background video */
 }
 .footer > h3 {
   margin: 0;
 }
 .footer > h3, .footer p {
   background-color: rgba(255, 255, 255, 0.5);
-color: blue;
+  color: blue;
+}
+@media (max-height: 780px) {
+  .footer {
+    position: relative;
+  }
 }
