@@ -18,6 +18,14 @@ h1, h2, h3, p {
   color: white;
 }
 
+/*Animated Content*/
+.animate__animated {
+  display: inline-block;
+  color: pink;
+  font-size: 1.5rem;
+  font-weight: bold;
+  background-color: rgba(0, 0, 255, 0.5); 
+}
 /*Page Background*/
 #background-video {
   position: fixed;
