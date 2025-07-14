@@ -4,17 +4,23 @@
 * {
   text-align: left;
 }
-html, body {
+
+html,
+body {
   margin: 0;
   padding: 0;
   height: 100%;
   overflow-x: hidden;
 }
-h1, h2, h3, p {
-  background-color: rgba(0, 0, 255, 0.5); 
-  display: inline-block; 
+
+h1,
+h2,
+h3,
+p {
+  background-color: rgba(0, 0, 255, 0.5);
+  display: inline-block;
   padding: 0.25em 0.5em;
-  border-radius: 0.3em; 
+  border-radius: 0.3em;
   color: white;
 }
 
@@ -24,8 +30,71 @@ h1, h2, h3, p {
   color: pink;
   font-size: 1.5rem;
   font-weight: bold;
-  background-color: rgba(0, 0, 255, 0.5); 
+  background-color: rgba(0, 0, 255, 0.5);
 }
+
+/*Heart Animation*/
+.heart-container {
+  width: 300px;
+  /* Adjust as needed */
+  height: 200px;
+  /* Adjust as needed */
+  position: relative;
+  /* Needed for heart positioning */
+}
+
+.heart {
+  width: 50px;
+  height: 50px;
+  background-color: red;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%) rotate(45deg);
+}
+
+.heart:before,
+.heart:after {
+  content: "";
+  width: 50px;
+  height: 50px;
+  background-color: red;
+  border-radius: 50%;
+  position: absolute;
+}
+
+.heart:before {
+  top: 0;
+  left: -25px;
+}
+
+.heart:after {
+  top: -25px;
+  left: 0;
+}
+
+
+/* CSS for animation */
+@keyframes beat {
+  0% {
+    transform: translate(-50%, -50%) rotate(45deg) scale(1);
+  }
+
+  50% {
+    transform: translate(-50%, -50%) rotate(45deg) scale(1.2);
+    /* Slightly larger */
+  }
+
+  100% {
+    transform: translate(-50%, -50%) rotate(45deg) scale(1);
+  }
+}
+
+.heart {
+  animation: beat 1s infinite;
+  /* Apply the animation */
+}
+
 /*Page Background*/
 #background-video {
   position: fixed;
@@ -44,6 +113,7 @@ h1, h2, h3, p {
   padding: 1rem;
   color: white;
 }
+
 .content img {
   max-width: 90vw;
   height: auto;
@@ -52,29 +122,37 @@ h1, h2, h3, p {
   object-fit: contain;
   border-radius: 10px;
 }
+
 @media (max-width: 600px) {
-  .content h1, .content h2 {
+
+  .content h1,
+  .content h2 {
     font-size: 1.2rem;
   }
 }
 
 /********Footer********/
 .footer {
-  position: fixed;
+  position: relative;
   bottom: 0;
   left: 0;
   width: 100%;
   font-size: 0.95rem;
   padding: 1rem 0.5rem;
-  z-index: 2; /* Ensure footer is above the background video */
+  z-index: 2;
+  /* Ensure footer is above the background video */
 }
-.footer > h3 {
+
+.footer>h3 {
   margin: 0;
 }
-.footer > h3, .footer p {
+
+.footer>h3,
+.footer p {
   background-color: rgba(255, 255, 255, 0.5);
   color: blue;
 }
+
 @media (max-height: 780px) {
   .footer {
     position: relative;
