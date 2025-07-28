@@ -1,0 +1,211 @@
+/* CSS Styles for Phishtopia */
+
+/* Background Styles */
+.gradient-background {
+  background: linear-gradient(300deg, #EF7E04, #05899E, #274744);
+  background-size: 180% 180%;
+  animation: gradient-animation 18s ease infinite;
+}
+
+@keyframes gradient-animation {
+  0% {
+    background-position: 0% 50%;
+  }
+
+  50% {
+    background-position: 100% 50%;
+  }
+
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+.light-bg {
+  background-color: #19c4df;
+  color: #182e2c;
+}
+
+.dark-bg {
+  background-color: #274744;
+  color: #EF7E04;
+}
+
+.orange-bg {
+  background-color: #d16e04;
+  color: #182e2c;
+}
+
+/* Image Styles */
+.logo {
+  border-radius: 50%;
+  width: 50px;
+}
+
+/* Text Styles */
+h1 {
+  font-size: 5rem;
+}
+
+h2 {
+  font-size: 3rem;
+}
+
+h3 {
+  font-size: 3rem;
+}
+
+h4 {
+  font-size: 2.5rem;
+}
+
+h5 {
+  font-size: 2.25rem;
+  color: #331b01;
+}
+
+p {
+  font-size: 1.5rem;
+  color: #331b01;
+}
+
+.pompiere-regular,
+h1,
+h2,
+h3,
+h4,
+h5 {
+  font-family: "Pompiere", sans-serif;
+  font-weight: 400;
+  font-style: normal;
+}
+
+.cormorant-garamond,
+p,
+button {
+  font-family: "Cormorant Garamond", serif;
+  font-optical-sizing: auto;
+  font-weight: 400;
+  font-style: normal;
+}
+
+.gradient-text {
+  animation: text-color-animation 18s ease infinite;
+}
+
+@keyframes text-color-animation {
+  0% {
+    color: #EF7E04;
+  }
+
+  33% {
+    color: #05899E;
+  }
+
+  66% {
+    color: #274744;
+  }
+
+  100% {
+    color: #EF7E04;
+  }
+}
+
+/* Button Styles */
+.btn-outline-light {
+  border-color: #331b01;
+  background-color: #ffb76a;
+}
+
+.btn-outline-dark {
+  border-color: #182e2c;
+  background-color: #1d2c28;
+}
+
+/* Section Styles */
+body {
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+.navbar {
+  border-bottom: 3px solid #333;
+}
+
+.main-grid {
+  background: #05899E;
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 20px;
+  padding: 20px;
+  flex-grow: 1;
+  align-items: start;
+}
+
+.hero-section {
+  grid-column: span 2;
+}
+
+.storecalc-section,
+.projects-section {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  min-height: 360px;
+  grid-column: span 1;
+}
+
+.storecalc-section>*,
+.projects-section>*:not(:last-child) {
+  margin-bottom: 20px;
+}
+
+.storecalc-section p {
+  color: #d16e04;
+}
+
+.carousel-section {
+  grid-column: span 2;
+}
+
+.carousel-caption {
+  color: #331b01;
+  background-color: #19c5df94;
+  padding: 10px;
+  border-radius: 10px;
+}
+
+.carousel-item img {
+  width: 100%;
+  height: 400px;
+  object-fit: cover;
+  object-position: center;
+}
+
+#footer {
+  margin-top: auto;
+  grid-column: 1 / -1;
+  border-top: 3px solid #333;
+}
+
+.footer-links {
+  background-color: #19c4df94;
+  color: #182e2c}
+
+/* Responsive Styles */
+@media (max-width: 768px) {
+  .main-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .hero-section,
+  .storecalc-section,
+  .projects-section,
+  .carousel-section {
+    grid-column: span 1;
+  }
+}
