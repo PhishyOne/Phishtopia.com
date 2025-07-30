@@ -148,6 +148,9 @@ body {
 .hero-section {
   grid-column: span 2;
 }
+.subtitle {
+  margin-top: 10px;
+}
 
 .storecalc-section,
 .projects-section {
