@@ -2,7 +2,7 @@
 
 /* Background Styles */
 .gradient-background {
-  background: linear-gradient(300deg, #EF7E04, #05899E, #274744);
+  background: linear-gradient(300deg,#05899E,  #EF7E04, #274744);
   background-size: 180% 180%;
   animation: gradient-animation 18s ease infinite;
 }
@@ -115,11 +115,13 @@ button {
 .btn-outline-light {
   border-color: #331b01;
   background-color: #ffb76a;
+  color: #1d2c28
 }
 
 .btn-outline-dark {
   border-color: #182e2c;
   background-color: #1d2c28;
+  color: #ffb76a
 }
 
 /* Section Styles */
@@ -147,6 +149,7 @@ body {
 
 .hero-section {
   grid-column: span 2;
+  margin-bottom: 20px;
 }
 .subtitle {
   margin-top: 10px;
@@ -160,11 +163,12 @@ body {
   justify-content: space-between;
   min-height: 360px;
   grid-column: span 1;
+  padding-bottom: 2rem !important;
 }
 
-.storecalc-section>*,
-.projects-section>*:not(:last-child) {
-  margin-bottom: 20px;
+.projects-section > :last-child,
+.storecalc-section > :last-child {
+  margin-top: auto;
 }
 
 .storecalc-section p {
@@ -177,7 +181,7 @@ body {
 
 .carousel-caption {
   color: #331b01;
-  background-color: #19c5df94;
+  background-color: #19c5dfb4;
   padding: 10px;
   border-radius: 10px;
 }
@@ -196,6 +200,7 @@ body {
 }
 
 .footer-links {
+  font-size: 1.5rem;
   background-color: #19c4df94;
   color: #182e2c}
 
