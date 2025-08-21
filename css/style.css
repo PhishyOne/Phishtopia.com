@@ -232,7 +232,7 @@ body {
   .hero-section,
   .storecalc-section,
   .projects-section,
-  .carousel-section {
+  .carousel-section, .birthday-section {
     grid-column: span 1;
   }
 }
