@@ -147,25 +147,6 @@ body {
   align-items: start;
 }
 
-.birthday-section {
-  grid-column: span 2;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  min-height: 360px;
-}
-
-.bday-button {
-  font-family: "Londrina Shadow", sans-serif;
-  font-weight: 400;
-  font-style: normal;
-  font-size: 2.5rem;
-  color: #010a09ff;
-  background-color: #ebb378ff;
-  border-radius: 10px;
-}
-
 .hero-section {
   grid-column: span 2;
   margin-bottom: 20px;
