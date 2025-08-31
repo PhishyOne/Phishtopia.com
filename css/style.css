@@ -1,8 +1,17 @@
 /* CSS Styles for Phishtopia */
 
+/* Color Names */
+:root {
+  --dark-text: #331b01;
+  --light-text: #ffb76a;
+  --dark-section-bg: #274744;
+  --light-section-bg: #d16e04;
+  --blue-main-bg: #19c4df;
+}
+
 /* Background Styles */
 .gradient-background {
-  background: linear-gradient(300deg,#05899E,  #EF7E04, #274744);
+  background: linear-gradient(300deg, var(--blue-main-bg),  var(--light-section-bg), var(--dark-section-bg));
   background-size: 180% 180%;
   animation: gradient-animation 18s ease infinite;
 }
@@ -22,18 +31,18 @@
 }
 
 .light-bg {
-  background-color: #19c4df;
-  color: #182e2c;
+  background-color: var(--blue-main-bg);
+  color: var(--dark-section-bg)
 }
 
 .dark-bg {
-  background-color: #274744;
-  color: #EF7E04;
+  background-color: var(--dark-section-bg);
+  color: var(--light-section-bg);
 }
 
 .orange-bg {
-  background-color: #d16e04;
-  color: #182e2c;
+  background-color: var(--light-section-bg);
+  color: var(--dark-text);
 }
 
 /* Image Styles */
@@ -61,12 +70,28 @@ h4 {
 
 h5 {
   font-size: 2.25rem;
-  color: #331b01;
+  color: var(--dark-text);
 }
 
 p {
   font-size: 1.5rem;
-  color: #331b01;
+  color: var(--dark-text);
+}
+
+a:link {
+  color: var(--dark-text)!important;
+}
+
+a:visited {
+  color: var(--light-text)!important;
+}
+
+a:hover {
+  color: var(--light-section-bg)!important;
+}
+
+a:active {
+  color: var(--dark-section-bg)!important;
 }
 
 .pompiere-regular,
@@ -95,33 +120,33 @@ button {
 
 @keyframes text-color-animation {
   0% {
-    color: #EF7E04;
+    color: var(--light-section-bg);
   }
 
   33% {
-    color: #05899E;
+    color: var(--blue-main-bg);
   }
 
   66% {
-    color: #274744;
+    color: var(--dark-section-bg);
   }
 
   100% {
-    color: #EF7E04;
+    color: var(--light-section-bg);
   }
 }
 
 /* Button Styles */
 .btn-outline-light {
-  border-color: #331b01;
-  background-color: #ffb76a;
-  color: #1d2c28
+  border-color: var(--dark-text);
+  background-color: var(--light-text);
+  color: var(--dark-text);
 }
 
 .btn-outline-dark {
-  border-color: #182e2c;
-  background-color: #1d2c28;
-  color: #ffb76a
+  border-color: var(--dark-text);
+  background-color: var(--dark-section-bg);
+  color: var(--light-text);
 }
 
 /* Section Styles */
@@ -134,11 +159,11 @@ body {
 }
 
 .navbar {
-  border-bottom: 3px solid #333;
+  border-bottom: 3px solid var(--dark-section-bg);
 }
 
 .main-grid {
-  background: #05899E;
+  background: var(--blue-main-bg);
   display: grid;
   grid-template-columns: repeat(2, 1fr);
   gap: 20px;
@@ -172,7 +197,7 @@ body {
 }
 
 .storecalc-section p {
-  color: #d16e04;
+  color: var(--light-section-bg);
 }
 
 .carousel-section {
@@ -180,8 +205,8 @@ body {
 }
 
 .carousel-caption {
-  color: #331b01;
-  background-color: #19c5dfb4;
+  color: var(--dark-text);
+  background-color: #19c5dfc7;
   padding: 10px;
   border-radius: 10px;
 }
@@ -193,16 +218,32 @@ body {
   object-position: center;
 }
 
-#footer {
+.footer {
   margin-top: auto;
-  grid-column: 1 / -1;
-  border-top: 3px solid #333;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  border-top: 3px solid var(--dark-text);
+}
+
+#copyright {
+  margin-bottom: 10px;
+  font-size: 1.2rem;
 }
 
 .footer-links {
-  font-size: 1.5rem;
-  background-color: #19c4df94;
-  color: #182e2c}
+  width: 75%;
+  display: flex;
+  flex-direction: row;
+  justify-content: space-around;
+  align-items: center;
+  padding-top: 10px;
+  margin: 20px auto;
+  border-radius: 10px;
+  font-size: 1.3rem;
+  background-color: var(--blue-main-bg);
+}
 
 /* Responsive Styles */
 @media (max-width: 768px) {
