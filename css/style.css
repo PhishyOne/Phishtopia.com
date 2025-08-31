@@ -83,15 +83,15 @@ a:link {
 }
 
 a:visited {
-  color: var(--light-text)!important;
-}
-
-a:hover {
   color: var(--light-section-bg)!important;
 }
 
-a:active {
+a:hover {
   color: var(--dark-section-bg)!important;
+}
+
+a:active {
+  color: var(--light-text)!important;
 }
 
 .pompiere-regular,
