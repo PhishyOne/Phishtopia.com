@@ -78,19 +78,19 @@ p {
   color: var(--dark-text);
 }
 
-a:link {
+a:link:not(a.btn) {
   color: var(--dark-text)!important;
 }
 
-a:visited {
+a:visited:not(a.btn) {
   color: var(--light-section-bg)!important;
 }
 
-a:hover {
+a:hover:not(a.btn) {
   color: var(--dark-section-bg)!important;
 }
 
-a:active {
+a:active:not(a.btn) {
   color: var(--light-text)!important;
 }
 
@@ -107,7 +107,7 @@ h5 {
 
 .cormorant-garamond,
 p,
-button {
+button, a.btn {
   font-family: "Cormorant Garamond", serif;
   font-optical-sizing: auto;
   font-weight: 400;
@@ -137,6 +137,10 @@ button {
 }
 
 /* Button Styles */
+.btn {
+  font-size: 1.3rem;
+}
+
 .btn-outline-light {
   border-color: var(--dark-text);
   background-color: var(--light-text);
