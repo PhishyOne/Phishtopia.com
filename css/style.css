@@ -196,11 +196,13 @@ body {
 #play-video {
   margin-top: 20px;
   padding: 10px 20px;
-  font-size: 16px;
   cursor: pointer;
   background-color: pink;
   color: purple;
-  font-size: 1.5rem;
+  font-size: 2rem;
+  font-family: "Modak", system-ui;
+  font-weight: 400;
+  font-style: normal;
   border: purple 3px solid;
   border-radius: 10px;
   text-align: center;
