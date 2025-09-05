@@ -184,6 +184,41 @@ body {
   margin-top: 10px;
 }
 
+.birthday-section {
+  grid-column: span 2;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+}
+
+#play-video {
+  margin-top: 20px;
+  padding: 10px 20px;
+  font-size: 16px;
+  cursor: pointer;
+  background-color: pink;
+  color: purple;
+  font-size: 1.5rem;
+  border: purple 3px solid;
+  border-radius: 10px;
+  text-align: center;
+}
+
+.birthday-section h2 {
+  font-size: 4rem;
+  color: #ff00ddff;
+  text-shadow: 2px 2px 4px purple;
+}
+
+#ash-birthday {
+  margin-top: 20px;
+  width: 80%;
+  display: none;
+  /* Hide the video initially */
+}
+
 .storecalc-section,
 .projects-section {
   height: 100%;
