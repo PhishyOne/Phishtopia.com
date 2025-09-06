@@ -6,7 +6,8 @@
   --light-text: #ffb76a;
   --dark-section-bg: #274744;
   --light-section-bg: #d16e04;
-  --blue-main-bg: #011F3F;;
+  --blue-main-bg: #011F3F;
+  ;
 }
 
 /* Background Styles */
@@ -102,13 +103,14 @@ a:active:not(a.btn, .footer-links a) {
   color: var(--light-section-bg) !important;
 }
 
-.footer-links a:hover  {
+.footer-links a:hover {
   color: #f1a43ec7 !important;
 }
 
 .footer-links a:active {
   color: var(--light-text) !important;
 }
+
 .pompiere-regular,
 h1,
 h2,
@@ -318,19 +320,24 @@ body {
   }
 }
 
+/* SIMON SECTION */
 .simon {
+  grid-column: span 2;
+  display: grid;
+  grid-template-columns: repeat(2, min-content);
+  grid-auto-rows: min-content;
+  gap: 20px;
+  justify-content: center;
+  align-content: center;
   text-align: center;
   background-color: #011F3F;
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  grid-template-rows: auto auto auto auto;
-  gap: 20px;
-  justify-items: center;
-  align-items: center;
 }
 
-.span-2 {
+.simon .span-2 {
   grid-column: span 2;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 #level-title {
@@ -340,22 +347,28 @@ body {
   color: #FEF2BF;
 }
 
-.container {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  width: 75%;
-  margin: auto;
-}
-
 .simon-btn {
-  margin: 25px;
-  display: inline-block;
-  height: 200px;
-  width: 200px;
+  width: clamp(200px, 20vw, 400px);
+  height: clamp(200px, 20vw, 400px);
   border: 10px solid black;
   border-radius: 20%;
+  box-sizing: border-box;
+}
+
+.green {
+  background-color: green;
+}
+
+.red {
+  background-color: red;
+}
+
+.yellow {
+  background-color: yellow;
+}
+
+.blue {
+  background-color: blue;
 }
 
 .game-over {
@@ -363,27 +376,12 @@ body {
   opacity: 0.8;
 }
 
-.red {
-  background-color: red;
-}
-
-.green {
-  background-color: green;
-}
-
-.blue {
-  background-color: blue;
-}
-
-.yellow {
-  background-color: yellow;
-}
-
 .pressed {
   box-shadow: 0 0 20px white;
   background-color: grey;
 }
 
+/* Start Button */
 .start-button {
   display: flex;
   align-items: center;
@@ -392,7 +390,6 @@ body {
   font-size: 30px;
   padding: 0.7em 1.4em 0.7em 1.4em;
   color: white;
-  background: #ad5389;
   background: linear-gradient(0deg, rgba(20, 167, 62, 1) 0%, rgba(102, 247, 113, 1) 100%);
   border: none;
   box-shadow: 0 0.7em 1.5em -0.5em #14a73e98;
