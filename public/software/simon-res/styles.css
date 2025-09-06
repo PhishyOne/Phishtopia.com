@@ -1,4 +1,4 @@
-/* CSS Styles for Phishtopia */
+/* CSS Styles for Simon */
 
 /* Color Names */
 :root {
@@ -78,22 +78,37 @@ p {
   color: var(--dark-text);
 }
 
-a:link:not(a.btn) {
+a:link:not(a.btn, .footer-links a) {
   color: var(--dark-text) !important;
 }
 
-a:visited:not(a.btn) {
+a:visited:not(a.btn, .footer-links a) {
   color: var(--light-section-bg) !important;
 }
 
-a:hover:not(a.btn) {
+a:hover:not(a.btn, .footer-links a) {
   color: var(--dark-section-bg) !important;
 }
 
-a:active:not(a.btn) {
+a:active:not(a.btn, .footer-links a) {
   color: var(--light-text) !important;
 }
 
+.footer-links a:link {
+  color: var(--light-text) !important;
+}
+
+.footer-links a:visited {
+  color: var(--light-section-bg) !important;
+}
+
+.footer-links a:hover  {
+  color: #f1a43ec7 !important;
+}
+
+.footer-links a:active {
+  color: var(--light-text) !important;
+}
 .pompiere-regular,
 h1,
 h2,
@@ -298,11 +313,7 @@ body {
     grid-template-columns: 1fr;
   }
 
-  .hero-section,
-  .storecalc-section,
-  .projects-section,
-  .carousel-section,
-  .birthday-section {
+  .hero-section {
     grid-column: span 1;
   }
 }
@@ -310,6 +321,16 @@ body {
 .simon {
   text-align: center;
   background-color: #011F3F;
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  grid-template-rows: auto auto auto auto;
+  gap: 20px;
+  justify-items: center;
+  align-items: center;
+}
+
+.span-2 {
+  grid-column: span 2;
 }
 
 #level-title {
