@@ -1,4 +1,4 @@
-/* CSS Styles for Phishtopia */
+/* CSS Styles for Phishtopia (fixed underline + cleaned link rules) */
 
 /* Color Names */
 :root {
@@ -11,7 +11,7 @@
 
 /* Background Styles */
 .gradient-background {
-  background: linear-gradient(300deg, var(--blue-main-bg),  var(--light-section-bg), var(--dark-section-bg));
+  background: linear-gradient(300deg, var(--blue-main-bg), var(--light-section-bg), var(--dark-section-bg));
   background-size: 180% 180%;
   animation: gradient-animation 18s ease infinite;
 }
@@ -32,7 +32,7 @@
 
 .light-bg {
   background-color: var(--blue-main-bg);
-  color: var(--dark-section-bg)
+  color: var(--dark-section-bg);
 }
 
 .dark-bg {
@@ -61,7 +61,7 @@ h2 {
 }
 
 h3 {
-  font-size: 3rem;
+  font-size: 2.5rem;
 }
 
 h4 {
@@ -78,22 +78,90 @@ p {
   color: var(--dark-text);
 }
 
-a:link:not(a.btn) {
-  color: var(--dark-text)!important;
+
+
+/* ---------- LINK / UNDERLINE: robust reset ---------- */
+
+/* Default: force a real underline and make it follow the text color */
+a {
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  /* explicit thickness helps consistent rendering */
+  text-underline-offset: 2px;
+  text-decoration-color: currentColor;
+  text-decoration-skip-ink: none;
+  /* avoid weird skipping on some fonts */
+  -webkit-text-decoration-color: currentColor;
+  /* older WebKit safety */
 }
 
-a:visited:not(a.btn) {
-  color: var(--light-section-bg)!important;
+/* Make sure pseudo-elements used as decorative underlines do not show up */
+a::before,
+a::after {
+  background-image: none !important;
+  box-shadow: none !important;
+  border-bottom: none !important;
 }
 
-a:hover:not(a.btn) {
-  color: var(--dark-section-bg)!important;
+/* Remove border/box-shadow-based underlines on anchors in these sections if any */
+.just-in-section a,
+.projects-list-section a {
+  border-bottom: none !important;
+  box-shadow: none !important;
+  background-image: none !important;
+  text-decoration-color: currentColor !important;
 }
 
-a:active:not(a.btn) {
-  color: var(--light-text)!important;
+/* Base color rules for anchors that are NOT .btn (simple selectors only) */
+a:not(.btn):link {
+  color: var(--dark-text);
 }
 
+a:not(.btn):visited {
+  color: var(--light-section-bg);
+}
+
+a:not(.btn):hover {
+  color: var(--dark-section-bg);
+}
+
+a:not(.btn):active {
+  color: var(--light-text);
+}
+
+/* Colors for anchors inside the special sections */
+.just-in-section a:link,
+.projects-list-section a:link, .navbar a:link {
+  color: #0e11ccff !important;
+}
+
+.just-in-section a:visited,
+.projects-list-section a:visited, .navbar a:visited {
+  color: #19c4df !important;
+}
+
+.just-in-section a:hover,
+.projects-list-section a:hover,
+.just-in-section h2:hover,
+.navbar a:hover {
+  color: var(--dark-section-bg) !important;
+}
+
+.just-in-section a:active,
+.projects-list-section a:active,
+.navbar a:active {
+  color: #e73407ff !important;
+}
+
+/* If your headings contain anchors and you want the heading text to match the anchor color,
+   target both the heading and the anchor (hover on heading also updates): */
+.projects-list-section h2,
+.projects-list-section h2 a {
+  color: inherit;
+  /* keep heading color consistent with container unless overridden */
+}
+
+/* Fonts */
 .pompiere-regular,
 h1,
 h2,
@@ -107,7 +175,8 @@ h5 {
 
 .cormorant-garamond,
 p,
-button, a.btn {
+button,
+a.btn {
   font-family: "Cormorant Garamond", serif;
   font-optical-sizing: auto;
   font-weight: 400;
@@ -165,6 +234,9 @@ body {
 .navbar {
   border-bottom: 3px solid var(--dark-section-bg);
 }
+.navbar li {
+  font-size: 1.5rem;
+}
 
 .main-grid {
   background: var(--blue-main-bg);
@@ -180,6 +252,7 @@ body {
   grid-column: span 2;
   margin-bottom: 20px;
 }
+
 .subtitle {
   margin-top: 10px;
 }
@@ -218,7 +291,6 @@ body {
   margin-top: 20px;
   width: 80%;
   display: none;
-  /* Hide the video initially */
 }
 
 .storecalc-section,
@@ -229,12 +301,73 @@ body {
   justify-content: space-between;
   min-height: 360px;
   grid-column: span 1;
-  padding-bottom: 2rem !important;
+  border-radius: 10px;
+  padding: 20px;
+  padding-bottom: 2rem;
 }
 
-.projects-section > :last-child,
-.storecalc-section > :last-child {
+.projects-section:not(.just-in-section)> :last-child {
   margin-top: auto;
+}
+
+.storecalc-section> :last-child {
+  margin-top: auto;
+}
+
+.projects-section {
+  background-color: var(--light-section-bg);
+  color: var(--dark-text);
+}
+
+.storecalc-section {
+  background-color: var(--dark-section-bg);
+  color: var(--light-section-bg);
+}
+
+.projects-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+  grid-column: span 2;
+}
+
+.just-in-section {
+  grid-row: 1 / span 2;
+  min-height: 100px;
+  justify-content: center;
+  padding: 20px;
+}
+
+.just-in-section h2 {
+  margin-bottom: 15px;
+}
+
+/* List Styles */
+.just-in-section ul {
+  list-style: none;
+  padding-left: 0;
+}
+
+.just-in-section li {
+  display: flex;
+  align-items: center;
+}
+
+.just-in-section li::before {
+  content: "•";
+  margin-right: 0.5em;
+  font-size: 1.2em;
+  line-height: 1;
+}
+
+.projects-list-section {
+  background-color: var(--light-section-bg);
+  color: var(--dark-text);
+  min-height: 0px;
+  padding: 20px 10px 15px 20px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
 }
 
 .storecalc-section p {
@@ -292,14 +425,18 @@ body {
 
 /* Responsive Styles */
 @media (max-width: 768px) {
-  .main-grid {
+
+  .main-grid,
+  .projects-grid {
     grid-template-columns: 1fr;
   }
 
   .hero-section,
   .storecalc-section,
   .projects-section,
-  .carousel-section, .birthday-section {
+  .carousel-section,
+  .birthday-section,
+  .projects-list-section {
     grid-column: span 1;
   }
 }
