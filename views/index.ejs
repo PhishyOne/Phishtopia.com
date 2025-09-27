@@ -1,0 +1,84 @@
+
+<%- include('partials/header.ejs') %>
+
+    <!-- Main Content -->
+    <main class="main-grid">
+        <!-- Hero Section -->
+        <section class="hero-section gradient-background rounded-3 pt-4 pb-3 ps-5">
+            <h1 class="gradient-text">phishtopia.com</h1>
+            <p>Home of the improbable. Where creativity is shared safely.</p>
+        </section>
+
+        <!-- Projects Section -->
+        <section class="projects-section">
+            <h2>Projects</h2>
+            <p>phishtopia aims to create a peaceful atmosphere where projects and artwork of the underground can be
+                displayed for the world to see. This is a place where finished products can shine.</p>
+            <a href="projects" class="btn btn-outline-dark button">View Projects</a>
+        </section>
+        <!-- StoreCalc Online Section -->
+        <section class="storecalc-section dark-bg">
+            <h2>StoreCalc Online (Egg Stage)</h2>
+            <p>Coming Soon! StoreCalc helps prisoners total up their commissary items and keep records of their
+                purchases.
+            </p>
+            <a href="storecalc" class="btn btn-outline-light button">StoreCalc Online</a>
+        </section>
+        <!-- Carousel Section -->
+        <section class="carousel-section">
+            <div id="carousel-captions" class="carousel slide carousel-fade" data-bs-ride="carousel">
+                <div class="carousel-indicators">
+                    <button type="button" data-bs-target="#carousel-captions" data-bs-slide-to="0" class="active"
+                        aria-current="true" aria-label="Slide 1"></button>
+                    <button type=" button" data-bs-target="#carousel-captions" data-bs-slide-to="1"
+                        aria-label="Slide 2"></button>
+                    <button type=" button" data-bs-target="#carousel-captions" data-bs-slide-to="2"
+                        aria-label="Slide 3"></button>
+                    <button type=" button" data-bs-target="#carousel-captions" data-bs-slide-to="3"
+                        aria-label="Slide 4"></button>
+                </div>
+                <div class="carousel-inner rounded-3">
+                    <div class="carousel-item active">
+                        <img src="res/images/heart.jpg" alt="Color pencil heart">
+                        <div class="carousel-caption">
+                            <h5>Artwork</h5>
+                            <p>Amazing work from talented people.</p>
+                        </div>
+                    </div>
+                    <div class="carousel-item">
+                        <img src="res/images/spaghetti.jpg" alt="Yummy spaghetti">
+                        <div class="carousel-caption">
+                            <h5>Food</h5>
+                            <p>Making mouth-watering food from scratch with next to nothing.</p>
+                        </div>
+                    </div>
+                    <div class="carousel-item">
+                        <img src="res/images/tattoo.jpg" alt="Jerry-rigged tattoo gun">
+                        <div class="carousel-caption">
+                            <h5>Engineering</h5>
+                            <p>You've never seen ingenuity quite like this.</p>
+                        </div>
+                    </div>
+                    <div class="carousel-item">
+                        <img src="res/images/storecalc.png" alt="Preview of StoreCalc for Android">
+                        <div class="carousel-caption">
+                            <h5>Software</h5>
+                            <p>Building productivity.</p>
+                        </div>
+                    </div>
+                </div>
+                <button class="carousel-control-prev" type="button" data-bs-target="#carousel-captions"
+                    data-bs-slide="prev">
+                    <span class="carousel-control-prev-icon" aria-hidden="true"></span>
+                    <span class="visually-hidden">Previous</span>
+                </button>
+                <button class="carousel-control-next" type="button" data-bs-target="#carousel-captions"
+                    data-bs-slide="next">
+                    <span class="carousel-control-next-icon" aria-hidden="true"></span>
+                    <span class="visually-hidden">Next</span>
+                </button>
+            </div>
+        </section>
+        </main>
+
+<%- include('partials/footer.ejs') %>

@@ -1,0 +1,442 @@
+/* CSS Styles for Phishtopia (fixed underline + cleaned link rules) */
+
+/* Color Names */
+:root {
+  --dark-text: #331b01;
+  --light-text: #ffb76a;
+  --dark-section-bg: #274744;
+  --light-section-bg: #d16e04;
+  --blue-main-bg: #19c4df;
+}
+
+/* Background Styles */
+.gradient-background {
+  background: linear-gradient(300deg, var(--blue-main-bg), var(--light-section-bg), var(--dark-section-bg));
+  background-size: 180% 180%;
+  animation: gradient-animation 18s ease infinite;
+}
+
+@keyframes gradient-animation {
+  0% {
+    background-position: 0% 50%;
+  }
+
+  50% {
+    background-position: 100% 50%;
+  }
+
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+.light-bg {
+  background-color: var(--blue-main-bg);
+  color: var(--dark-section-bg);
+}
+
+.dark-bg {
+  background-color: var(--dark-section-bg);
+  color: var(--light-section-bg);
+}
+
+.orange-bg {
+  background-color: var(--light-section-bg);
+  color: var(--dark-text);
+}
+
+/* Image Styles */
+.logo {
+  border-radius: 50%;
+  width: 50px;
+}
+
+/* Text Styles */
+h1 {
+  font-size: 5rem;
+}
+
+h2 {
+  font-size: 3rem;
+}
+
+h3 {
+  font-size: 2.5rem;
+}
+
+h4 {
+  font-size: 2.5rem;
+}
+
+h5 {
+  font-size: 2.25rem;
+  color: var(--dark-text);
+}
+
+p {
+  font-size: 1.5rem;
+  color: var(--dark-text);
+}
+
+
+
+/* ---------- LINK / UNDERLINE: robust reset ---------- */
+
+/* Default: force a real underline and make it follow the text color */
+a {
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  /* explicit thickness helps consistent rendering */
+  text-underline-offset: 2px;
+  text-decoration-color: currentColor;
+  text-decoration-skip-ink: none;
+  /* avoid weird skipping on some fonts */
+  -webkit-text-decoration-color: currentColor;
+  /* older WebKit safety */
+}
+
+/* Make sure pseudo-elements used as decorative underlines do not show up */
+a::before,
+a::after {
+  background-image: none !important;
+  box-shadow: none !important;
+  border-bottom: none !important;
+}
+
+/* Remove border/box-shadow-based underlines on anchors in these sections if any */
+.just-in-section a,
+.projects-list-section a {
+  border-bottom: none !important;
+  box-shadow: none !important;
+  background-image: none !important;
+  text-decoration-color: currentColor !important;
+}
+
+/* Base color rules for anchors that are NOT .btn (simple selectors only) */
+a:not(.btn):link {
+  color: var(--dark-text);
+}
+
+a:not(.btn):visited {
+  color: var(--light-section-bg);
+}
+
+a:not(.btn):hover {
+  color: var(--dark-section-bg);
+}
+
+a:not(.btn):active {
+  color: var(--light-text);
+}
+
+/* Colors for anchors inside the special sections */
+.just-in-section a:link,
+.projects-list-section a:link, .navbar a:link {
+  color: #0e11ccff !important;
+}
+
+.just-in-section a:visited,
+.projects-list-section a:visited, .navbar a:visited {
+  color: #19c4df !important;
+}
+
+.just-in-section a:hover,
+.projects-list-section a:hover,
+.just-in-section h2:hover,
+.navbar a:hover {
+  color: var(--dark-section-bg) !important;
+}
+
+.just-in-section a:active,
+.projects-list-section a:active,
+.navbar a:active {
+  color: #e73407ff !important;
+}
+
+/* If your headings contain anchors and you want the heading text to match the anchor color,
+   target both the heading and the anchor (hover on heading also updates): */
+.projects-list-section h2,
+.projects-list-section h2 a {
+  color: inherit;
+  /* keep heading color consistent with container unless overridden */
+}
+
+/* Fonts */
+.pompiere-regular,
+h1,
+h2,
+h3,
+h4,
+h5 {
+  font-family: "Pompiere", sans-serif;
+  font-weight: 400;
+  font-style: normal;
+}
+
+.cormorant-garamond,
+p,
+button,
+a.btn {
+  font-family: "Cormorant Garamond", serif;
+  font-optical-sizing: auto;
+  font-weight: 400;
+  font-style: normal;
+}
+
+.gradient-text {
+  animation: text-color-animation 18s ease infinite;
+}
+
+@keyframes text-color-animation {
+  0% {
+    color: var(--light-section-bg);
+  }
+
+  33% {
+    color: var(--blue-main-bg);
+  }
+
+  66% {
+    color: var(--dark-section-bg);
+  }
+
+  100% {
+    color: var(--light-section-bg);
+  }
+}
+
+/* Button Styles */
+.btn {
+  font-size: 1.3rem;
+}
+
+.btn-outline-light {
+  border-color: var(--dark-text);
+  background-color: var(--light-text);
+  color: var(--dark-text);
+}
+
+.btn-outline-dark {
+  border-color: var(--dark-text);
+  background-color: var(--dark-section-bg);
+  color: var(--light-text);
+}
+
+/* Section Styles */
+body {
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+.navbar {
+  border-bottom: 3px solid var(--dark-section-bg);
+}
+.navbar li {
+  font-size: 1.5rem;
+}
+
+.main-grid {
+  background: var(--blue-main-bg);
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+  padding: 20px;
+  flex-grow: 1;
+  align-items: start;
+}
+
+.hero-section {
+  grid-column: span 2;
+  margin-bottom: 20px;
+}
+
+.subtitle {
+  margin-top: 10px;
+}
+
+.birthday-section {
+  grid-column: span 2;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+}
+
+#play-video {
+  margin-top: 20px;
+  padding: 10px 20px;
+  cursor: pointer;
+  background-color: pink;
+  color: purple;
+  font-size: 2rem;
+  font-family: "Modak", system-ui;
+  font-weight: 400;
+  font-style: normal;
+  border: purple 3px solid;
+  border-radius: 10px;
+  text-align: center;
+}
+
+.birthday-section h2 {
+  font-size: 4rem;
+  color: #ff00ddff;
+  text-shadow: 2px 2px 4px purple;
+}
+
+#ash-birthday {
+  margin-top: 20px;
+  width: 80%;
+  display: none;
+}
+
+.storecalc-section,
+.projects-section {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  min-height: 360px;
+  grid-column: span 1;
+  border-radius: 10px;
+  padding: 20px;
+  padding-bottom: 2rem;
+}
+
+.projects-section:not(.just-in-section)> :last-child {
+  margin-top: auto;
+}
+
+.storecalc-section> :last-child {
+  margin-top: auto;
+}
+
+.projects-section {
+  background-color: var(--light-section-bg);
+  color: var(--dark-text);
+}
+
+.storecalc-section {
+  background-color: var(--dark-section-bg);
+  color: var(--light-section-bg);
+}
+
+.projects-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+  grid-column: span 2;
+}
+
+.just-in-section {
+  grid-row: 1 / span 2;
+  min-height: 100px;
+  justify-content: center;
+  padding: 20px;
+}
+
+.just-in-section h2 {
+  margin-bottom: 15px;
+}
+
+/* List Styles */
+.just-in-section ul {
+  list-style: none;
+  padding-left: 0;
+}
+
+.just-in-section li {
+  display: flex;
+  align-items: center;
+}
+
+.just-in-section li::before {
+  content: "•";
+  margin-right: 0.5em;
+  font-size: 1.2em;
+  line-height: 1;
+}
+
+.projects-list-section {
+  background-color: var(--light-section-bg);
+  color: var(--dark-text);
+  min-height: 0px;
+  padding: 20px 10px 15px 20px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.storecalc-section p {
+  color: var(--light-section-bg);
+}
+
+.carousel-section {
+  grid-column: span 2;
+}
+
+.carousel-caption {
+  color: var(--dark-text);
+  background-color: #19c5dfc7;
+  padding: 10px;
+  border-radius: 10px;
+}
+
+.carousel-item img {
+  width: 100%;
+  height: 400px;
+  object-fit: cover;
+  object-position: center;
+}
+
+.footer {
+  margin-top: auto;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  border-top: 3px solid var(--dark-text);
+}
+
+#copyright {
+  margin-bottom: 10px;
+  font-size: 1.2rem;
+}
+
+.footer-links {
+  width: 75%;
+  display: flex;
+  flex-direction: row;
+  justify-content: space-around;
+  align-items: center;
+  padding-top: 10px;
+  margin: 20px auto;
+  border-radius: 10px;
+  font-size: 1.3rem;
+  background-color: var(--blue-main-bg);
+}
+
+.footer-links p {
+  margin: 0 10px 10px 10px;
+}
+
+/* Responsive Styles */
+@media (max-width: 768px) {
+
+  .main-grid,
+  .projects-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .hero-section,
+  .storecalc-section,
+  .projects-section,
+  .carousel-section,
+  .birthday-section,
+  .projects-list-section {
+    grid-column: span 1;
+  }
+}

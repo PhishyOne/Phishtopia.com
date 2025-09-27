@@ -1,0 +1,32 @@
+{
+  "name": "phishtopia.com",
+  "version": "2.0.0",
+  "description": "Phishtopia.com with backend",
+  "main": "index.js",
+  "type": "module",
+  "engines": {
+    "node": "22.x"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node index.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/PhishyOne/Phishtopia.com.git"
+  },
+  "keywords": [
+    "phishtopia",
+    "creativity"
+  ],
+  "author": "PhishyOne",
+  "license": "GPL-3.0-or-later",
+  "bugs": {
+    "url": "https://github.com/PhishyOne/Phishtopia.com/issues"
+  },
+  "homepage": "https://github.com/PhishyOne/Phishtopia.com#readme",
+  "dependencies": {
+    "ejs": "^3.1.10",
+    "express": "^5.1.0"
+  }
+}

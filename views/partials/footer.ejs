@@ -1,0 +1,32 @@
+<!-- Footer -->
+<div class="footer gradient-background">
+    <div class="footer-links">
+        <p><a href="https://phishtopia.com">Home</a></p>
+        <p><a href="https://phishyone.github.io/Fullstack-Course/">My Course Progress</a></p>
+        <p><a href="contact">Contact Me</a></p>
+    </div>
+    <a href="https://phishtopia.com"><img src="res/images/phishLogo.png" alt="Phishtopia" class="logo mb-2" /></a>
+    <a href="https://phishtopia.com">
+        <p id="copyright" class="gradient-text">©2025 Phishtopia</p>
+    </a>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/js/bootstrap.bundle.min.js"
+    integrity="sha384-ndDqU0Gzau9qJ1lfW4pNLlhNTkCfHzAVBReH9diLvGRem5+R9g2FzA8ZGN954O5Q"
+    crossorigin="anonymous"></script>
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
+<script src="/index.js"></script>
+
+<% if (typeof extraScripts !=='undefined' ) { %>
+    <% if (Array.isArray(extraScripts)) { %>
+        <% extraScripts.forEach(function(src) { %>
+            <script src="<%= src %>"></script>
+        <% }); %>
+    <% } else { %>
+        <script src="<%= extraScripts %>"></script>
+    <% } %>
+<% } %>
+
+</body>
+
+</html>

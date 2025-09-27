@@ -1,0 +1,24 @@
+
+<%- include('partials/header', { title: 'Simon Game', extraStyles: './styles/simon.css'}) %>
+
+    <!-- Main Content -->
+    <main class="main-grid">
+        <!-- Hero Section -->
+        <section class="hero-section gradient-background rounded-3 pt-4 pb-3 ps-5">
+            <h1 class="gradient-text">Simon</h1>
+            <p>Challenge yourself to press the buttons in the order they were activated. Good luck!</p>
+        </section>
+
+        <div class="simon span-2">
+            <h2 class="span-2" id="level-title">Press Start</h2>
+            <div class="span-2">
+                <button class="start-button" role="button">Start</button>
+            </div>
+                    <div type="button" id="green" class="simon-btn green"></div>
+                    <div type="button" id="red" class="simon-btn red"></div>
+                    <div type="button" id="yellow" class="simon-btn yellow"></div>
+                    <div type="button" id="blue" class="simon-btn blue"></div>
+        </div>
+    </main>
+
+<%- include('partials/footer', { extraScripts: 'res/software/simon-res/game.js' }) %>
