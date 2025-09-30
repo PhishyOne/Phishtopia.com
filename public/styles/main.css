@@ -6,7 +6,7 @@
   --light-text: #ffb76a;
   --dark-section-bg: #274744;
   --light-section-bg: #d16e04;
-  --blue-main-bg: #19c4df;
+  --blue-main-bg: #19c5df;
 }
 
 /* Background Styles */
@@ -28,6 +28,18 @@
   100% {
     background-position: 0% 50%;
   }
+}
+
+#bubble-canvas {
+  background: rgba(121, 208, 219, 1);
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: -1;
+    /* pushes canvas behind content */
+    display: block;
 }
 
 .light-bg {
@@ -233,13 +245,14 @@ body {
 
 .navbar {
   border-bottom: 3px solid var(--dark-section-bg);
+  opacity: 0.75;
 }
 .navbar li {
   font-size: 1.5rem;
 }
 
 .main-grid {
-  background: var(--blue-main-bg);
+  background: transparent;
   display: grid;
   grid-template-columns: repeat(2, 1fr);
   gap: 10px;
@@ -257,42 +270,6 @@ body {
   margin-top: 10px;
 }
 
-.birthday-section {
-  grid-column: span 2;
-  text-align: center;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  width: 100%;
-}
-
-#play-video {
-  margin-top: 20px;
-  padding: 10px 20px;
-  cursor: pointer;
-  background-color: pink;
-  color: purple;
-  font-size: 2rem;
-  font-family: "Modak", system-ui;
-  font-weight: 400;
-  font-style: normal;
-  border: purple 3px solid;
-  border-radius: 10px;
-  text-align: center;
-}
-
-.birthday-section h2 {
-  font-size: 4rem;
-  color: #ff00ddff;
-  text-shadow: 2px 2px 4px purple;
-}
-
-#ash-birthday {
-  margin-top: 20px;
-  width: 80%;
-  display: none;
-}
-
 .storecalc-section,
 .projects-section {
   height: 100%;
@@ -304,6 +281,7 @@ body {
   border-radius: 10px;
   padding: 20px;
   padding-bottom: 2rem;
+  opacity: 0.75;
 }
 
 .projects-section:not(.just-in-section)> :last-child {
@@ -376,6 +354,7 @@ body {
 
 .carousel-section {
   grid-column: span 2;
+  opacity: 0.75;
 }
 
 .carousel-caption {
@@ -399,6 +378,7 @@ body {
   justify-content: center;
   align-items: center;
   border-top: 3px solid var(--dark-text);
+  opacity: 0.75;
 }
 
 #copyright {
