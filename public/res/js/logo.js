@@ -64,6 +64,12 @@ function drawGear(rot = 0) {
         ctx.closePath();
     }
 
+    // Shadow
+    ctx.shadowColor = "rgba(0,0,0,0.3)";
+    ctx.shadowBlur = 10;
+    ctx.shadowOffsetX = 4;
+    ctx.shadowOffsetY = 4;
+
     // Fill & stroke
     ctx.fillStyle = "rgba(241, 240, 233, 0.97)"; // fully transparent fill
     ctx.fill("evenodd");
