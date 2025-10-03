@@ -11,7 +11,7 @@ div {
     position:relative; 
     width:450px; 
     height:450px; 
-    background:url('/canvas/Corp-Logo/logoBG.jpg') center/cover no-repeat;
+    background:url('/res/images/logoBG.jpg') center/cover no-repeat;
 }
 
 canvas {
