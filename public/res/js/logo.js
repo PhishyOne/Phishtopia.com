@@ -24,9 +24,14 @@ const offsetCutout = degreeOffsetCutout * Math.PI / 180;
 let angle = 0; // current rotation
 const speed = 0.01; // radians per frame, adjust to rotate faster/slower
 
+const bg = new Image();
+bg.src = '/res/images/logoBG.jpg';
+bg.onload = () => requestAnimationFrame(animate); // start animation once loaded
+
 function drawGear(rot = 0) {
     ctx.clearRect(0, 0, canvas.width, canvas.height); // clear previous frame
     ctx.save();
+    ctx.drawImage(bg, 0, 0, canvas.width, canvas.height);
     ctx.translate(centerX, centerY);
     ctx.rotate(rot); // rotate gear
 
@@ -80,10 +85,40 @@ function drawGear(rot = 0) {
     ctx.restore();
 }
 
-function animate() {
-    drawGear(angle);
-    angle += speed; // increment rotation
-    requestAnimationFrame(animate);
-}
+// --- Recording setup ---
+const stream = canvas.captureStream(60); // 60 FPS
+const recorder = new MediaRecorder(stream, { mimeType: "video/webm; codecs=vp9" });
 
-animate();
+let chunks = [];
+
+recorder.ondataavailable = e => chunks.push(e.data);
+recorder.onstop = () => {
+    const blob = new Blob(chunks, { type: "video/webm" });
+    const url = URL.createObjectURL(blob);
+
+    // Download the video
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "gear_animation.webm";
+    a.click();
+};
+
+// --- Animation with 5-second capture ---
+
+let startTime = null;
+
+function animate(timestamp) {
+    if (!startTime) startTime = timestamp;
+    const elapsed = (timestamp - startTime) / 1000; // seconds
+
+    drawGear(angle);
+    angle += speed;
+
+    if (elapsed < 8) { // stop after 5 seconds
+        requestAnimationFrame(animate);
+    } else {
+        recorder.stop();
+    }
+}
+recorder.start();
+requestAnimationFrame(animate);
