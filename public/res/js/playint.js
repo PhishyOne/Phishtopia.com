@@ -1,3 +1,4 @@
+
 import express from "express";
 import axios from "axios";
 import { parse } from "csv-parse/sync";
@@ -63,7 +64,7 @@ async function fetchAllPagesParallel(baseUrl) {
    ROUTES
    ============================ */
 router.get("/", (req, res) => {
-    res.render("project29/index", {
+    res.render("/views/PlayInt", {
         error: null,
         playerName: null,
         topRegions: [],
@@ -75,7 +76,7 @@ router.get("/submit", async (req, res) => {
     try {
         const playerName = req.query.name?.trim();
         if (!playerName) {
-            return res.render("project29/index", {
+            return res.render("/views/PlayInt", {
                 error: "Please enter a player name.",
                 playerName: null,
                 topRegions: [],
@@ -168,7 +169,7 @@ router.get("/submit", async (req, res) => {
             percent: Number(((count / totalCount) * 100).toFixed(1)),
         }));
 
-        res.render("project29/index", {
+        res.render("/views/PlayInt", {
             error: null,
             playerName,
             topRegions,
@@ -176,7 +177,7 @@ router.get("/submit", async (req, res) => {
         });
     } catch (err) {
         console.error("Error in /submit:", err);
-        res.render("project29/index", {
+        res.render("/views/PlayInt", {
             error: "Failed to fetch or process data.",
             playerName: null,
             topRegions: [],
