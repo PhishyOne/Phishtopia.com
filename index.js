@@ -16,10 +16,10 @@ app.set("views", join(__dirname, "views"));
 // Serve static files from /public
 app.use(express.static(join(__dirname, "public")));
 
-// --- Auto-generate simple .ejs routes (except PlayInt) ---
+// --- Auto-generate simple .ejs routes (except PlayerInt) ---
 const viewsDir = join(__dirname, "views");
 const viewFiles = readdirSync(viewsDir)
-    .filter(file => file.endsWith(".ejs") && file !== "PlayInt.ejs");
+    .filter(file => file.endsWith(".ejs") && file !== "PlayerInt.ejs");
 
 viewFiles.forEach(file => {
     const name = file.replace(".ejs", "");
@@ -40,8 +40,8 @@ viewFiles.forEach(file => {
     }
 });
 
-// --- Mount PlayInt router ---
-app.use("/PlayInt", playIntRouter);
+// --- Mount PlayerInt router ---
+app.use("/PlayerInt", playIntRouter);
 
 // --- Start server ---
 app.listen(port, () => {
