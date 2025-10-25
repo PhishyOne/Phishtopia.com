@@ -32,14 +32,13 @@
 
 #bubble-canvas {
   background: rgba(121, 208, 219, 1);
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    z-index: -1;
-    /* pushes canvas behind content */
-    display: block;
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: -1;
+  display: block;
 }
 
 .light-bg {
@@ -63,51 +62,59 @@
   width: 50px;
 }
 
-/* Text Styles */
-h1 {
+/* Base Fonts for Main Site (Scoped) */
+body:not(.playint) {
+  font-family: "Cormorant Garamond", serif;
+}
+
+body:not(.playint) h1,
+body:not(.playint) h2,
+body:not(.playint) h3,
+body:not(.playint) h4,
+body:not(.playint) h5,
+body:not(.playint) .pompiere-regular {
+  font-family: "Pompiere", sans-serif;
+  font-weight: 400;
+  font-style: normal;
+}
+
+/* Heading Sizes */
+body:not(.playint) h1 {
   font-size: 5rem;
 }
 
-h2 {
+body:not(.playint) h2 {
   font-size: 3rem;
 }
 
-h3 {
+body:not(.playint) h3 {
   font-size: 2.5rem;
 }
 
-h4 {
+body:not(.playint) h4 {
   font-size: 2.5rem;
 }
 
-h5 {
+body:not(.playint) h5 {
   font-size: 2.25rem;
   color: var(--dark-text);
 }
 
-p {
+body:not(.playint) p {
   font-size: 1.5rem;
   color: var(--dark-text);
 }
 
-
-
 /* ---------- LINK / UNDERLINE: robust reset ---------- */
-
-/* Default: force a real underline and make it follow the text color */
 a {
   text-decoration: underline;
   text-decoration-thickness: 1px;
-  /* explicit thickness helps consistent rendering */
   text-underline-offset: 2px;
   text-decoration-color: currentColor;
   text-decoration-skip-ink: none;
-  /* avoid weird skipping on some fonts */
   -webkit-text-decoration-color: currentColor;
-  /* older WebKit safety */
 }
 
-/* Make sure pseudo-elements used as decorative underlines do not show up */
 a::before,
 a::after {
   background-image: none !important;
@@ -115,7 +122,6 @@ a::after {
   border-bottom: none !important;
 }
 
-/* Remove border/box-shadow-based underlines on anchors in these sections if any */
 .just-in-section a,
 .projects-list-section a {
   border-bottom: none !important;
@@ -124,7 +130,6 @@ a::after {
   text-decoration-color: currentColor !important;
 }
 
-/* Base color rules for anchors that are NOT .btn (simple selectors only) */
 a:not(.btn):link {
   color: var(--dark-text);
 }
@@ -141,14 +146,15 @@ a:not(.btn):active {
   color: var(--light-text);
 }
 
-/* Colors for anchors inside the special sections */
 .just-in-section a:link,
-.projects-list-section a:link, .navbar a:link {
+.projects-list-section a:link,
+.navbar a:link {
   color: #0e11ccff !important;
 }
 
 .just-in-section a:visited,
-.projects-list-section a:visited, .navbar a:visited {
+.projects-list-section a:visited,
+.navbar a:visited {
   color: #19c4df !important;
 }
 
@@ -165,36 +171,12 @@ a:not(.btn):active {
   color: #e73407ff !important;
 }
 
-/* If your headings contain anchors and you want the heading text to match the anchor color,
-   target both the heading and the anchor (hover on heading also updates): */
 .projects-list-section h2,
 .projects-list-section h2 a {
   color: inherit;
-  /* keep heading color consistent with container unless overridden */
 }
 
-/* Fonts */
-.pompiere-regular,
-h1,
-h2,
-h3,
-h4,
-h5 {
-  font-family: "Pompiere", sans-serif;
-  font-weight: 400;
-  font-style: normal;
-}
-
-.cormorant-garamond,
-p,
-button,
-a.btn {
-  font-family: "Cormorant Garamond", serif;
-  font-optical-sizing: auto;
-  font-weight: 400;
-  font-style: normal;
-}
-
+/* Gradient Text */
 .gradient-text {
   animation: text-color-animation 18s ease infinite;
 }
@@ -234,7 +216,7 @@ a.btn {
   color: var(--light-text);
 }
 
-/* Section Styles */
+/* Layout / Section Styles */
 body {
   margin: 0;
   padding: 0;
@@ -247,6 +229,7 @@ body {
   border-bottom: 3px solid var(--dark-section-bg);
   opacity: 0.75;
 }
+
 .navbar li {
   font-size: 1.5rem;
 }
@@ -320,7 +303,6 @@ body {
   margin-bottom: 15px;
 }
 
-/* List Styles */
 .just-in-section ul {
   list-style: none;
   padding-left: 0;

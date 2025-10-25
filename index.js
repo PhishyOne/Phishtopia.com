@@ -13,7 +13,7 @@ const port = process.env.PORT || 3002;
 app.set("view engine", "ejs");
 app.set("views", join(__dirname, "views"));
 
-// Static files (like /public/res/, /public/styles/, etc.)
+// Serve static files from /public
 app.use(express.static(join(__dirname, "public")));
 
 // --- Auto-generate simple .ejs routes (except PlayInt) ---
@@ -24,15 +24,26 @@ const viewFiles = readdirSync(viewsDir)
 viewFiles.forEach(file => {
     const name = file.replace(".ejs", "");
     if (name === "index") {
-        app.get("/", (req, res) => res.render(name));
+        app.get("/", (req, res) => {
+            res.render(name, {
+                extraStyles: ["/styles/main.css"],                     // Index CSS
+                extraScripts: ["/index.js", "/res/js/canvas.js"]      // Bubbles/Canvas JS
+            });
+        });
     } else {
-        app.get(`/${name}`, (req, res) => res.render(name));
+        app.get(`/${name}`, (req, res) => {
+            res.render(name, {
+                extraStyles: ["/styles/main.css"],  // Default CSS for other pages
+                extraScripts: []                    // No extra JS unless needed
+            });
+        });
     }
 });
 
-// --- Mount PlayInt route ---
+// --- Mount PlayInt router ---
 app.use("/PlayInt", playIntRouter);
 
+// --- Start server ---
 app.listen(port, () => {
     console.log(`Server running on port ${port}`);
 });

@@ -1,3 +1,4 @@
+
 import express from "express";
 import axios from "axios";
 import { parse } from "csv-parse/sync";
@@ -57,19 +58,34 @@ router.get("/", (req, res) => {
         error: null,
         playerName: null,
         topRegions: [],
-        hourlyPercentages: []
+        hourlyPercentages: [],
+        extraStyles: ["styles/playint.css"],
+        extraScripts: [
+            "res/js/stars-bg.js",
+            "res/js/little-logo.js",
+            "res/js/playint-spin.js",
+            "res/js/playint.js"
+        ],
+        bodyClass: "playint"
     });
 });
-
 router.get("/submit", async (req, res) => {
     try {
-        const playerName = req.query.name?.trim();
+        const playerName = req.query.name.trim();
         if (!playerName) {
             return res.render("PlayInt", {
                 error: "Please enter a player name.",
                 playerName: null,
                 topRegions: [],
-                hourlyPercentages: []
+                hourlyPercentages: [],
+                extraStyles: ["styles/playint.css"],
+                extraScripts: [
+                    "res/js/stars-bg.js",
+                    "res/js/little-logo.js",
+                    "res/js/playint-spin.js",
+                    "res/js/playint.js"
+                ],
+                bodyClass: "playint"
             });
         }
 
@@ -151,7 +167,15 @@ router.get("/submit", async (req, res) => {
             error: null,
             playerName,
             topRegions,
-            hourlyPercentages
+            hourlyPercentages,
+            extraStyles: ["styles/playint.css"],
+            extraScripts: [
+                "res/js/stars-bg.js",
+                "res/js/little-logo.js",
+                "res/js/playint-spin.js",
+                "res/js/playint.js"
+            ],
+            bodyClass: "playint"
         });
     } catch (err) {
         console.error("Error in /submit:", err);
@@ -159,7 +183,15 @@ router.get("/submit", async (req, res) => {
             error: "Failed to fetch or process data.",
             playerName: null,
             topRegions: [],
-            hourlyPercentages: []
+            hourlyPercentages: [],
+            extraStyles: ["styles/playint.css"],
+            extraScripts: [
+                "res/js/stars-bg.js",
+                "res/js/little-logo.js",
+                "res/js/playint-spin.js",
+                "res/js/playint.js"
+            ],
+            bodyClass: "playint"
         });
     }
 });

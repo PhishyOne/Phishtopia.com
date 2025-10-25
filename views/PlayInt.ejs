@@ -1,12 +1,13 @@
 
-<%- include('partials/header', { title: 'Echoes PlayInt' , extraStyles: ['styles/playint.css'] }) %>
+<%- include('partials/header', { title: 'Echoes PlayInt' , extraStyles: ['/styles/playint.css'], bodyClass: 'playint' })
+    %>
 
 <canvas id="stars-bg"></canvas>
 <div class="container">
     <div class="title-container">
         <div class="logo-container">
             <canvas id="gearCanvas"></canvas>
-            <img src="res/images/logoBG.jpg" alt="Logo Background" class="logo-bg">
+            <img src="/res/images/logoBG.jpg" alt="Logo Background" class="logo-bg">
         </div>
         <h1 id="eve-title">Eve Echoes: INTM</h1>
     </div>
@@ -113,5 +114,5 @@
                                     <% } %>
 </div>
 
-<%- include('partials/footer', { extraScripts: ['res/js/stars-bg.js', 'res/js/little-logo.js',
-    'res/js/playint-spin.js', 'res/js/playint.js'] }) %>
+<%- include('partials/footer', { extraScripts: ['/res/js/stars-bg.js', '/res/js/little-logo.js',
+    '/res/js/playint-spin.js', '/res/js/playint.js'] }) %>

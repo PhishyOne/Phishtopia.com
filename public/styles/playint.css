@@ -1,46 +1,30 @@
-/* ===== Global & Layout ===== */
+/* ===== PlayInt Page Styles ===== */
+body.playint {
+    background: linear-gradient(180deg, #04071a 0%, #071133 100%);
+    color: #fff;
+    padding: 20px;
+    font-family: 'Shentox', Arial, sans-serif;
+    overflow-x: hidden;
+}
 
-/* Eve Font */
+/* ===== Fonts ===== */
 @font-face {
-    font-family: 'Shentox';
-    src: url('https://web.ccpgamescdn.com/aws/webfonts/shentox/webfonts-2.0/Shentox-Medium.woff2') format('woff2');
-    font-weight: 500;
+    font-family: 'Eve Alpha';
+    src: url('/styles/evealpha_bold.ttf') format('truetype');
+    font-weight: 700;
     font-style: normal;
     font-display: swap;
 }
 
-@font-face {
-    font-family: 'Eve Alpha';
-    src: url('/project29/css/evealpha_bold.ttf') format('truetype');
-    font-weight: 700;
-    font-style: bold;
-    font-display: swap;
-}
-
-body {
-    font-family: 'Shentox', Arial, sans-serif;
-    background: linear-gradient(180deg, #04071a 0%, #071133 100%);
-    margin: 0;
-    overflow-x: hidden;
-    padding: 20px;
-    color: #ffffffff;
-}
-
-#eve-title {
+body.playint #eve-title {
     font-family: 'Eve Alpha', Arial, sans-serif;
     font-size: 36px;
     margin-bottom: 20px;
-    color: #ffffffff;
-    gap: 10px;
-    }
-    
-#gearCanvas {
-    display: inline-block;
-    width: 80px;
-    height: 80px;
+    color: #fff;
 }
 
-#stars-bg {
+/* ===== Star Background Canvas ===== */
+body.playint #stars-bg {
     position: fixed;
     top: 0;
     left: 0;
@@ -53,7 +37,8 @@ body {
         linear-gradient(180deg, #04071a 0%, #071133 100%);
 }
 
-.container {
+/* ===== Container ===== */
+body.playint .container {
     max-width: 1200px;
     margin: 0 auto;
     background: transparent;
@@ -62,50 +47,45 @@ body {
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.28);
 }
 
-h2 {
+/* ===== Titles ===== */
+body.playint h2 {
     font-size: 28px;
     margin-bottom: 20px;
-    text-align: left;
-    color: #000000ff;
-    text-shadow: 2px 2px 2px #fff,
-        -2px -2px 2px #fff,
-        2px -2px 2px #fff,
-        -2px 2px 2px #fff;
+    color: #ffffff;
+    text-shadow: 2px 2px 2px #00000055;
 }
 
-h3 {
+body.playint h3 {
     font-size: 20px;
     margin-top: 20px;
     margin-bottom: 10px;
-    color: #fff;
+    color: #ffffff;
 }
 
-#result {
+/* ===== Results ===== */
+body.playint #result {
     color: #03a9f4;
 }
-label {
+
+/* ===== Labels ===== */
+body.playint label {
     font-size: 24px;
     font-weight: bold;
-    color: #f00b0bff
+    color: #f00b0bff;
 }
 
 /* ===== Search Box ===== */
-.search-box {
+body.playint .search-box {
     margin-bottom: 20px;
 }
 
-.search-box form {
+body.playint .search-box form {
     display: flex;
     align-items: center;
     gap: 6px;
 }
 
-.search-box label {
-    margin-right: 6px;
-    font-weight: bold;
-}
-
-.search-box input[type="text"] {
+body.playint .search-box input[type="text"] {
     padding: 6px;
     font-size: 14px;
     flex: 1;
@@ -116,28 +96,26 @@ label {
     background-color: #fff;
 }
 
-.search-box button {
+body.playint .search-box button {
     font-size: 14px;
     padding: 6px 12px;
     border-radius: 0.5em;
     border: none;
-    background: linear-gradient(90deg,  #f00b0bff, #000000ff);
+    background: linear-gradient(90deg, #f00b0bff, #000000ff);
     color: #fff;
     cursor: pointer;
-    font-family: 'Shentox', sans-serif;
+    font-family: 'Shentox', Arial, sans-serif;
     box-shadow: 2px 2px 3px #000000b4;
     transition: all 0.25s ease;
-    display: inline-flex;
-    align-items: center;
 }
 
-.search-box button:hover {
-    filter: brightness(1.5);
+body.playint .search-box button:hover {
+    filter: brightness(1.3);
     transform: translateY(-1px);
 }
 
-/* ===== Spinner ===== */
-.spinner {
+/* ===== Loading Spinner ===== */
+body.playint .spinner {
     border: 6px solid #f3f3f3;
     border-top: 6px solid #f00b0bff;
     border-radius: 50%;
@@ -158,55 +136,54 @@ label {
 }
 
 /* ===== Collapsible Tree ===== */
-.tree,
-.tree ul,
-.tree ul ul,
-.tree ul ul ul {
+body.playint .tree,
+body.playint .tree ul,
+body.playint .tree ul ul,
+body.playint .tree ul ul ul {
     list-style: none;
     padding-left: 0;
     margin: 0;
 }
 
-.tree li {
+body.playint .tree li {
     margin: 4px 0;
 }
 
-.tree .caret {
+body.playint .tree .caret {
     cursor: pointer;
     user-select: none;
 }
 
-.tree .caret::before {
+body.playint .tree .caret::before {
     content: "\25B6";
     display: inline-block;
     margin-right: 6px;
     transition: transform 0.2s;
 }
 
-.tree .caret-down::before {
+body.playint .tree .caret-down::before {
     transform: rotate(90deg);
 }
 
-.tree .nested {
+body.playint .tree .nested {
     display: none;
     padding-left: 20px;
 }
 
-.tree .nested.show {
+body.playint .tree .nested.show {
     display: block;
 }
 
-/* ===== Indentation Refinement ===== */
-.tree ul ul {
+body.playint .tree ul ul {
     padding-left: 25px;
 }
 
-.tree ul ul ul {
+body.playint .tree ul ul ul {
     padding-left: 40px;
 }
 
 /* ===== Color Dots ===== */
-.color-dot {
+body.playint .color-dot {
     display: inline-block;
     width: 12px;
     height: 12px;
@@ -216,7 +193,7 @@ label {
 }
 
 /* ===== Hourly Activity Chart ===== */
-.hourly-chart-row {
+body.playint .hourly-chart-row {
     display: flex;
     justify-content: flex-start;
     align-items: flex-end;
@@ -225,7 +202,7 @@ label {
     overflow-x: auto;
 }
 
-.hour-column {
+body.playint .hour-column {
     flex: 1;
     display: flex;
     flex-direction: column;
@@ -233,7 +210,7 @@ label {
     min-width: 20px;
 }
 
-.hour-bar {
+body.playint .hour-bar {
     width: 100%;
     background-color: #03a9f4;
     border-radius: 4px 4px 0 0;
@@ -242,7 +219,7 @@ label {
     transition: height 0.3s ease, background-color 0.3s ease;
 }
 
-.hour-bar .hour-percent {
+body.playint .hour-bar .hour-percent {
     position: absolute;
     top: 50%;
     left: 50%;
@@ -254,49 +231,46 @@ label {
     pointer-events: none;
 }
 
-.hour-label {
+body.playint .hour-label {
     text-align: center;
     font-size: 12px;
     margin-top: 4px;
 }
 
-/* Hover effect */
-.hour-column:hover .hour-bar {
+body.playint .hour-column:hover .hour-bar {
     height: calc(var(--bar-height) * 1.5);
     background-color: #f00b0bff;
 }
 
-.hour-column:hover .hour-bar .hour-percent {
+body.playint .hour-column:hover .hour-bar .hour-percent {
     opacity: 1;
 }
 
-.title-container {
+/* ===== Logo and Title ===== */
+body.playint .title-container {
     display: flex;
     align-items: center;
     gap: 15px;
 }
 
-.logo-container {
+body.playint .logo-container {
     position: relative;
     width: 50px;
-    /* actual logo size */
     height: 50px;
 }
 
-.logo-bg {
+body.playint .logo-bg {
     width: 100%;
     height: 100%;
     display: block;
 }
 
-#gearCanvas {
+body.playint #gearCanvas {
     position: absolute;
     top: 0;
     left: 0;
     width: 50px;
-    /* match container */
     height: 50px;
-    /* match container */
     pointer-events: none;
     background: transparent;
 }

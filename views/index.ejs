@@ -1,5 +1,5 @@
-
-<%- include('partials/header.ejs') %>
+<%- include('partials/header.ejs', { title: 'Phishtopia' , extraStyles: ["/styles/main.css"], // main styles for index
+    extraScripts: ["/index.js", "/res/js/canvas.js" ] }) %>
 
     <!-- Main Content -->
     <main class="main-grid">
@@ -12,16 +12,18 @@
         <!-- Projects Section -->
         <section class="projects-section">
             <h2>Projects</h2>
-            <p>phishtopia is a platform for a hopeful web developer to get noticed. I aim to showcase my projects and progress while making useful tools that people enjoy using.</p>
+            <p>phishtopia is a platform for a hopeful web developer to get noticed. I aim to showcase my projects and
+                progress while making useful tools that people enjoy using.</p>
             <a href="projects" class="btn btn-outline-dark button">View Projects</a>
         </section>
+
         <!-- EE PlayInt Section -->
         <section class="storecalc-section dark-bg">
             <h2>Eve Echoes Player Intelligence</h2>
-            <p>Using publicly available killmails from the echoes.mobi api, this tool produces the likely location and time of play for a chosen player.
-            </p>
+            <p>Using publicly available killmails from the echoes.mobi api, this tool produces the likely location and
+                time of play for a chosen player.</p>
             <a href="PlayInt" class="btn btn-outline-light button">Echoes PlayInt</a>
         </section>
-        </main>
+    </main>
 
-<%- include('partials/footer.ejs') %>
+    <%- include('partials/footer.ejs') %>
