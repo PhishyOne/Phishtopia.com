@@ -227,7 +227,6 @@ body {
 
 .navbar {
   border-bottom: 3px solid var(--dark-section-bg);
-  opacity: 0.75;
 }
 
 .navbar li {
