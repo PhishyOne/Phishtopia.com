@@ -279,7 +279,7 @@ body {
   color: var(--dark-text);
 }
 
-.storecalc-section {
+body:not(.playint) .storecalc-section p {
   background-color: var(--dark-section-bg);
   color: var(--light-section-bg);
 }
