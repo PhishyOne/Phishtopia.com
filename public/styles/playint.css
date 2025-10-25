@@ -275,3 +275,11 @@ body.playint #gearCanvas {
     z-index: 1;
     background: transparent;
 }
+
+@media (max-width: 768px) {
+    body.playint .title-container {
+        flex-direction: column;
+        /* stack logo + title */
+        gap: 8px;
+    }
+}
