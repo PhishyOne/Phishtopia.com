@@ -1,26 +1,48 @@
-
 import express from "express";
 import axios from "axios";
 import { parse } from "csv-parse/sync";
 
 const router = express.Router();
 
+/* ============================
+   Global Color Function (fixed)
+   ============================ */
 function getColor(count, maxCount) {
-    if (!maxCount || maxCount <= 0) return '#00ff00';
-    const ratio = Math.max(0, Math.min(1, count / maxCount));
-    if (ratio <= 0.5) {
-        const t = ratio / 0.5;
-        const r = Math.round(255 * t);
-        const g = 255;
-        return `rgb(${r},${g},0)`;
+    if (!maxCount || maxCount <= 0) return "#00ff00";
+
+    // compute percent of max
+    const pct = (count / maxCount) * 100;
+
+    let r, g, b = 0;
+
+    if (pct <= 32) {
+        // green → yellow
+        const t = pct / 32;
+        r = Math.round(0 + t * 255);
+        g = 255;
+    } else if (pct <= 65) {
+        // yellow → orange
+        const t = (pct - 32) / (65 - 32);
+        r = 255;
+        g = Math.round(255 - t * 128); // green decreases
     } else {
-        const t = (ratio - 0.5) / 0.5;
-        const r = 255;
-        const g = Math.round(255 * (1 - t));
-        return `rgb(${r},${g},0)`;
+        // orange → red
+        const t = (pct - 65) / (100 - 65);
+        r = 255;
+        g = Math.round(127 - t * 127); // green goes to 0
     }
+
+    // clamp
+    r = Math.min(255, Math.max(0, r));
+    g = Math.min(255, Math.max(0, g));
+
+    return `rgb(${r},${g},${b})`;
 }
 
+
+/* ============================
+   Helpers
+   ============================ */
 function topN(items, n) {
     return items.sort((a, b) => b.count - a.count).slice(0, n);
 }
@@ -36,7 +58,7 @@ async function fetchAllPagesParallel(baseUrl) {
     let allData = [];
 
     responses.forEach(r => {
-        if (r.status === 'fulfilled' && r.value.data) {
+        if (r.status === "fulfilled" && r.value.data) {
             try {
                 const pageData = parse(r.value.data, { columns: true, skip_empty_lines: true });
                 allData = allData.concat(pageData);
@@ -49,9 +71,9 @@ async function fetchAllPagesParallel(baseUrl) {
     return allData;
 }
 
-// ============================
-// ROUTES
-// ============================
+/* ============================
+   ROUTES
+   ============================ */
 
 router.get("/", (req, res) => {
     res.render("PlayInt", {
@@ -69,9 +91,10 @@ router.get("/", (req, res) => {
         bodyClass: "playint"
     });
 });
+
 router.get("/submit", async (req, res) => {
     try {
-        const playerName = req.query.name.trim();
+        const playerName = req.query.name?.trim();
         if (!playerName) {
             return res.render("PlayInt", {
                 error: "Please enter a player name.",
@@ -89,6 +112,7 @@ router.get("/submit", async (req, res) => {
             });
         }
 
+        // Fetch data
         const [dataVictim, dataKiller] = await Promise.all([
             fetchAllPagesParallel(`https://echoes.mobi/api/killmails?victim_name=${encodeURIComponent(playerName)}`),
             fetchAllPagesParallel(`https://echoes.mobi/api/killmails?killer_name=${encodeURIComponent(playerName)}`)
@@ -97,8 +121,9 @@ router.get("/submit", async (req, res) => {
         const allData = [...dataVictim, ...dataKiller];
         const totalCount = allData.length || 1;
 
+        // Map data hierarchy
         const regionMap = {};
-        let maxSystemCount = 0;
+        let globalMaxSystemCount = 0;
 
         allData.forEach(row => {
             const region = row.region || "Unknown Region";
@@ -116,40 +141,41 @@ router.get("/submit", async (req, res) => {
                 regionMap[region].constellations[con].systems[sys] = { count: 0 };
             regionMap[region].constellations[con].systems[sys].count++;
 
-            const sysCount = regionMap[region].constellations[con].systems[sys].count;
-            if (sysCount > maxSystemCount) maxSystemCount = sysCount;
+            if (regionMap[region].constellations[con].systems[sys].count > globalMaxSystemCount)
+                globalMaxSystemCount = regionMap[region].constellations[con].systems[sys].count;
         });
 
+        // Build output with consistent color scaling
         const regionsArr = Object.entries(regionMap).map(([regionName, regionData]) => {
             const constellations = Object.entries(regionData.constellations).map(([conName, conData]) => {
                 const systemsArr = Object.entries(conData.systems).map(([sysName, sysData]) => ({
                     name: sysName,
                     count: sysData.count,
                     percent: Number(((sysData.count / totalCount) * 100).toFixed(1)),
-                    color: getColor(sysData.count, maxSystemCount)
+                    color: getColor(sysData.count, globalMaxSystemCount)
                 }));
-                const maxSysCountInCon = Math.max(...systemsArr.map(s => s.count), 0);
+
                 return {
                     name: conName,
                     count: conData.count,
                     percent: Number(((conData.count / totalCount) * 100).toFixed(1)),
-                    color: getColor(conData.count, maxSysCountInCon),
+                    color: getColor(conData.count, globalMaxSystemCount),
                     systems: topN(systemsArr, 5)
                 };
             });
 
-            const maxConstCountInRegion = Math.max(...constellations.map(c => c.count), 0);
             return {
                 name: regionName,
                 count: regionData.count,
                 percent: Number(((regionData.count / totalCount) * 100).toFixed(1)),
-                color: getColor(regionData.count, maxConstCountInRegion),
+                color: getColor(regionData.count, globalMaxSystemCount),
                 constellations: topN(constellations, 5)
             };
         });
 
         const topRegions = topN(regionsArr, 5);
 
+        // Hourly activity
         const MAX_BAR_PX = 300;
         const hourlyCounts = Array(24).fill(0);
         allData.forEach(row => {
