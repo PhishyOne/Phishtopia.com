@@ -76,7 +76,7 @@ async function fetchAllPagesParallel(baseUrl) {
    ============================ */
 
 router.get("/", (req, res) => {
-    res.render("PlayInt", {
+    res.render("PlayerInt", {
         error: null,
         playerName: null,
         topRegions: [],
@@ -96,7 +96,7 @@ router.get("/submit", async (req, res) => {
     try {
         const playerName = req.query.name?.trim();
         if (!playerName) {
-            return res.render("PlayInt", {
+            return res.render("PlayerInt", {
                 error: "Please enter a player name.",
                 playerName: null,
                 topRegions: [],
@@ -189,7 +189,7 @@ router.get("/submit", async (req, res) => {
             percent: Number(((count / totalCount) * 100).toFixed(1)),
         }));
 
-        res.render("PlayInt", {
+        res.render("PlayerInt", {
             error: null,
             playerName,
             topRegions,
@@ -205,7 +205,7 @@ router.get("/submit", async (req, res) => {
         });
     } catch (err) {
         console.error("Error in /submit:", err);
-        res.render("PlayInt", {
+        res.render("PlayerInt", {
             error: "Failed to fetch or process data.",
             playerName: null,
             topRegions: [],

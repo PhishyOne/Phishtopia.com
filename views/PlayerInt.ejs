@@ -1,5 +1,5 @@
 
-<%- include('partials/header', { title: 'Echoes PlayInt' , extraStyles: ['/styles/playint.css'], bodyClass: 'playint' })
+<%- include('partials/header', { title: 'Echoes PlayerInt' , extraStyles: ['/styles/playint.css'], bodyClass: 'playint' })
     %>
 
 <canvas id="stars-bg"></canvas>
@@ -15,7 +15,7 @@
 
     <!-- Search Box -->
     <div class="search-box">
-        <form id="playerForm" action="/PlayInt/submit" method="GET">
+        <form id="playerForm" action="/PlayerInt/submit" method="GET">
             <label for="playerInput">Enter Player Name:</label>
             <input type="text" id="playerInput" name="name" placeholder="(Case Sensitive)" required>
             <button type="submit">Search</button>
