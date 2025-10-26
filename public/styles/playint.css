@@ -2,7 +2,7 @@
 body.playint {
     background: linear-gradient(180deg, #04071a 0%, #071133 100%);
     color: #fff;
-    padding: 20px;
+    padding: 0px;
     font-family: 'Shentox', Arial, sans-serif;
     overflow-x: hidden;
 }
@@ -283,6 +283,25 @@ body.playint .discord-logo {
 
 body.playint .discord-logo:hover {
     transform: scale(1.1);
+}
+
+body.playint .youtube-logo {
+    height: 35px;
+    cursor: pointer;
+    transition: transform 0.2s;
+    background-color: #ffffff98;
+    border-radius: 0.5em;
+}
+
+body.playint .youtube-logo:hover {
+    transform: scale(1.1);
+}
+
+#pig-title {
+    margin-top: 30px;
+    font-size: 32px;
+    color: #ffffff;
+    text-shadow: 2px 2px 2px #ff0000c4;
 }
 
 body.playint #gearCanvas {
