@@ -1,46 +1,49 @@
-/* CSS Styles for Phishtopia (fixed underline + cleaned link rules) */
+/* =========================================
+   Phishtopia Styles — Cleaned & Organized
+   ========================================= */
 
-/* Color Names */
+/* ---------- Colors ---------- */
 :root {
   --dark-text: #331b01;
-  --light-text: #f00b0bff; 
+  --light-text: #f00b0bff;
   --dark-section-bg: #ffb76a;
   --light-section-bg: #03a9f4;
   --blue-main-bg: #19c5df;
 }
 
-/* Background Styles */
+/* ---------- Backgrounds ---------- */
 .gradient-background {
-  background: linear-gradient(300deg, var(--light-text), var(--light-section-bg), var(--dark-section-bg));
+  background: linear-gradient(300deg,
+      var(--light-text),
+      var(--light-section-bg),
+      var(--dark-section-bg));
   background-size: 180% 180%;
   animation: gradient-animation 18s ease infinite;
 }
 
 @keyframes gradient-animation {
-  0% {
+
+  0%,
+  100% {
     background-position: 0% 50%;
   }
 
   50% {
     background-position: 100% 50%;
   }
-
-  100% {
-    background-position: 0% 50%;
-  }
 }
 
 #bubble-canvas {
-  background: rgba(121, 208, 219, 1);
   position: fixed;
-  top: 0;
-  left: 0;
+  inset: 0;
   width: 100%;
   height: 100%;
-  z-index: -1;
   display: block;
+  z-index: -1;
+  background: rgba(121, 208, 219, 1);
 }
 
+/* Simple color utility backgrounds */
 .light-bg {
   background-color: var(--blue-main-bg);
   color: var(--dark-section-bg);
@@ -56,13 +59,13 @@
   color: var(--dark-text);
 }
 
-/* Image Styles */
+/* ---------- Images ---------- */
 .logo {
-  border-radius: 50%;
   width: 50px;
+  border-radius: 50%;
 }
 
-/* Base Fonts for Main Site (Scoped) */
+/* ---------- Typography ---------- */
 body:not(.playint) {
   font-family: "Cormorant Garamond", serif;
 }
@@ -75,10 +78,8 @@ body:not(.playint) h5,
 body:not(.playint) .pompiere-regular {
   font-family: "Pompiere", sans-serif;
   font-weight: 400;
-  font-style: normal;
 }
 
-/* Heading Sizes */
 body:not(.playint) h1 {
   font-size: 5rem;
 }
@@ -87,10 +88,7 @@ body:not(.playint) h2 {
   font-size: 3rem;
 }
 
-body:not(.playint) h3 {
-  font-size: 2.5rem;
-}
-
+body:not(.playint) h3,
 body:not(.playint) h4 {
   font-size: 2.5rem;
 }
@@ -105,16 +103,17 @@ body:not(.playint) p {
   color: var(--dark-text);
 }
 
-/* ---------- LINK / UNDERLINE: robust reset ---------- */
+/* ---------- Links ---------- */
 a {
+  color: var(--dark-text);
   text-decoration: underline;
   text-decoration-thickness: 1px;
   text-underline-offset: 2px;
   text-decoration-color: currentColor;
   text-decoration-skip-ink: none;
-  -webkit-text-decoration-color: currentColor;
 }
 
+/* Remove possible underline artifacts */
 a::before,
 a::after {
   background-image: none !important;
@@ -122,18 +121,7 @@ a::after {
   border-bottom: none !important;
 }
 
-.just-in-section a,
-.projects-list-section a {
-  border-bottom: none !important;
-  box-shadow: none !important;
-  background-image: none !important;
-  text-decoration-color: currentColor !important;
-}
-
-a:not(.btn):link {
-  color: var(--dark-text);
-}
-
+/* Link states */
 a:not(.btn):visited {
   color: var(--light-text);
 }
@@ -146,10 +134,12 @@ a:not(.btn):active {
   color: var(--light-section-bg);
 }
 
-.just-in-section a:link,
-.projects-list-section a:link,
-.navbar a:link {
+/* Section-specific link colors */
+.just-in-section a,
+.projects-list-section a,
+.navbar a {
   color: var(--dark-text) !important;
+  text-decoration-color: currentColor !important;
 }
 
 .just-in-section a:visited,
@@ -160,7 +150,6 @@ a:not(.btn):active {
 
 .just-in-section a:hover,
 .projects-list-section a:hover,
-.just-in-section h2:hover,
 .navbar a:hover {
   color: var(--dark-section-bg) !important;
 }
@@ -171,18 +160,21 @@ a:not(.btn):active {
   color: #2ac3c9ff !important;
 }
 
+/* Keep h2 link colors consistent */
 .projects-list-section h2,
 .projects-list-section h2 a {
   color: inherit;
 }
 
-/* Gradient Text */
+/* ---------- Gradient Text ---------- */
 .gradient-text {
   animation: text-color-animation 18s ease infinite;
 }
 
 @keyframes text-color-animation {
-  0% {
+
+  0%,
+  100% {
     color: var(--light-section-bg);
   }
 
@@ -193,13 +185,9 @@ a:not(.btn):active {
   66% {
     color: var(--dark-section-bg);
   }
-
-  100% {
-    color: var(--light-section-bg);
-  }
 }
 
-/* Button Styles */
+/* ---------- Buttons ---------- */
 .btn {
   font-size: 1.3rem;
 }
@@ -216,7 +204,7 @@ a:not(.btn):active {
   color: var(--light-text);
 }
 
-/* Layout / Section Styles */
+/* ---------- Layout ---------- */
 body {
   margin: 0;
   padding: 0;
@@ -233,14 +221,13 @@ body {
   font-size: 1.5rem;
 }
 
+/* Grid Layouts */
 .main-grid {
-  background: transparent;
   display: grid;
   grid-template-columns: repeat(2, 1fr);
   gap: 10px;
   padding: 20px;
   flex-grow: 1;
-  align-items: start;
 }
 
 .hero-section {
@@ -252,26 +239,16 @@ body {
   margin-top: 10px;
 }
 
+/* Section containers */
 .storecalc-section,
 .projects-section {
-  height: 100%;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
   min-height: 360px;
-  grid-column: span 1;
   border-radius: 10px;
-  padding: 20px;
-  padding-bottom: 2rem;
+  padding: 20px 20px 2rem;
   opacity: 0.75;
-}
-
-.projects-section:not(.just-in-section)> :last-child {
-  margin-top: auto;
-}
-
-.storecalc-section> :last-child {
-  margin-top: auto;
 }
 
 .projects-section {
@@ -279,9 +256,16 @@ body {
   color: var(--dark-text);
 }
 
+/* Last child auto push */
+.projects-section:not(.just-in-section)> :last-child,
+.storecalc-section> :last-child {
+  margin-top: auto;
+}
+
+/* Inner p for storecalc */
 body:not(.playint) .storecalc-section p {
   background-color: var(--dark-section-bg);
-  color: var(--light-section-bg);
+  color: var(--dark-text);
 }
 
 .projects-grid {
@@ -291,6 +275,7 @@ body:not(.playint) .storecalc-section p {
   grid-column: span 2;
 }
 
+/* ---------- Just-In Section ---------- */
 .just-in-section {
   grid-row: 1 / span 2;
   min-height: 100px;
@@ -304,7 +289,7 @@ body:not(.playint) .storecalc-section p {
 
 .just-in-section ul {
   list-style: none;
-  padding-left: 0;
+  padding: 0;
 }
 
 .just-in-section li {
@@ -316,47 +301,23 @@ body:not(.playint) .storecalc-section p {
   content: "•";
   margin-right: 0.5em;
   font-size: 1.2em;
-  line-height: 1;
 }
 
+/* ---------- Projects List Section ---------- */
 .projects-list-section {
   background-color: var(--light-section-bg);
   color: var(--dark-text);
-  min-height: 0px;
   padding: 20px 10px 15px 20px;
   display: flex;
   flex-direction: column;
   justify-content: center;
 }
 
-.storecalc-section p {
-  color: var(--light-section-bg);
-}
-
-.carousel-section {
-  grid-column: span 2;
-  opacity: 0.75;
-}
-
-.carousel-caption {
-  color: var(--dark-text);
-  background-color: #19c5dfc7;
-  padding: 10px;
-  border-radius: 10px;
-}
-
-.carousel-item img {
-  width: 100%;
-  height: 400px;
-  object-fit: cover;
-  object-position: center;
-}
-
+/* ---------- Footer ---------- */
 .footer {
   margin-top: auto;
   display: flex;
   flex-direction: column;
-  justify-content: center;
   align-items: center;
   border-top: 3px solid var(--dark-text);
   opacity: 0.75;
@@ -370,7 +331,6 @@ body:not(.playint) .storecalc-section p {
 .footer-links {
   width: 75%;
   display: flex;
-  flex-direction: row;
   justify-content: space-around;
   align-items: center;
   padding-top: 10px;
@@ -381,10 +341,10 @@ body:not(.playint) .storecalc-section p {
 }
 
 .footer-links p {
-  margin: 0 10px 10px 10px;
+  margin: 0 10px 10px;
 }
 
-/* Responsive Styles */
+/* ---------- Responsive ---------- */
 @media (max-width: 768px) {
 
   .main-grid,

@@ -1,3 +1,4 @@
+
 import express from "express";
 import axios from "axios";
 import { parse } from "csv-parse/sync";
@@ -83,9 +84,7 @@ router.get("/", (req, res) => {
         hourlyPercentages: [],
         extraStyles: ["styles/playint.css"],
         extraScripts: [
-            "res/js/stars-bg.js",
             "res/js/little-logo.js",
-            "res/js/playint-spin.js",
             "res/js/playint.js"
         ],
         bodyClass: "playint"
@@ -103,9 +102,7 @@ router.get("/submit", async (req, res) => {
                 hourlyPercentages: [],
                 extraStyles: ["styles/playint.css"],
                 extraScripts: [
-                    "res/js/stars-bg.js",
                     "res/js/little-logo.js",
-                    "res/js/playint-spin.js",
                     "res/js/playint.js"
                 ],
                 bodyClass: "playint"
@@ -196,9 +193,7 @@ router.get("/submit", async (req, res) => {
             hourlyPercentages,
             extraStyles: ["styles/playint.css"],
             extraScripts: [
-                "res/js/stars-bg.js",
                 "res/js/little-logo.js",
-                "res/js/playint-spin.js",
                 "res/js/playint.js"
             ],
             bodyClass: "playint"
@@ -212,9 +207,7 @@ router.get("/submit", async (req, res) => {
             hourlyPercentages: [],
             extraStyles: ["styles/playint.css"],
             extraScripts: [
-                "res/js/stars-bg.js",
                 "res/js/little-logo.js",
-                "res/js/playint-spin.js",
                 "res/js/playint.js"
             ],
             bodyClass: "playint"
