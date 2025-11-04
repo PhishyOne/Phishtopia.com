@@ -28,22 +28,27 @@
             <form id="playerForm" action="/PlayerInt/submit" method="GET">
                 <div class="search-row">
                     <label for="playerInput">Enter Player Name:</label>
-                    <input type="text" id="playerInput" name="name" placeholder="(Case Sensitive)" required>
+                    <input type="text" id="playerInput" name="name" placeholder="(Case Sensitive)" required
+                        value="<%= playerName ? playerName : '' %>">
                     <button type="submit">Search</button>
                 </div>
-        
+                <div class="toggle-date-row" id="toggleDates">
+                    <span>Optional Date Range</span>
+                    <span class="toggle-arrow">&#9656;</span>
+                </div>
+                
                 <div class="date-row">
                     <label for="startDate">From:</label>
                     <input type="date" id="startDate" name="start">
-        
+                
                     <label for="endDate">To:</label>
                     <input type="date" id="endDate" name="end">
                 </div>
+                
+                
             </form>
         </div>
         
-
-
         <!-- Loading Spinner -->
         <div id="loading" style="display:none; text-align:center; margin-top:20px;">
             <p>Fetching all kills and losses — this may take a few seconds...</p>

@@ -147,3 +147,24 @@ document.addEventListener('DOMContentLoaded', () => {
     updateUTCTime();
     setInterval(updateUTCTime, 1000);
 });
+
+/* =================
+   Date Range Toggle
+   ================= */
+const toggleDates = document.getElementById('toggleDates');
+const dateRow = document.querySelector('.date-row');
+const arrow = toggleDates.querySelector('.toggle-arrow');
+
+toggleDates.addEventListener('click', () => {
+    if (dateRow.style.height === '0px' || dateRow.style.height === '') {
+        // Expand
+        dateRow.style.height = dateRow.scrollHeight + 'px';
+        arrow.style.transform = 'rotate(90deg)';
+    } else {
+        // Collapse
+        dateRow.style.height = '0px';
+        arrow.style.transform = 'rotate(0deg)';
+    }
+});
+   
+

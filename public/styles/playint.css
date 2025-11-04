@@ -2,7 +2,7 @@
 body.playint {
     background: linear-gradient(180deg, #04071a 0%, #071133 100%);
     color: #fff;
-    padding: 0px;
+    padding: 0;
     font-family: 'Shentox', Arial, sans-serif;
     overflow-x: hidden;
 }
@@ -32,7 +32,8 @@ body.playint #stars-bg {
     height: 100vh;
     z-index: -1;
     pointer-events: none;
-    background: radial-gradient(ellipse at 30% 20%, rgba(255, 255, 255, 0.02), transparent 8%),
+    background:
+        radial-gradient(ellipse at 30% 20%, rgba(255, 255, 255, 0.02), transparent 8%),
         radial-gradient(ellipse at 70% 80%, rgba(255, 255, 255, 0.01), transparent 10%),
         linear-gradient(180deg, #04071a 0%, #071133 100%);
 }
@@ -41,28 +42,33 @@ body.playint #stars-bg {
 body.playint .container {
     max-width: 1200px;
     margin: 0 auto;
-    background: transparent;
     padding: 20px;
     border-radius: 8px;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.28);
+    background: transparent;
 }
 
 /* ===== Titles ===== */
 body.playint h2 {
     font-size: 28px;
     margin-bottom: 20px;
-    color: #ffffff;
+    color: #fff;
     text-shadow: 2px 2px 2px #00000055;
 }
 
 body.playint h3 {
     font-size: 20px;
-    margin-top: 20px;
-    margin-bottom: 10px;
-    color: #ffffff;
+    margin: 20px 0 10px 0;
+    color: #fff;
 }
 
-/* ===== Results ===== */
+body.playint #pig-title {
+    margin-top: 30px;
+    font-size: 32px;
+    color: #fff;
+    text-shadow: 2px 2px 2px #ff0000c4;
+}
+
 body.playint #result {
     color: #03a9f4;
 }
@@ -83,18 +89,10 @@ body.playint .search-box form {
     display: flex;
     flex-direction: column;
     gap: 8px;
-    /* space between rows */
 }
 
-/* First row: Player name + input + button */
-body.playint .search-box .search-row {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 6px;
-    align-items: center;
-}
-
-/* Second row: date filters */
+/* Rows in search box */
+body.playint .search-box .search-row,
 body.playint .search-box .date-row {
     display: flex;
     flex-wrap: wrap;
@@ -122,12 +120,13 @@ body.playint .search-box button {
     padding: 6px 12px;
     border-radius: 0.5em;
     border: none;
-    background: linear-gradient(90deg, #f00b0bff, #000000ff);
+    background: linear-gradient(90deg, #f00b0bff, #000);
     color: #fff;
     cursor: pointer;
     font-family: 'Shentox', Arial, sans-serif;
     box-shadow: 2px 2px 3px #000000b4;
     transition: all 0.25s ease;
+    max-width: 400px;
 }
 
 body.playint .search-box button:hover {
@@ -216,7 +215,6 @@ body.playint .color-dot {
 /* ===== Hourly Activity Chart ===== */
 body.playint .hourly-chart-row {
     display: flex;
-    justify-content: flex-start;
     align-items: flex-end;
     gap: 4px;
     margin-top: 10px;
@@ -233,10 +231,10 @@ body.playint .hour-column {
 
 body.playint .hour-bar {
     width: 100%;
-    background-color: #03a9f4;
     border-radius: 4px 4px 0 0;
     position: relative;
     height: var(--bar-height);
+    background-color: #03a9f4;
     transition: height 0.3s ease, background-color 0.3s ease;
 }
 
@@ -267,7 +265,7 @@ body.playint .hour-column:hover .hour-bar .hour-percent {
     opacity: 1;
 }
 
-/* ===== Logo and Title ===== */
+/* ===== Logo and Join Sections ===== */
 body.playint .title-container {
     display: flex;
     align-items: center;
@@ -283,7 +281,6 @@ body.playint .logo-container {
 body.playint .logo-bg {
     width: 100%;
     height: 100%;
-    display: block;
 }
 
 body.playint .join-container {
@@ -296,33 +293,21 @@ body.playint .join-container h2 {
     align-self: center;
 }
 
-body.playint .discord-logo {
-    height: 35px;
-    cursor: pointer;
-    transition: transform 0.2s;
-}
-
-body.playint .discord-logo:hover {
-    transform: scale(1.1);
-}
-
+body.playint .discord-logo,
 body.playint .youtube-logo {
     height: 35px;
     cursor: pointer;
     transition: transform 0.2s;
-    background-color: #ffffff98;
-    border-radius: 0.5em;
 }
 
+body.playint .discord-logo:hover,
 body.playint .youtube-logo:hover {
     transform: scale(1.1);
 }
 
-#pig-title {
-    margin-top: 30px;
-    font-size: 32px;
-    color: #ffffff;
-    text-shadow: 2px 2px 2px #ff0000c4;
+body.playint .youtube-logo {
+    background-color: #ffffff98;
+    border-radius: 0.5em;
 }
 
 body.playint #gearCanvas {
@@ -336,12 +321,13 @@ body.playint #gearCanvas {
     background: transparent;
 }
 
+/* ===== Date Range ===== */
 body.playint .date-range {
     text-align: left;
     padding: 0.5rem 1rem;
     border-radius: 10px;
     background: rgba(255, 255, 255, 0.51);
-    font-size: 1.0rem;
+    font-size: 1rem;
     color: #222;
     max-width: fit-content;
     box-shadow: 0 0 5px rgba(0, 0, 0, 0.15);
@@ -352,14 +338,41 @@ body.playint .date-range p {
     font-weight: bold;
 }
 
+/* Collapsible Date Row */
+body.playint .date-row {
+    overflow: hidden;
+    height: 0;
+    transition: height 0.3s ease;
+}
+
+body.playint .date-row.expanded {
+    max-height: 100px;
+}
+
+/* Toggle Arrow & Text */
+body.playint .toggle-date-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+    user-select: none;
+    color: #f00b0bff;
+    font-size: 18px;
+    margin-bottom: 6px;
+}
+
+body.playint .toggle-arrow {
+    font-size: 20px;
+    transition: transform 0.2s ease;
+}
+
+/* ===== Responsive ===== */
 @media (max-width: 768px) {
     body.playint .title-container {
         flex-direction: column;
-        /* stack logo + title */
         gap: 8px;
     }
 
-    /* Ensure search box rows wrap nicely on mobile */
     body.playint .search-box .search-row,
     body.playint .search-box .date-row {
         flex-direction: column;
