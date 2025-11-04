@@ -315,6 +315,22 @@ body.playint #gearCanvas {
     background: transparent;
 }
 
+body.playint .date-range {
+    text-align: left;
+    padding: 0.5rem 1rem;
+    border-radius: 10px;
+    background: rgba(255, 255, 255, 0.51);
+    font-size: 1.0rem;
+    color: #222;
+    max-width: fit-content;
+    box-shadow: 0 0 5px rgba(0, 0, 0, 0.15);
+}
+
+body.playint .date-range p{
+    margin: 0;
+    font-weight: bold;
+}
+
 @media (max-width: 768px) {
     body.playint .title-container {
         flex-direction: column;

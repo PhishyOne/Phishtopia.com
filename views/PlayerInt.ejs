@@ -1,135 +1,162 @@
+<%- include('partials/header', { title: 'Echoes PlayerInt' , extraStyles: ['/styles/playint.css'], bodyClass: 'playint'
+    }) %>
 
-<%- include('partials/header', { title: 'Echoes PlayerInt' , extraStyles: ['/styles/playint.css'], bodyClass: 'playint' })
-    %>
-
-<canvas id="stars-bg"></canvas>
-<div class="container">
-    <div class="title-container">
-        <div class="logo-container">
-            <canvas id="gearCanvas"></canvas>
-            <img src="/res/images/logoBG.jpg" alt="Logo Background" class="logo-bg">
+    <canvas id="stars-bg"></canvas>
+    <div class="container">
+        <div class="title-container">
+            <div class="logo-container">
+                <canvas id="gearCanvas"></canvas>
+                <img src="/res/images/logoBG.jpg" alt="Logo Background" class="logo-bg">
+            </div>
+            <h1 id="eve-title">Eve Echoes: INTM</h1>
         </div>
-        <h1 id="eve-title">Eve Echoes: INTM</h1>
-    </div>
-    <div class="join-container">
-        <h2>Join International Team [INTM]:</h2>
-        <a href="https://discord.com/channels/1196004493255516230/1197120187489595482"><img src="/res/images/discord.svg" alt="Discord Logo" class="discord-logo"></a>
-    </div>
-    <div class="join-container">
-        <h2>What is [INTM]?</h2>
-        <a href="https://www.youtube.com/watch?v=3JE9PedLWqE&list=PLPlRnK8RqmvoasFKFmFRS55O12O6PvD4Z&index=1"><img
-                src="/res/images/youtube.svg" alt="YouTube Logo" class="youtube-logo"></a>
-    </div>
-    <h2 id="pig-title">Player Intelligence Gatherer</h2>
-    <p>Current UTC Time: <span id="utc-time"></span></p>
+        <div class="join-container">
+            <h2>Join International Team [INTM]:</h2>
+            <a href="https://discord.com/channels/1196004493255516230/1197120187489595482"><img
+                    src="/res/images/discord.svg" alt="Discord Logo" class="discord-logo"></a>
+        </div>
+        <div class="join-container">
+            <h2>What is [INTM]?</h2>
+            <a href="https://www.youtube.com/watch?v=3JE9PedLWqE&list=PLPlRnK8RqmvoasFKFmFRS55O12O6PvD4Z&index=1"><img
+                    src="/res/images/youtube.svg" alt="YouTube Logo" class="youtube-logo"></a>
+        </div>
+        <h2 id="pig-title">Player Intelligence Gatherer</h2>
+        <p>Current UTC Time: <span id="utc-time"></span></p>
 
-    <!-- Search Box -->
-    <div class="search-box">
-        <form id="playerForm" action="/PlayerInt/submit" method="GET">
-            <label for="playerInput">Enter Player Name:</label>
-            <input type="text" id="playerInput" name="name" placeholder="(Case Sensitive)" required>
-    
-            <label for="startDate">From:</label>
-            <input type="date" id="startDate" name="start">
-    
-            <label for="endDate">To:</label>
-            <input type="date" id="endDate" name="end">
-    
-            <button type="submit">Search</button>
-        </form>
-    </div>
-      
+        <!-- Search Box -->
+        <div class="search-box">
+            <form id="playerForm" action="/PlayerInt/submit" method="GET">
+                <div class="search-row">
+                    <label for="playerInput">Enter Player Name:</label>
+                    <input type="text" id="playerInput" name="name" placeholder="(Case Sensitive)" required>
+                    <button type="submit">Search</button>
+                </div>
+        
+                <div class="date-row">
+                    <label for="startDate">From:</label>
+                    <input type="date" id="startDate" name="start">
+        
+                    <label for="endDate">To:</label>
+                    <input type="date" id="endDate" name="end">
+                </div>
+            </form>
+        </div>
+        
 
-    <!-- Loading Spinner -->
-    <div id="loading" style="display:none; text-align:center; margin-top:20px;">
-        <p>Fetching all kills and losses — this may take a few seconds...</p>
-        <div class="spinner"></div>
-    </div>
 
-    <!-- Error -->
-    <% if (error) { %>
-        <p style="color:red;">
-            <%= error %>
-        </p>
+        <!-- Loading Spinner -->
+        <div id="loading" style="display:none; text-align:center; margin-top:20px;">
+            <p>Fetching all kills and losses — this may take a few seconds...</p>
+            <div class="spinner"></div>
+        </div>
+
+        <!-- Error -->
+        <% if (error) { %>
+            <p style="color:red;">
+                <%= error %>
+            </p>
         <% } %>
 
-            <!-- Player Name -->
-            <% if (playerName) { %>
-                <h3 id="result">Results for <%= playerName %>
-                </h3>
-                <% } %>
-
-                    <!-- Top Regions Tree -->
-                    <% if (topRegions.length) { %>
-                        <h3>Top 5 Regions</h3>
-                        <ul class="tree">
-                            <% topRegions.forEach(region=> { %>
-                                <li>
-                                    <span class="caret">
-                                        <span class="color-dot" style="background-color:<%= region.color %>"></span>
-                                        <%= region.name %> (<%= region.percent %>%)
-                                    </span>
-                                    <ul class="nested">
-                                        <% region.constellations.forEach(con=> { %>
-                                            <li>
-                                                <span class="caret">
-                                                    <span class="color-dot"
-                                                        style="background-color:<%= con.color %>"></span>
-                                                    <%= con.name %> (<%= con.percent %>%)
-                                                </span>
-                                                <ul class="nested">
-                                                    <% con.systems.forEach(sys=> { %>
-                                                        <li>
-                                                            <span class="color-dot"
-                                                                style="background-color:<%= sys.color %>"></span>
-                                                            <%= sys.name %> (<%= sys.percent %>%)
-                                                        </li>
-                                                        <% }) %>
-                                                </ul>
-                                            </li>
-                                            <% }) %>
-                                    </ul>
-                                </li>
-                                <% }) %>
-                        </ul>
-                        <% } else { %>
-                            <p>No region data available.</p>
+        <!-- Player Name -->
+        <% if (playerName) { %>
+            <h3 id="result">Results for <%= playerName %>
+            </h3>
+        <% } %>
+                
+        <% if (topRegions.length || hourlyPercentages.length) { %>
+            <% if (startDate || endDate) { %>
+                <div class="date-range">
+                    <p>
+                        Showing data
+                        <% if (startDate) { %>from <strong>
+                                <%= startDate %>
+                            </strong>
                             <% } %>
-
-                                <!-- Hourly Chart -->
-                                <% if (hourlyPercentages.length) { %>
-                                    <h3>Activity by Hour</h3>
-                                    <div class="hourly-chart-row">
-                                        <% hourlyPercentages.slice(0, 12).forEach(slot=> { %>
-                                            <div class="hour-column">
-                                                <div class="hour-bar" style="--bar-height: <%= slot.height %>px;">
-                                                    <span class="hour-percent">
-                                                        <%= slot.percent.toFixed(1) %>%
-                                                    </span>
-                                                </div>
-                                                <div class="hour-label">
-                                                    <%= slot.hour %>:00 UTC
-                                                </div>
-                                            </div>
-                                            <% }) %>
-                                    </div>
-
-                                    <div class="hourly-chart-row">
-                                        <% hourlyPercentages.slice(12, 24).forEach(slot=> { %>
-                                            <div class="hour-column">
-                                                <div class="hour-bar" style="--bar-height: <%= slot.height %>px;">
-                                                    <span class="hour-percent">
-                                                        <%= slot.percent.toFixed(1) %>%
-                                                    </span>
-                                                </div>
-                                                <div class="hour-label">
-                                                    <%= slot.hour %>:00 UTC
-                                                </div>
-                                            </div>
-                                            <% }) %>
-                                    </div>
-                                    <p>Each bar height represents % of total kills/losses for that hour.</p>
+                                <% if (endDate) { %>to <strong>
+                                        <%= endDate %>
+                                    </strong>
                                     <% } %>
-</div>
+                    </p>
+                </div>
+                <% } else { %>
+                    <div class="date-range">
+                        <p>Showing all available data.</p>
+                    </div>
+                    <% } %>
+                        <% } %>
+          
+                  
+                        <!-- Top Regions Tree -->
+                        <% if (topRegions.length) { %>
+                            <h3>Top 5 Regions</h3>
+                            <ul class="tree">
+                                <% topRegions.forEach(region=> { %>
+                                    <li>
+                                        <span class="caret">
+                                            <span class="color-dot" style="background-color:<%= region.color %>"></span>
+                                            <%= region.name %> (<%= region.percent %>%)
+                                        </span>
+                                        <ul class="nested">
+                                            <% region.constellations.forEach(con=> { %>
+                                                <li>
+                                                    <span class="caret">
+                                                        <span class="color-dot"
+                                                            style="background-color:<%= con.color %>"></span>
+                                                        <%= con.name %> (<%= con.percent %>%)
+                                                    </span>
+                                                    <ul class="nested">
+                                                        <% con.systems.forEach(sys=> { %>
+                                                            <li>
+                                                                <span class="color-dot"
+                                                                    style="background-color:<%= sys.color %>"></span>
+                                                                <%= sys.name %> (<%= sys.percent %>%)
+                                                            </li>
+                                                            <% }) %>
+                                                    </ul>
+                                                </li>
+                                                <% }) %>
+                                        </ul>
+                                    </li>
+                                    <% }) %>
+                            </ul>
+                            <% } else { %>
+                                <p>No region data available.</p>
+                                <% } %>
 
-<%- include('partials/footer', { extraScripts: ['/res/js/little-logo.js', '/res/js/playint.js'] }) %>
+                                    <!-- Hourly Chart -->
+                                    <% if (hourlyPercentages.length) { %>
+                                        <h3>Activity by Hour</h3>
+                                        <div class="hourly-chart-row">
+                                            <% hourlyPercentages.slice(0, 12).forEach(slot=> { %>
+                                                <div class="hour-column">
+                                                    <div class="hour-bar" style="--bar-height: <%= slot.height %>px;">
+                                                        <span class="hour-percent">
+                                                            <%= slot.percent.toFixed(1) %>%
+                                                        </span>
+                                                    </div>
+                                                    <div class="hour-label">
+                                                        <%= slot.hour %>:00 UTC
+                                                    </div>
+                                                </div>
+                                                <% }) %>
+                                        </div>
+
+                                        <div class="hourly-chart-row">
+                                            <% hourlyPercentages.slice(12, 24).forEach(slot=> { %>
+                                                <div class="hour-column">
+                                                    <div class="hour-bar" style="--bar-height: <%= slot.height %>px;">
+                                                        <span class="hour-percent">
+                                                            <%= slot.percent.toFixed(1) %>%
+                                                        </span>
+                                                    </div>
+                                                    <div class="hour-label">
+                                                        <%= slot.hour %>:00 UTC
+                                                    </div>
+                                                </div>
+                                                <% }) %>
+                                        </div>
+                                        <p>Each bar height represents % of total kills/losses for that hour.</p>
+                                        <% } %>
+    </div>
+
+    <%- include('partials/footer', { extraScripts: ['/res/js/little-logo.js', '/res/js/playint.js' ] }) %>

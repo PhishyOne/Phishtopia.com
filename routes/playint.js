@@ -100,6 +100,8 @@ router.get("/submit", async (req, res) => {
                 playerName: null,
                 topRegions: [],
                 hourlyPercentages: [],
+                startDate: req.query.start || null,
+                endDate: req.query.end || null,
                 extraStyles: ["styles/playint.css"],
                 extraScripts: [
                     "res/js/little-logo.js",
@@ -212,6 +214,8 @@ router.get("/submit", async (req, res) => {
             playerName,
             topRegions,
             hourlyPercentages,
+            startDate: req.query.start || null,
+            endDate: req.query.end || null,
             extraStyles: ["styles/playint.css"],
             extraScripts: [
                 "res/js/little-logo.js",
@@ -226,13 +230,15 @@ router.get("/submit", async (req, res) => {
             playerName: null,
             topRegions: [],
             hourlyPercentages: [],
+            startDate: req.query.start || null,
+            endDate: req.query.end || null,
             extraStyles: ["styles/playint.css"],
             extraScripts: [
                 "res/js/little-logo.js",
                 "res/js/playint.js"
             ],
             bodyClass: "playint"
-        });
+        });        
     }
 });
 
