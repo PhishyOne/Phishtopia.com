@@ -28,9 +28,17 @@
         <form id="playerForm" action="/PlayerInt/submit" method="GET">
             <label for="playerInput">Enter Player Name:</label>
             <input type="text" id="playerInput" name="name" placeholder="(Case Sensitive)" required>
+    
+            <label for="startDate">From:</label>
+            <input type="date" id="startDate" name="start">
+    
+            <label for="endDate">To:</label>
+            <input type="date" id="endDate" name="end">
+    
             <button type="submit">Search</button>
         </form>
     </div>
+      
 
     <!-- Loading Spinner -->
     <div id="loading" style="display:none; text-align:center; margin-top:20px;">

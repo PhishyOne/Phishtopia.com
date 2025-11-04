@@ -115,7 +115,28 @@ router.get("/submit", async (req, res) => {
             fetchAllPagesParallel(`https://echoes.mobi/api/killmails?killer_name=${encodeURIComponent(playerName)}`)
         ]);
 
-        const allData = [...dataVictim, ...dataKiller];
+        let allData = [...dataVictim, ...dataKiller];
+
+        // Parse optional start/end filters
+        const startDate = req.query.start ? new Date(req.query.start) : null;
+        const endDate = req.query.end ? new Date(req.query.end) : null;
+
+        if (startDate && isNaN(startDate)) throw new Error("Invalid start date");
+        if (endDate && isNaN(endDate)) throw new Error("Invalid end date");
+
+        // Filter by date if both provided or just one side
+        if (startDate || endDate) {
+            allData = allData.filter(row => {
+                const rawDate = row.date_killed || row.date_created || row.date_updated;
+                if (!rawDate) return false;
+                const d = new Date(rawDate);
+                if (isNaN(d)) return false;
+                if (startDate && d < startDate) return false;
+                if (endDate && d > endDate) return false;
+                return true;
+            });
+        }
+
         const totalCount = allData.length || 1;
 
         // Map data hierarchy
