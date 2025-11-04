@@ -81,19 +81,40 @@ body.playint .search-box {
 
 body.playint .search-box form {
     display: flex;
-    align-items: center;
-    gap: 6px;
+    flex-direction: column;
+    gap: 8px;
+    /* space between rows */
 }
 
-body.playint .search-box input[type="text"] {
+/* First row: Player name + input + button */
+body.playint .search-box .search-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    align-items: center;
+}
+
+/* Second row: date filters */
+body.playint .search-box .date-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    align-items: center;
+}
+
+body.playint .search-box input[type="text"],
+body.playint .search-box input[type="date"] {
     padding: 6px;
     font-size: 14px;
-    flex: 1;
-    min-width: 150px;
-    max-width: 200px;
     border-radius: 0.5em;
     border: 3px solid #f00b0bff;
     background-color: #fff;
+}
+
+body.playint .search-box input[type="text"] {
+    flex: 1;
+    min-width: 150px;
+    max-width: 200px;
 }
 
 body.playint .search-box button {
@@ -326,7 +347,7 @@ body.playint .date-range {
     box-shadow: 0 0 5px rgba(0, 0, 0, 0.15);
 }
 
-body.playint .date-range p{
+body.playint .date-range p {
     margin: 0;
     font-weight: bold;
 }
@@ -336,5 +357,12 @@ body.playint .date-range p{
         flex-direction: column;
         /* stack logo + title */
         gap: 8px;
+    }
+
+    /* Ensure search box rows wrap nicely on mobile */
+    body.playint .search-box .search-row,
+    body.playint .search-box .date-row {
+        flex-direction: column;
+        gap: 6px;
     }
 }
