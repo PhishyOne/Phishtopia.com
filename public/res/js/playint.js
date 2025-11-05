@@ -149,22 +149,20 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 /* =================
-   Date Range Toggle
-   ================= */
-const toggleDates = document.getElementById('toggleDates');
-const dateRow = document.querySelector('.date-row');
-const arrow = toggleDates.querySelector('.toggle-arrow');
+    Filter Toggle
+    ================= */
+document.addEventListener('DOMContentLoaded', () => {
+    const toggleFilters = document.getElementById('toggleFilters');
+    const filtersRow = document.querySelector('.filters-row');
+    const arrow = toggleFilters.querySelector('.toggle-arrow');
 
-toggleDates.addEventListener('click', () => {
-    if (dateRow.style.height === '0px' || dateRow.style.height === '') {
-        // Expand
-        dateRow.style.height = dateRow.scrollHeight + 'px';
-        arrow.style.transform = 'rotate(90deg)';
-    } else {
-        // Collapse
-        dateRow.style.height = '0px';
-        arrow.style.transform = 'rotate(0deg)';
-    }
+    // Start collapsed
+    filtersRow.classList.remove('expanded');
+    arrow.innerHTML = '&#9656;'; // right-pointing
+
+    toggleFilters.addEventListener('click', () => {
+        filtersRow.classList.toggle('expanded');
+        arrow.innerHTML = filtersRow.classList.contains('expanded') ? '&#9662;' : '&#9656;';
+    });
 });
-   
-
+    

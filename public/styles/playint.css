@@ -97,7 +97,6 @@ body.playint .search-box .date-row {
     display: flex;
     flex-wrap: wrap;
     gap: 6px;
-    align-items: center;
 }
 
 body.playint .search-box input[type="text"],
@@ -338,13 +337,6 @@ body.playint .date-range p {
     font-weight: bold;
 }
 
-/* Collapsible Date Row */
-body.playint .date-row {
-    overflow: hidden;
-    height: 0;
-    transition: height 0.3s ease;
-}
-
 body.playint .date-row.expanded {
     max-height: 100px;
 }
@@ -364,6 +356,69 @@ body.playint .toggle-date-row {
 body.playint .toggle-arrow {
     font-size: 20px;
     transition: transform 0.2s ease;
+}
+
+/* Collapsible Date Row - no need to collapse separately */
+/* Filters Row */
+body.playint .filters-row {
+    overflow: hidden;
+    max-height: 0;
+    /* collapsed */
+    transition: max-height 0.3s ease;
+    margin-top: 6px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+body.playint .filters-row.expanded {
+    max-height: 300px;
+    /* enough to show dates + checkboxes */
+}
+
+/* Remove height:0 from date-row */
+body.playint .date-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    align-items: center;
+    margin-top: 6px;
+    /* NO height or overflow rules */
+}
+
+/* Checkbox Row */
+body.playint .checkbox-row {
+    display: flex;
+    gap: 15px;
+    align-items: center;
+    color: #f00b0bff;
+}
+
+/* Toggle container: text + arrow */
+body.playint .toggle-date-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+    user-select: none;
+    color: #fff;
+    font-size: 18px;
+    margin-bottom: 6px;
+}
+
+body.playint .toggle-arrow {
+    display: inline-block;
+    transition: transform 0.2s ease;
+}
+
+/* Date row and PvP row styling inside filters */
+body.playint .filters-row .date-row,
+body.playint .filters-row .pvp-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    align-items: center;
+    margin-top: 6px;
 }
 
 /* ===== Responsive ===== */

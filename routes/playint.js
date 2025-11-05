@@ -1,4 +1,3 @@
-
 import express from "express";
 import axios from "axios";
 import { parse } from "csv-parse/sync";
@@ -39,7 +38,6 @@ function getColor(count, maxCount) {
 
     return `rgb(${r},${g},${b})`;
 }
-
 
 /* ============================
    Helpers
@@ -82,6 +80,10 @@ router.get("/", (req, res) => {
         playerName: null,
         topRegions: [],
         hourlyPercentages: [],
+        startDate: null,
+        endDate: null,
+        killSelected: true,
+        deathSelected: true,
         extraStyles: ["styles/playint.css"],
         extraScripts: [
             "res/js/little-logo.js",
@@ -102,6 +104,8 @@ router.get("/submit", async (req, res) => {
                 hourlyPercentages: [],
                 startDate: req.query.start || null,
                 endDate: req.query.end || null,
+                killSelected: !!req.query.kill,
+                deathSelected: !!req.query.death,
                 extraStyles: ["styles/playint.css"],
                 extraScripts: [
                     "res/js/little-logo.js",
@@ -111,13 +115,20 @@ router.get("/submit", async (req, res) => {
             });
         }
 
-        // Fetch data
-        const [dataVictim, dataKiller] = await Promise.all([
-            fetchAllPagesParallel(`https://echoes.mobi/api/killmails?victim_name=${encodeURIComponent(playerName)}`),
-            fetchAllPagesParallel(`https://echoes.mobi/api/killmails?killer_name=${encodeURIComponent(playerName)}`)
-        ]);
+        const killSelected = !!req.query.kill;
+        const deathSelected = !!req.query.death;
 
-        let allData = [...dataVictim, ...dataKiller];
+        // Determine which API queries to make
+        const promises = [];
+        if (killSelected || (!killSelected && !deathSelected)) {
+            promises.push(fetchAllPagesParallel(`https://echoes.mobi/api/killmails?killer_name=${encodeURIComponent(playerName)}`));
+        }
+        if (deathSelected || (!killSelected && !deathSelected)) {
+            promises.push(fetchAllPagesParallel(`https://echoes.mobi/api/killmails?victim_name=${encodeURIComponent(playerName)}`));
+        }
+
+        const results = await Promise.all(promises);
+        let allData = results.flat();
 
         // Parse optional start/end filters
         const startDate = req.query.start ? new Date(req.query.start) : null;
@@ -126,7 +137,6 @@ router.get("/submit", async (req, res) => {
         if (startDate && isNaN(startDate)) throw new Error("Invalid start date");
         if (endDate && isNaN(endDate)) throw new Error("Invalid end date");
 
-        // Filter by date if both provided or just one side
         if (startDate || endDate) {
             allData = allData.filter(row => {
                 const rawDate = row.date_killed || row.date_created || row.date_updated;
@@ -141,7 +151,7 @@ router.get("/submit", async (req, res) => {
 
         const totalCount = allData.length || 1;
 
-        // Map data hierarchy
+        // Map regions, constellations, systems
         const regionMap = {};
         let globalMaxSystemCount = 0;
 
@@ -165,7 +175,6 @@ router.get("/submit", async (req, res) => {
                 globalMaxSystemCount = regionMap[region].constellations[con].systems[sys].count;
         });
 
-        // Build output with consistent color scaling
         const regionsArr = Object.entries(regionMap).map(([regionName, regionData]) => {
             const constellations = Object.entries(regionData.constellations).map(([conName, conData]) => {
                 const systemsArr = Object.entries(conData.systems).map(([sysName, sysData]) => ({
@@ -174,7 +183,6 @@ router.get("/submit", async (req, res) => {
                     percent: Number(((sysData.count / totalCount) * 100).toFixed(1)),
                     color: getColor(sysData.count, globalMaxSystemCount)
                 }));
-
                 return {
                     name: conName,
                     count: conData.count,
@@ -195,7 +203,7 @@ router.get("/submit", async (req, res) => {
 
         const topRegions = topN(regionsArr, 5);
 
-        // Hourly activity
+        // Hourly activity chart
         const MAX_BAR_PX = 300;
         const hourlyCounts = Array(24).fill(0);
         allData.forEach(row => {
@@ -216,6 +224,8 @@ router.get("/submit", async (req, res) => {
             hourlyPercentages,
             startDate: req.query.start || null,
             endDate: req.query.end || null,
+            killSelected: true,
+            deathSelected: true,
             extraStyles: ["styles/playint.css"],
             extraScripts: [
                 "res/js/little-logo.js",
@@ -223,6 +233,7 @@ router.get("/submit", async (req, res) => {
             ],
             bodyClass: "playint"
         });
+
     } catch (err) {
         console.error("Error in /submit:", err);
         res.render("PlayerInt", {
@@ -232,13 +243,15 @@ router.get("/submit", async (req, res) => {
             hourlyPercentages: [],
             startDate: req.query.start || null,
             endDate: req.query.end || null,
+            killSelected: !!req.query.kill,
+            deathSelected: !!req.query.death,
             extraStyles: ["styles/playint.css"],
             extraScripts: [
                 "res/js/little-logo.js",
                 "res/js/playint.js"
             ],
             bodyClass: "playint"
-        });        
+        });
     }
 });
 

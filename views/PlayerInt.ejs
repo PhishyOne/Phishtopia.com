@@ -30,24 +30,46 @@
                     <label for="playerInput">Enter Player Name:</label>
                     <input type="text" id="playerInput" name="name" placeholder="(Case Sensitive)" required
                         value="<%= playerName ? playerName : '' %>">
-                    <button type="submit">Search</button>
                 </div>
-                <div class="toggle-date-row" id="toggleDates">
-                    <span>Optional Date Range</span>
+        
+                <!-- Optional Filters Toggle -->
+                <div class="toggle-date-row" id="toggleFilters">
+                    <span>Optional Filters</span>
                     <span class="toggle-arrow">&#9656;</span>
                 </div>
+        
+                <!-- Filters Row (Collapsed by default) -->
+                <!-- Filters Row (Collapsed by default) -->
+                <div class="filters-row">
+                    <!-- Date Range -->
+                    <div class="date-row">
+                        <label for="startDate">From:</label>
+                        <input type="date" id="startDate" name="start" value="<%= startDate || '' %>">
                 
-                <div class="date-row">
-                    <label for="startDate">From:</label>
-                    <input type="date" id="startDate" name="start">
+                        <label for="endDate">To:</label>
+                        <input type="date" id="endDate" name="end" value="<%= endDate || new Date().toISOString().split('T')[0] %>">
+
+                    </div>
                 
-                    <label for="endDate">To:</label>
-                    <input type="date" id="endDate" name="end">
+                    <!-- Kill/Death Checkboxes -->
+                    <div class="checkbox-row">
+                        <label>
+                            <input type="checkbox" name="kill" value="1" <%=typeof killSelected==='undefined' || killSelected ? 'checked'
+                                : '' %>>
+                            Killer
+                        </label>
+                        <label>
+                            <input type="checkbox" name="death" value="1" <%=typeof deathSelected==='undefined' || deathSelected ? 'checked'
+                                : '' %>>
+                            Victim
+                        </label>
+                    </div>
+                    
                 </div>
-                
-                
+
+                <button type="submit">Search</button>
             </form>
-        </div>
+        </div>        
         
         <!-- Loading Spinner -->
         <div id="loading" style="display:none; text-align:center; margin-top:20px;">
