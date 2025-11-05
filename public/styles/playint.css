@@ -381,7 +381,7 @@ body.playint .date-row {
     display: flex;
     flex-wrap: wrap;
     gap: 6px;
-    align-items: center;
+    /*align-items: center;*/
     margin-top: 6px;
     /* NO height or overflow rules */
 }
@@ -417,7 +417,7 @@ body.playint .filters-row .pvp-row {
     display: flex;
     flex-wrap: wrap;
     gap: 6px;
-    align-items: center;
+    max-width: fit-content;
     margin-top: 6px;
 }
 
