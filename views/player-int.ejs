@@ -1,31 +1,32 @@
-<%- include('partials/header', { title: 'Echoes PlayerInt' , extraStyles: ['/styles/playint.css'], bodyClass: 'playint'
-    }) %>
+<%- include('partials/header', { title: 'Echoes Player Intelligence' , extraStyles: ['/styles/player-int.css'],
+    bodyClass: 'player-int' }) %>
+  
 
     <canvas id="stars-bg"></canvas>
     <div class="container">
         <div class="title-container">
             <div class="logo-container">
                 <canvas id="gearCanvas"></canvas>
-                <img src="/res/images/logoBG.jpg" alt="Logo Background" class="logo-bg">
+                <img src="/images/logoBG.jpg" alt="Logo Background" class="logo-bg">
             </div>
             <h1 id="eve-title">Eve Echoes: INTM</h1>
         </div>
         <div class="join-container">
             <h2>Join International Team [INTM]:</h2>
             <a href="https://discord.com/channels/1196004493255516230/1197120187489595482"><img
-                    src="/res/images/discord.svg" alt="Discord Logo" class="discord-logo"></a>
+                    src="/images/discord.svg" alt="Discord Logo" class="discord-logo"></a>
         </div>
         <div class="join-container">
             <h2>What is [INTM]?</h2>
             <a href="https://www.youtube.com/watch?v=3JE9PedLWqE&list=PLPlRnK8RqmvoasFKFmFRS55O12O6PvD4Z&index=1"><img
-                    src="/res/images/youtube.svg" alt="YouTube Logo" class="youtube-logo"></a>
+                    src="/images/youtube.svg" alt="YouTube Logo" class="youtube-logo"></a>
         </div>
         <h2 id="pig-title">Player Intelligence Gatherer</h2>
         <p>Current UTC Time: <span id="utc-time"></span></p>
 
         <!-- Search Box -->
         <div class="search-box">
-            <form id="playerForm" action="/PlayerInt/submit" method="GET">
+            <form id="playerForm" action="/player-int/submit" method="GET">
                 <div class="search-row">
                     <label for="playerInput">Enter Player Name:</label>
                     <input type="text" id="playerInput" name="name" placeholder="(Case Sensitive)" required
@@ -186,4 +187,4 @@
                                         <% } %>
     </div>
 
-    <%- include('partials/footer', { extraScripts: ['/res/js/little-logo.js', '/res/js/playint.js' ] }) %>
+    <%- include('partials/footer', { extraScripts: ['/js/little-logo.js', '/js/player-int.js' ] }) %>

@@ -1,11 +1,11 @@
 // Constants and Variables
 const buttonColors = ["red", "blue", "green", "yellow"];
 const soundFiles = {
-  red: "/res/software/simon-res/red.mp3",
-  blue: "/res/software/simon-res/blue.mp3",
-  green: "/res/software/simon-res/green.mp3",
-  yellow: "/res/software/simon-res/yellow.mp3",
-  wrong: "/res/software/simon-res/wrong.mp3",
+  red: "/audio/simon/red.mp3",
+  blue: "/audio/simon/blue.mp3",
+  green: "/audio/simon/green.mp3",
+  yellow: "/audio/simon/yellow.mp3",
+  wrong: "/audio/simon/wrong.mp3",
 };
 
 let gamePattern = [];

@@ -25,7 +25,7 @@ let angle = 0; // current rotation
 const speed = 0.01; // radians per frame, adjust to rotate faster/slower
 
 const bg = new Image();
-bg.src = '/res/images/logoBG.jpg';
+bg.src = '/images/logoBG.jpg';
 bg.onload = () => requestAnimationFrame(animate); // start animation once loaded
 
 function drawGear(rot = 0) {

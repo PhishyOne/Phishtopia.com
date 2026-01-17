@@ -5,7 +5,9 @@
         "ms-vscode.live-server",
         "slevesque.vscode-zipexplorer",
         "GitHub.copilot",
-        "GitHub.copilot-chat"
+        "GitHub.copilot-chat",
+        "cweijan.vscode-postgresql-client2",
+        "cweijan.dbclient-jdbc"
       ]
     }
   },

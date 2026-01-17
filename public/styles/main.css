@@ -66,39 +66,39 @@
 }
 
 /* ---------- Typography ---------- */
-body:not(.playint) {
+body:not(.player-int) {
   font-family: "Cormorant Garamond", serif;
 }
 
-body:not(.playint) h1,
-body:not(.playint) h2,
-body:not(.playint) h3,
-body:not(.playint) h4,
-body:not(.playint) h5,
-body:not(.playint) .pompiere-regular {
+body:not(.player-int) h1,
+body:not(.player-int) h2,
+body:not(.player-int) h3,
+body:not(.player-int) h4,
+body:not(.player-int) h5,
+body:not(.player-int) .pompiere-regular {
   font-family: "Pompiere", sans-serif;
   font-weight: 400;
 }
 
-body:not(.playint) h1 {
+body:not(.player-int) h1 {
   font-size: 5rem;
 }
 
-body:not(.playint) h2 {
+body:not(.player-int) h2 {
   font-size: 3rem;
 }
 
-body:not(.playint) h3,
-body:not(.playint) h4 {
+body:not(.player-int) h3,
+body:not(.player-int) h4 {
   font-size: 2.5rem;
 }
 
-body:not(.playint) h5 {
+body:not(.player-int) h5 {
   font-size: 2.25rem;
   color: var(--dark-text);
 }
 
-body:not(.playint) p {
+body:not(.player-int) p {
   font-size: 1.5rem;
   color: var(--dark-text);
 }
@@ -263,7 +263,7 @@ body {
 }
 
 /* Inner p for storecalc */
-body:not(.playint) .storecalc-section p {
+body:not(.player-int) .storecalc-section p {
   background-color: var(--dark-section-bg);
   color: var(--dark-text);
 }

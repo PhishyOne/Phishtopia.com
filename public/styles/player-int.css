@@ -1,5 +1,5 @@
-/* ===== PlayInt Page Styles ===== */
-body.playint {
+/* ===== player-int Page Styles ===== */
+body.player-int {
     background: linear-gradient(180deg, #04071a 0%, #071133 100%);
     color: #fff;
     padding: 0;
@@ -16,7 +16,7 @@ body.playint {
     font-display: swap;
 }
 
-body.playint #eve-title {
+body.player-int #eve-title {
     font-family: 'Eve Alpha', Arial, sans-serif;
     font-size: 36px;
     margin-bottom: 20px;
@@ -24,7 +24,7 @@ body.playint #eve-title {
 }
 
 /* ===== Star Background Canvas ===== */
-body.playint #stars-bg {
+body.player-int #stars-bg {
     position: fixed;
     top: 0;
     left: 0;
@@ -39,7 +39,7 @@ body.playint #stars-bg {
 }
 
 /* ===== Container ===== */
-body.playint .container {
+body.player-int .container {
     max-width: 1200px;
     margin: 0 auto;
     padding: 20px;
@@ -49,58 +49,58 @@ body.playint .container {
 }
 
 /* ===== Titles ===== */
-body.playint h2 {
+body.player-int h2 {
     font-size: 28px;
     margin-bottom: 20px;
     color: #fff;
     text-shadow: 2px 2px 2px #00000055;
 }
 
-body.playint h3 {
+body.player-int h3 {
     font-size: 20px;
     margin: 20px 0 10px 0;
     color: #fff;
 }
 
-body.playint #pig-title {
+body.player-int #pig-title {
     margin-top: 30px;
     font-size: 32px;
     color: #fff;
     text-shadow: 2px 2px 2px #ff0000c4;
 }
 
-body.playint #result {
+body.player-int #result {
     color: #03a9f4;
 }
 
 /* ===== Labels ===== */
-body.playint label {
+body.player-int label {
     font-size: 24px;
     font-weight: bold;
     color: #f00b0bff;
 }
 
 /* ===== Search Box ===== */
-body.playint .search-box {
+body.player-int .search-box {
     margin-bottom: 20px;
 }
 
-body.playint .search-box form {
+body.player-int .search-box form {
     display: flex;
     flex-direction: column;
     gap: 8px;
 }
 
 /* Rows in search box */
-body.playint .search-box .search-row,
-body.playint .search-box .date-row {
+body.player-int .search-box .search-row,
+body.player-int .search-box .date-row {
     display: flex;
     flex-wrap: wrap;
     gap: 6px;
 }
 
-body.playint .search-box input[type="text"],
-body.playint .search-box input[type="date"] {
+body.player-int .search-box input[type="text"],
+body.player-int .search-box input[type="date"] {
     padding: 6px;
     font-size: 14px;
     border-radius: 0.5em;
@@ -108,13 +108,13 @@ body.playint .search-box input[type="date"] {
     background-color: #fff;
 }
 
-body.playint .search-box input[type="text"] {
+body.player-int .search-box input[type="text"] {
     flex: 1;
     min-width: 150px;
     max-width: 200px;
 }
 
-body.playint .search-box button {
+body.player-int .search-box button {
     font-size: 14px;
     padding: 6px 12px;
     border-radius: 0.5em;
@@ -128,13 +128,13 @@ body.playint .search-box button {
     max-width: 400px;
 }
 
-body.playint .search-box button:hover {
+body.player-int .search-box button:hover {
     filter: brightness(1.3);
     transform: translateY(-1px);
 }
 
 /* ===== Loading Spinner ===== */
-body.playint .spinner {
+body.player-int .spinner {
     border: 6px solid #f3f3f3;
     border-top: 6px solid #f00b0bff;
     border-radius: 50%;
@@ -155,54 +155,54 @@ body.playint .spinner {
 }
 
 /* ===== Collapsible Tree ===== */
-body.playint .tree,
-body.playint .tree ul,
-body.playint .tree ul ul,
-body.playint .tree ul ul ul {
+body.player-int .tree,
+body.player-int .tree ul,
+body.player-int .tree ul ul,
+body.player-int .tree ul ul ul {
     list-style: none;
     padding-left: 0;
     margin: 0;
 }
 
-body.playint .tree li {
+body.player-int .tree li {
     margin: 4px 0;
 }
 
-body.playint .tree .caret {
+body.player-int .tree .caret {
     cursor: pointer;
     user-select: none;
 }
 
-body.playint .tree .caret::before {
+body.player-int .tree .caret::before {
     content: "\25B6";
     display: inline-block;
     margin-right: 6px;
     transition: transform 0.2s;
 }
 
-body.playint .tree .caret-down::before {
+body.player-int .tree .caret-down::before {
     transform: rotate(90deg);
 }
 
-body.playint .tree .nested {
+body.player-int .tree .nested {
     display: none;
     padding-left: 20px;
 }
 
-body.playint .tree .nested.show {
+body.player-int .tree .nested.show {
     display: block;
 }
 
-body.playint .tree ul ul {
+body.player-int .tree ul ul {
     padding-left: 25px;
 }
 
-body.playint .tree ul ul ul {
+body.player-int .tree ul ul ul {
     padding-left: 40px;
 }
 
 /* ===== Color Dots ===== */
-body.playint .color-dot {
+body.player-int .color-dot {
     display: inline-block;
     width: 12px;
     height: 12px;
@@ -212,7 +212,7 @@ body.playint .color-dot {
 }
 
 /* ===== Hourly Activity Chart ===== */
-body.playint .hourly-chart-row {
+body.player-int .hourly-chart-row {
     display: flex;
     align-items: flex-end;
     gap: 4px;
@@ -220,7 +220,7 @@ body.playint .hourly-chart-row {
     overflow-x: auto;
 }
 
-body.playint .hour-column {
+body.player-int .hour-column {
     flex: 1;
     display: flex;
     flex-direction: column;
@@ -228,7 +228,7 @@ body.playint .hour-column {
     min-width: 20px;
 }
 
-body.playint .hour-bar {
+body.player-int .hour-bar {
     width: 100%;
     border-radius: 4px 4px 0 0;
     position: relative;
@@ -237,7 +237,7 @@ body.playint .hour-bar {
     transition: height 0.3s ease, background-color 0.3s ease;
 }
 
-body.playint .hour-bar .hour-percent {
+body.player-int .hour-bar .hour-percent {
     position: absolute;
     top: 50%;
     left: 50%;
@@ -249,67 +249,67 @@ body.playint .hour-bar .hour-percent {
     pointer-events: none;
 }
 
-body.playint .hour-label {
+body.player-int .hour-label {
     text-align: center;
     font-size: 12px;
     margin-top: 4px;
 }
 
-body.playint .hour-column:hover .hour-bar {
+body.player-int .hour-column:hover .hour-bar {
     height: calc(var(--bar-height) * 1.5);
     background-color: #f00b0bff;
 }
 
-body.playint .hour-column:hover .hour-bar .hour-percent {
+body.player-int .hour-column:hover .hour-bar .hour-percent {
     opacity: 1;
 }
 
 /* ===== Logo and Join Sections ===== */
-body.playint .title-container {
+body.player-int .title-container {
     display: flex;
     align-items: center;
     gap: 15px;
 }
 
-body.playint .logo-container {
+body.player-int .logo-container {
     position: relative;
     width: 50px;
     height: 50px;
 }
 
-body.playint .logo-bg {
+body.player-int .logo-bg {
     width: 100%;
     height: 100%;
 }
 
-body.playint .join-container {
+body.player-int .join-container {
     display: flex;
     gap: 15px;
 }
 
-body.playint .join-container h2 {
+body.player-int .join-container h2 {
     color: #f00b0bff;
     align-self: center;
 }
 
-body.playint .discord-logo,
-body.playint .youtube-logo {
+body.player-int .discord-logo,
+body.player-int .youtube-logo {
     height: 35px;
     cursor: pointer;
     transition: transform 0.2s;
 }
 
-body.playint .discord-logo:hover,
-body.playint .youtube-logo:hover {
+body.player-int .discord-logo:hover,
+body.player-int .youtube-logo:hover {
     transform: scale(1.1);
 }
 
-body.playint .youtube-logo {
+body.player-int .youtube-logo {
     background-color: #ffffff98;
     border-radius: 0.5em;
 }
 
-body.playint #gearCanvas {
+body.player-int #gearCanvas {
     position: absolute;
     top: 0;
     left: 0;
@@ -321,7 +321,7 @@ body.playint #gearCanvas {
 }
 
 /* ===== Date Range ===== */
-body.playint .date-range {
+body.player-int .date-range {
     text-align: left;
     padding: 0.5rem 1rem;
     border-radius: 10px;
@@ -332,35 +332,18 @@ body.playint .date-range {
     box-shadow: 0 0 5px rgba(0, 0, 0, 0.15);
 }
 
-body.playint .date-range p {
+body.player-int .date-range p {
     margin: 0;
     font-weight: bold;
 }
 
-body.playint .date-row.expanded {
+body.player-int .date-row.expanded {
     max-height: 100px;
-}
-
-/* Toggle Arrow & Text */
-body.playint .toggle-date-row {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    cursor: pointer;
-    user-select: none;
-    color: #f00b0bff;
-    font-size: 18px;
-    margin-bottom: 6px;
-}
-
-body.playint .toggle-arrow {
-    font-size: 20px;
-    transition: transform 0.2s ease;
 }
 
 /* Collapsible Date Row - no need to collapse separately */
 /* Filters Row */
-body.playint .filters-row {
+body.player-int .filters-row {
     overflow: hidden;
     max-height: 0;
     /* collapsed */
@@ -371,13 +354,13 @@ body.playint .filters-row {
     gap: 6px;
 }
 
-body.playint .filters-row.expanded {
+body.player-int .filters-row.expanded {
     max-height: 300px;
     /* enough to show dates + checkboxes */
 }
 
 /* Remove height:0 from date-row */
-body.playint .date-row {
+body.player-int .date-row {
     display: flex;
     flex-wrap: wrap;
     gap: 6px;
@@ -387,7 +370,7 @@ body.playint .date-row {
 }
 
 /* Checkbox Row */
-body.playint .checkbox-row {
+body.player-int .checkbox-row {
     display: flex;
     gap: 15px;
     align-items: center;
@@ -395,7 +378,7 @@ body.playint .checkbox-row {
 }
 
 /* Toggle container: text + arrow */
-body.playint .toggle-date-row {
+body.player-int .toggle-date-row {
     display: flex;
     align-items: center;
     gap: 8px;
@@ -406,14 +389,14 @@ body.playint .toggle-date-row {
     margin-bottom: 6px;
 }
 
-body.playint .toggle-arrow {
+body.player-int .toggle-arrow {
     display: inline-block;
     transition: transform 0.2s ease;
 }
 
 /* Date row and PvP row styling inside filters */
-body.playint .filters-row .date-row,
-body.playint .filters-row .pvp-row {
+body.player-int .filters-row .date-row,
+body.player-int .filters-row .pvp-row {
     display: flex;
     flex-wrap: wrap;
     gap: 6px;
@@ -423,13 +406,13 @@ body.playint .filters-row .pvp-row {
 
 /* ===== Responsive ===== */
 @media (max-width: 768px) {
-    body.playint .title-container {
+    body.player-int .title-container {
         flex-direction: column;
         gap: 8px;
     }
 
-    body.playint .search-box .search-row,
-    body.playint .search-box .date-row {
+    body.player-int .search-box .search-row,
+    body.player-int .search-box .date-row {
         flex-direction: column;
         gap: 6px;
     }
