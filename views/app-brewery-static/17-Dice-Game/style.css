@@ -1,0 +1,61 @@
+h1 {
+    font-family: "Knewave", system-ui;
+    font-weight: 400;
+    font-style: normal;
+    font-size: 3em;
+}
+
+body {
+    background-color: #031d36;
+    color: #992e2e;
+}
+.container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+}
+
+#rollButton {
+    padding: 20px 40px;
+    background-color: #0d7910;
+    color: #ade28f;
+    border: none;
+    border-radius: 5px;
+    font-size: 1em;
+    margin: 20px;
+}
+
+.dice-container {
+    background-color: #042580;
+    border: 2px solid #333;
+    border-radius: 10px;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
+    margin-top: 10px;
+}
+
+.p1-container, .p2-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5em;
+    background-color: #349ebe;
+    margin: 15px 10px 20px 10px;
+    padding: 10px;
+}
+
+#player1, #player2 {
+    height: 100px;
+    margin: 20px;
+}
+
+.result {
+    font-size: 3em;
+    color: #0d7910;
+    margin-top: 15px;
+    text-align: center;
+}

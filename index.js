@@ -1,5 +1,5 @@
 import express from "express";
-import { readdirSync } from "fs";
+import { readdirSync, existsSync } from "fs";
 import { join, dirname } from "path";
 import { fileURLToPath } from "url";
 import axios from "axios";
@@ -44,38 +44,38 @@ async function fetchAllPagesParallel(baseUrl) {
     for (let page = 1; page <= MAX_PAGES; page++) {
         promises.push(axios.get(`${baseUrl}&page=${page}`));
     }
-
     const responses = await Promise.allSettled(promises);
     let allData = [];
-
     responses.forEach(r => {
         if (r.status === "fulfilled" && r.value.data) {
             try {
                 const pageData = parse(r.value.data, { columns: true, skip_empty_lines: true });
                 allData = allData.concat(pageData);
             } catch (err) {
-                console.warn("Parse error on page data:", err.message);
+                console.warn("Parse error:", err.message);
             }
         }
     });
-
     return allData;
 }
 
 // =====================
-// EJS Setup
+// Express setup
 // =====================
 app.set("view engine", "ejs");
 app.set("views", join(__dirname, "views"));
 
-// Serve static files from /public
+// Serve static files
 app.use(express.static(join(__dirname, "public")));
 
+// Serve old static projects under /static
+app.use("/static", express.static(join(__dirname, "../app-brewery-static")));
+
 // =====================
-// Auto-generate simple .ejs routes (except player-int)
+// Auto-generate simple EJS routes (skip player-int)
 // =====================
 const viewsDir = join(__dirname, "views");
-const viewFiles = readdirSync(viewsDir).filter(file => file.endsWith(".ejs") && file !== "player-int.ejs");
+const viewFiles = readdirSync(viewsDir).filter(f => f.endsWith(".ejs") && f !== "player-int.ejs");
 
 viewFiles.forEach(file => {
     const name = file.replace(".ejs", "");
@@ -99,8 +99,6 @@ viewFiles.forEach(file => {
 // =====================
 // player-int Routes
 // =====================
-
-// Main player-int page
 app.get("/player-int", (req, res) => {
     res.render("player-int", {
         error: null,
@@ -111,31 +109,16 @@ app.get("/player-int", (req, res) => {
         endDate: null,
         killSelected: true,
         deathSelected: true,
-        extraStyles: ["styles/playint.css"],
-        extraScripts: ["js/little-logo.js", "js/playint.js"],
-        bodyClass: "playint"
+        extraStyles: ["/styles/player-int.css"],
+        extraScripts: ["/js/little-logo.js", "/js/player-int.js"],
+        bodyClass: "player-int"
     });
 });
 
-// player-int submit route
 app.get("/player-int/submit", async (req, res) => {
     try {
         const playerName = req.query.name?.trim();
-        if (!playerName) {
-            return res.render("player-int", {
-                error: "Please enter a player name.",
-                playerName: null,
-                topRegions: [],
-                hourlyPercentages: [],
-                startDate: req.query.start || null,
-                endDate: req.query.end || null,
-                killSelected: !!req.query.kill,
-                deathSelected: !!req.query.death,
-                extraStyles: ["styles/playint.css"],
-                extraScripts: ["js/little-logo.js", "js/playint.js"],
-                bodyClass: "playint"
-            });
-        }
+        if (!playerName) throw new Error("Missing player name");
 
         const killSelected = !!req.query.kill;
         const deathSelected = !!req.query.death;
@@ -148,14 +131,10 @@ app.get("/player-int/submit", async (req, res) => {
             promises.push(fetchAllPagesParallel(`https://echoes.mobi/api/killmails?victim_name=${encodeURIComponent(playerName)}`));
         }
 
-        const results = await Promise.all(promises);
-        let allData = results.flat();
+        let allData = (await Promise.all(promises)).flat();
 
         const startDate = req.query.start ? new Date(req.query.start) : null;
         const endDate = req.query.end ? new Date(req.query.end) : null;
-
-        if (startDate && isNaN(startDate)) throw new Error("Invalid start date");
-        if (endDate && isNaN(endDate)) throw new Error("Invalid end date");
 
         if (startDate || endDate) {
             allData = allData.filter(row => {
@@ -170,7 +149,6 @@ app.get("/player-int/submit", async (req, res) => {
         }
 
         const totalCount = allData.length || 1;
-
         const regionMap = {};
         let globalMaxSystemCount = 0;
 
@@ -210,7 +188,6 @@ app.get("/player-int/submit", async (req, res) => {
                     systems: topN(systemsArr, 5)
                 };
             });
-
             return {
                 name: regionName,
                 count: regionData.count,
@@ -244,13 +221,13 @@ app.get("/player-int/submit", async (req, res) => {
             endDate: req.query.end || null,
             killSelected: true,
             deathSelected: true,
-            extraStyles: ["styles/playint.css"],
-            extraScripts: ["js/little-logo.js", "js/playint.js"],
-            bodyClass: "playint"
+            extraStyles: ["/styles/player-int.css"],
+            extraScripts: ["/js/little-logo.js", "/js/player-int.js"],
+            bodyClass: "player-int"
         });
 
     } catch (err) {
-        console.error("Error in /player-int/submit:", err);
+        console.error("Error in /player-int/submit:", err.message);
         res.render("player-int", {
             error: "Failed to fetch or process data.",
             playerName: null,
@@ -260,9 +237,9 @@ app.get("/player-int/submit", async (req, res) => {
             endDate: req.query.end || null,
             killSelected: !!req.query.kill,
             deathSelected: !!req.query.death,
-            extraStyles: ["styles/playint.css"],
-            extraScripts: ["js/little-logo.js", "js/playint.js"],
-            bodyClass: "playint"
+            extraStyles: ["/styles/player-int.css"],
+            extraScripts: ["/js/little-logo.js", "/js/player-int.js"],
+            bodyClass: "player-int"
         });
     }
 });

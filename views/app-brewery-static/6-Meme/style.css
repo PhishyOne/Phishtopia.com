@@ -1,0 +1,27 @@
+*{
+    background-color: black;
+}
+
+#motivational-box {
+    width: 100%;
+}
+
+h1 {
+    font-family: "Libre Baskerville", serif;
+    font-weight: 400;
+    font-style: normal;
+    text-align: center;
+    margin-bottom: 0px;
+    color: white;
+    text-transform: uppercase;
+}
+
+p {
+    text-align: center;
+    color: white;
+}
+
+img {
+    border: 5px solid white;
+    width: 100%;
+}

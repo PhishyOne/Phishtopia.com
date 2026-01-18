@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>EE PlayInt</title>
+    <link rel="stylesheet" href="/project29/css/main.css">
+</head>
+
+<body>
+    <canvas id="stars-bg"></canvas>
+    <div class="container">
+        <div class="title-container">
+            <div class="logo-container">
+                <canvas id="gearCanvas"></canvas>
+                <img src="/project29/images/logo-bg.jpg" alt="Logo Background" class="logo-bg">
+            </div>
+            <h1 id="eve-title">Eve Echoes: INTM</h1>
+        </div>
+        
+        
+            <h2>Player Intelligence</h2>
+
+        <!-- Search Box -->
+            <div class="search-box">
+                <form id="playerForm" action="/project29/submit" method="GET">
+                    <label for="playerInput">Enter Player Name:</label>
+                    <input type="text" id="playerInput" name="name" placeholder="(Case Sensitive)" required>
+                    <button type="submit">Search</button>
+                </form>
+            </div>
+
+        <!-- Loading Spinner -->
+        <div id="loading" style="display:none; text-align:center; margin-top:20px;">
+            <p>Fetching all kills and losses — this may take a few seconds...</p>
+            <div class="spinner"></div>
+        </div>
+
+        <!-- Error -->
+        <% if (error) { %>
+            <p style="color:red;">
+                <%= error %>
+            </p>
+            <% } %>
+
+                <!-- Player Name -->
+                <% if (playerName) { %>
+                    <h3 id="result">Results for <%= playerName %></h3>
+                    <% } %>
+
+                        <!-- Top Regions Tree -->
+                        <% if (topRegions.length) { %>
+                            <h3>Top 5 Regions</h3>
+                            <ul class="tree">
+                                <% topRegions.forEach(region=> { %>
+                                    <li>
+                                        <span class="caret">
+                                            <span class="color-dot" style="background-color:<%= region.color %>"></span>
+                                            <%= region.name %> (<%= region.percent %>%)
+                                        </span>
+                                        <ul class="nested">
+                                            <% region.constellations.forEach(con=> { %>
+                                                <li>
+                                                    <span class="caret">
+                                                        <span class="color-dot"
+                                                            style="background-color:<%= con.color %>"></span>
+                                                        <%= con.name %> (<%= con.percent %>%)
+                                                    </span>
+                                                    <ul class="nested">
+                                                        <% con.systems.forEach(sys=> { %>
+                                                            <li>
+                                                                <span class="color-dot"
+                                                                    style="background-color:<%= sys.color %>"></span>
+                                                                <%= sys.name %> (<%= sys.percent %>%)
+                                                            </li>
+                                                            <% }) %>
+                                                    </ul>
+                                                </li>
+                                                <% }) %>
+                                        </ul>
+                                    </li>
+                                    <% }) %>
+                            </ul>
+                            <% } else { %>
+                                <p>No region data available.</p>
+                                <% } %>
+
+                                    <!-- Hourly Chart -->
+                                    <% if (hourlyPercentages.length) { %>
+                                        <h3>Activity by Hour</h3>
+                                        <div class="hourly-chart-row">
+                                            <% hourlyPercentages.slice(0, 12).forEach(slot=> { %>
+                                                <div class="hour-column">
+                                                    <div class="hour-bar" style="--bar-height: <%= slot.height %>px;">
+                                                        <span class="hour-percent">
+                                                            <%= slot.percent.toFixed(1) %>%
+                                                        </span>
+                                                    </div>
+                                                    <div class="hour-label">
+                                                        <%= slot.hour %>:00 UTC
+                                                    </div>
+                                                </div>
+                                                <% }) %>
+                                        </div>
+                                        
+                                        <div class="hourly-chart-row">
+                                            <% hourlyPercentages.slice(12, 24).forEach(slot=> { %>
+                                                <div class="hour-column">
+                                                    <div class="hour-bar" style="--bar-height: <%= slot.height %>px;">
+                                                        <span class="hour-percent">
+                                                            <%= slot.percent.toFixed(1) %>%
+                                                        </span>
+                                                    </div>
+                                                    <div class="hour-label">
+                                                        <%= slot.hour %>:00 UTC
+                                                    </div>
+                                                </div>
+                                                <% }) %>
+                                        </div>
+                                        <p>Each bar height represents % of total kills/losses for that hour.</p>
+                                        <% } %>
+    </div>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", () => {
+            const spinner = document.getElementById("loading");
+            const form = document.getElementById("playerForm");
+
+            // Show spinner on submit
+            if (form) {
+                form.addEventListener("submit", () => {
+                    if (spinner) spinner.style.display = "block";
+                });
+            }
+
+            // Collapsible tree logic
+            document.querySelectorAll(".tree .caret").forEach(caret => {
+                caret.addEventListener("click", e => {
+                    const li = e.target.closest("li");
+                    if (!li) return;
+
+                    const nested = li.querySelector(":scope > .nested");
+                    if (!nested) return;
+
+                    const isExpanding = !nested.classList.contains("show");
+
+                    // Toggle this node
+                    nested.classList.toggle("show");
+                    caret.classList.toggle("caret-down");
+
+                    // Expand or collapse all descendants recursively
+                    nested.querySelectorAll(".nested").forEach(childNested => {
+                        if (isExpanding) {
+                            childNested.classList.add("show");
+                            const childCaret = childNested.parentElement.querySelector(":scope > .caret");
+                            if (childCaret) childCaret.classList.add("caret-down");
+                        } else {
+                            childNested.classList.remove("show");
+                            const childCaret = childNested.parentElement.querySelector(":scope > .caret");
+                            if (childCaret) childCaret.classList.remove("caret-down");
+                        }
+                    });
+                });
+            });
+        });
+
+        // Hide spinner if page is restored from cache
+        window.addEventListener("pageshow", () => {
+            const spinner = document.getElementById("loading");
+            if (spinner) spinner.style.display = "none";
+        });
+    </script>
+    <script src="/project29/js/stars-bg.js"></script>
+    <script src="/project29/js/intm-logo.js"></script>
+</body>
+
+</html>
