@@ -1,9 +1,14 @@
+
 import express from "express";
 import bodyParser from "body-parser";
 import pg from "pg";
 
 const router = express.Router();
 router.use(bodyParser.urlencoded({ extended: true }));
+import { join, dirname } from "path";
+import { fileURLToPath } from "url";
+const __dirname = dirname(fileURLToPath(import.meta.url));
+
 
 
 const db = new pg.Client({
@@ -44,7 +49,7 @@ router.get("/", async (req, res) => {
     const currentUser = usersResult.rows.find(
       u => u.id === currentUserId
     );
-    
+
     const result = await db.query(
       `
       SELECT country_code
@@ -53,16 +58,19 @@ router.get("/", async (req, res) => {
       `,
       [currentUserId]
     );
-    
+
     const countries = result.rows.map(row => row.country_code);
     const error = req.query.error || ""; // Get error message from query param
-    
+
     res.render("project33-2", {
       countries,
       total: countries.length,
       users: usersResult.rows,
       color: currentUser?.color || "teal",
       error,
+      extraStyles: ["/project33-2/styles/main.css"], // <-- add this
+      extraScripts: [], // optional, add project-specific scripts if any
+      bodyClass: "project33-2" // optional, useful for CSS
     });
   } catch (err) {
     console.error("DB error:", err);
@@ -165,8 +173,13 @@ router.post("/clear", async (req, res) => {
 });
 
 router.get("/new", (req, res) => {
-  res.render("project33-2/new");
+  res.render("project33-2/new", {
+    extraStyles: ["/project33-2/styles/main.css"],
+    extraScripts: [],
+    bodyClass: "project33-2"
+  });
 });
+
 //Create New User
 router.post("/new", async (req, res) => {
   //Hint: The RETURNING keyword can return the data that was inserted.
@@ -202,5 +215,4 @@ router.post("/user", (req, res) => {
   res.redirect("/project33-2");
 });
 
-router.use(express.static("public"));
 export default router;

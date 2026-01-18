@@ -5,7 +5,6 @@ import pg from "pg";
 const router = express.Router();
 
 router.use(bodyParser.urlencoded({ extended: true }));
-router.use(express.static("public"));
 
 const db = new pg.Client({
   user: "ufp1ais6lj4me0",
@@ -32,7 +31,8 @@ router.get("/", async (req, res) => {
     res.render("project33-1", {
       countries,
       total: countries.length,
-      error,
+      extraStyles: ["/project33-1/styles/main.css"],
+      error
     });
   } catch (err) {
     console.error("DB error:", err);

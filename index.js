@@ -59,43 +59,107 @@ async function fetchAllPagesParallel(baseUrl) {
     return allData;
 }
 
+//==========================================================================
+//==========================================================================
+// =====================
+// App Brewery Routes
+// =====================
+import project25Routes from "./app-brewery-server/routes/project25.js";
+import project28Routes from "./app-brewery-server/routes/project28.js";
+import project29Routes from "./app-brewery-server/routes/project29.js";
+import project30Routes from "./app-brewery-server/routes/project30.js";
+import project331Routes from "./app-brewery-server/routes/project33-1.js";
+import project332Routes from "./app-brewery-server/routes/project33-2.js";
+
+// Mount Project routers
+app.use("/project25", project25Routes);
+app.use("/project28", project28Routes);
+app.use("/project29", project29Routes);
+app.use("/project30", project30Routes);
+app.use("/api", project30Routes);
+app.use("/project33-1", project331Routes);
+app.use("/project33-2", project332Routes);
+//==========================================================================
+//==========================================================================
+
 // =====================
 // Express setup
 // =====================
 app.set("view engine", "ejs");
-app.set("views", join(__dirname, "views"));
+app.set("views", [
+    join(__dirname, "views"), // Main Phishtopia Views
+    join(__dirname, "app-brewery-server/views") // Backend Projects
+]);
+
+app.use((req, res, next) => {
+    res.locals.bodyClass = "";
+    res.locals.extraStyles = [];
+    res.locals.extraScripts = [];
+    next();
+});
+
+// Log all requests for debugging static files
+app.use((req, res, next) => {
+    if (req.url.endsWith(".css") || req.url.endsWith(".js") || req.url.endsWith(".png")) {
+        console.log(`[STATIC REQUEST] ${req.method} ${req.url}`);
+    }
+    next();
+});
+
+// Serve backend project public folders
+const backendProjects = [
+    "project25",
+    "project28",
+    "project29",
+    "project30",
+    "project33-1",
+    "project33-2"
+];
+
+backendProjects.forEach(proj => {
+    app.use(`/${proj}`, express.static(join(__dirname, "app-brewery-server/public", proj)));
+});
 
 // Serve static files
 app.use(express.static(join(__dirname, "public")));
-
+  
 // Serve old static projects under /static
-app.use("/static", express.static(join(__dirname, "../app-brewery-static")));
+app.use("/static", express.static(join(__dirname, "views/app-brewery-static")));
 
 // =====================
-// Auto-generate simple EJS routes (skip player-int)
+// Auto-generate simple EJS routes (Phishtopia only)
 // =====================
 const viewsDir = join(__dirname, "views");
-const viewFiles = readdirSync(viewsDir).filter(f => f.endsWith(".ejs") && f !== "player-int.ejs");
+const viewFiles = readdirSync(viewsDir).filter(
+    f => f.endsWith(".ejs") && f !== "player-int.ejs"
+);
 
 viewFiles.forEach(file => {
     const name = file.replace(".ejs", "");
-    if (name === "index") {
-        app.get("/", (req, res) => {
-            res.render(name, {
-                extraStyles: ["/styles/main.css"],
-                extraScripts: ["/index.js", "/js/canvas.js"]
-            });
+    const isProject = name.startsWith("project"); // e.g. project33-2
+
+    app.get(name === "index" ? "/" : `/${name}`, (req, res) => {
+        // Determine project CSS files
+        let styles = [];
+        if (isProject) {
+            styles.push(`/${name}/styles/main.css`);
+            // Include additional project-specific CSS if exists
+            if (name === "project33-2") styles.push(`/${name}/styles/new.css`);
+        } else {
+            styles.push("/styles/main.css");
+        }
+
+        res.render(name, {
+            bodyClass: name,
+            extraStyles: styles,       // always an array
+            extraScripts: name === "index" ? ["/index.js", "/js/canvas.js"] : []
         });
-    } else {
-        app.get(`/${name}`, (req, res) => {
-            res.render(name, {
-                extraStyles: ["/styles/main.css"],
-                extraScripts: []
-            });
-        });
-    }
+    });
 });
 
+  
+//==========================================================================
+//==========================================================================
 // =====================
 // player-int Routes
 // =====================
@@ -243,6 +307,10 @@ app.get("/player-int/submit", async (req, res) => {
         });
     }
 });
+//==========================================================================
+//==========================================================================
+
+
 
 // =====================
 // Start server

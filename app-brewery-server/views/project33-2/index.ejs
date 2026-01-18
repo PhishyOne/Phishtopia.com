@@ -1,11 +1,17 @@
 <!DOCTYPE html>
 <html lang="en">
-
+ 
+  
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Travel Tracker</title>
-  <link rel="stylesheet" href="/project33-2/styles/main.css">
+  <!-- <link rel="stylesheet" href="/project33-2/styles/main.css"> -->
+  <% if (extraStyles && extraStyles.length) { %>
+    <% extraStyles.forEach(style=> { %>
+      <link rel="stylesheet" href="<%= style %>">
+      <% }) %>
+        <% } %>
 </head>
 
 <body>
