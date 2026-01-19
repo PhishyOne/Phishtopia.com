@@ -31,56 +31,6 @@ const port = process.env.PORT || 3002;
 app.use(express.urlencoded({ extended: true }));
 
 // =====================
-// Helper functions
-// =====================
-function getColor(count, maxCount) {
-    if (!maxCount || maxCount <= 0) return "#00ff00";
-    const pct = (count / maxCount) * 100;
-    let r, g, b = 0;
-    if (pct <= 32) {
-        const t = pct / 32;
-        r = Math.round(0 + t * 255);
-        g = 255;
-    } else if (pct <= 65) {
-        const t = (pct - 32) / (65 - 32);
-        r = 255;
-        g = Math.round(255 - t * 128);
-    } else {
-        const t = (pct - 65) / (100 - 65);
-        r = 255;
-        g = Math.round(127 - t * 127);
-    }
-    r = Math.min(255, Math.max(0, r));
-    g = Math.min(255, Math.max(0, g));
-    return `rgb(${r},${g},${b})`;
-}
-
-function topN(items, n) {
-    return items.sort((a, b) => b.count - a.count).slice(0, n);
-}
-
-async function fetchAllPagesParallel(baseUrl) {
-    const MAX_PAGES = 10;
-    const promises = [];
-    for (let page = 1; page <= MAX_PAGES; page++) {
-        promises.push(axios.get(`${baseUrl}&page=${page}`));
-    }
-    const responses = await Promise.allSettled(promises);
-    let allData = [];
-    responses.forEach(r => {
-        if (r.status === "fulfilled" && r.value.data) {
-            try {
-                const pageData = parse(r.value.data, { columns: true, skip_empty_lines: true });
-                allData = allData.concat(pageData);
-            } catch (err) {
-                console.warn("Parse error:", err.message);
-            }
-        }
-    });
-    return allData;
-}
-
-// =====================
 // Mount Project Routers
 // =====================
 app.use("/player-int", playerIntRoutes);
