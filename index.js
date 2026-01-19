@@ -1,7 +1,6 @@
-
 // Load environment variables first
 import dotenv from "dotenv";
-dotenv.config(); 
+dotenv.config();
 
 import express from "express";
 import { readdirSync } from "fs";
@@ -89,13 +88,21 @@ viewFiles.forEach(file => {
     const isProject = name.startsWith("project");
 
     app.get(name === "index" ? "/" : `/${name}`, (req, res) => {
+        // Styles
         const styles = isProject ? [`/${name}/styles/main.css`] : ["/styles/main.css"];
         if (name === "project33-2") styles.push(`/${name}/styles/new.css`);
+
+        // Scripts: only include canvas.js for index, projects, and contact pages
+        const scripts = [];
+        if (["index", "projects", "contact"].includes(name)) {
+            scripts.push("/js/canvas.js");
+        }
+        if (name === "index") scripts.push("/index.js"); // keep index.js for index
 
         res.render(name, {
             bodyClass: name,
             extraStyles: styles,
-            extraScripts: name === "index" ? ["/index.js", "/js/canvas.js"] : []
+            extraScripts: scripts
         });
     });
 });
