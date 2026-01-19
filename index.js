@@ -4,6 +4,9 @@ import { join, dirname } from "path";
 import { fileURLToPath } from "url";
 import axios from "axios";
 import { parse } from "csv-parse/sync";
+import dotenv from "dotenv";
+dotenv.config();
+app.use(express.urlencoded({ extended: true }));
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const app = express();

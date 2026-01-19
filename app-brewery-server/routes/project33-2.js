@@ -1,44 +1,21 @@
 
 import express from "express";
-import bodyParser from "body-parser";
 import pg from "pg";
 
 const router = express.Router();
-router.use(bodyParser.urlencoded({ extended: true }));
-import { join, dirname } from "path";
-import { fileURLToPath } from "url";
-
-const __dirname = dirname(fileURLToPath(import.meta.url));
-
-
 
 const db = new pg.Client({
-  user: "uejgslvtpkiinu",
-  host: "casrkuuedp6an1.cluster-czrs8kj4isg7.us-east-1.rds.amazonaws.com",
-  database: "d8uopajfmdjv48",
-  password: "p32a8f8cf831e5db7fc8171966ff8a9a88b616266ff9c6ce3619db2b30754981f",
-  port: 5432,
-  ssl: {
-    rejectUnauthorized: false,
-  },
+  user: process.env.DB_USER,
+  host: process.env.DB_HOST,
+  database: process.env.DB_NAME,
+  password: process.env.DB_PASSWORD,
+  port: process.env.DB_PORT,
+  ssl: { rejectUnauthorized: false },
 });
+
 await db.connect();
 
 let currentUserId = 1;
-
-let users = [
-  { id: 1, name: "Angela", color: "teal" },
-  { id: 2, name: "Jack", color: "powderblue" },
-];
-
-async function checkVisisted() {
-  const result = await db.query("SELECT country_code FROM fullstack.visited_countries_33_2");
-  let countries = [];
-  result.rows.forEach((country) => {
-    countries.push(country.country_code);
-  });
-  return countries;
-}
 
 //Main Page Route
 router.get("/", async (req, res) => {

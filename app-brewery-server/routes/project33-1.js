@@ -1,20 +1,20 @@
 import express from "express";
 import bodyParser from "body-parser";
 import pg from "pg";
+import dotenv from "dotenv";
+dotenv.config();
 
 const router = express.Router();
 
 router.use(bodyParser.urlencoded({ extended: true }));
 
 const db = new pg.Client({
-  user: "uejgslvtpkiinu",
-  host: "casrkuuedp6an1.cluster-czrs8kj4isg7.us-east-1.rds.amazonaws.com",
-  database: "d8uopajfmdjv48",
-  password: "p32a8f8cf831e5db7fc8171966ff8a9a88b616266ff9c6ce3619db2b30754981f",
-  port: 5432,
-  ssl: {
-    rejectUnauthorized: false,
-  },
+  user: process.env.DB_USER,
+  host: process.env.DB_HOST,
+  database: process.env.DB_NAME,
+  password: process.env.DB_PASSWORD,
+  port: process.env.DB_PORT,
+  ssl: { rejectUnauthorized: false },
 });
 
 await db.connect();
