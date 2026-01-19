@@ -7,10 +7,10 @@ const router = express.Router();
 router.use(bodyParser.urlencoded({ extended: true }));
 
 const db = new pg.Client({
-  user: "ufp1ais6lj4me0",
-  host: "cet8r1hlj0mlnt.cluster-czrs8kj4isg7.us-east-1.rds.amazonaws.com",
-  database: "daiavg0tvubkqb",
-  password: "p6c62e7eb19afc5f9566f7a7411bdd0454f02dd8c3094a7ec7d4056edb7f04edd",
+  user: "uejgslvtpkiinu",
+  host: "casrkuuedp6an1.cluster-czrs8kj4isg7.us-east-1.rds.amazonaws.com",
+  database: "d8uopajfmdjv48",
+  password: "p32a8f8cf831e5db7fc8171966ff8a9a88b616266ff9c6ce3619db2b30754981f",
   port: 5432,
   ssl: {
     rejectUnauthorized: false,
