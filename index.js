@@ -1,5 +1,7 @@
+
+// Load environment variables first
 import dotenv from "dotenv";
-dotenv.config(); // Load environment variables first
+dotenv.config(); 
 
 import express from "express";
 import { readdirSync } from "fs";
@@ -8,11 +10,13 @@ import { fileURLToPath } from "url";
 import axios from "axios";
 import { parse } from "csv-parse/sync";
 
-import db from "./app-brewery-server/db.js"; // Hosted RDS Postgres client
+// Load database connection (Needs this or crash)
+import db from "./app-brewery-server/db.js";
 
 // =====================
 // Project routers
 // =====================
+import playerIntRoutes from "./app-brewery-server/routes/player-int.js";
 import project25Routes from "./app-brewery-server/routes/project25.js";
 import project28Routes from "./app-brewery-server/routes/project28.js";
 import project29Routes from "./app-brewery-server/routes/project29.js";
@@ -79,6 +83,7 @@ async function fetchAllPagesParallel(baseUrl) {
 // =====================
 // Mount Project Routers
 // =====================
+app.use("/player-int", playerIntRoutes);
 app.use("/project25", project25Routes);
 app.use("/project28", project28Routes);
 app.use("/project29", project29Routes);
@@ -143,78 +148,6 @@ viewFiles.forEach(file => {
             extraScripts: name === "index" ? ["/index.js", "/js/canvas.js"] : []
         });
     });
-});
-
-// =====================
-// player-int routes
-// =====================
-app.get("/player-int", (req, res) => {
-    res.render("player-int", {
-        error: null,
-        playerName: null,
-        topRegions: [],
-        hourlyPercentages: [],
-        startDate: null,
-        endDate: null,
-        killSelected: true,
-        deathSelected: true,
-        extraStyles: ["/styles/player-int.css"],
-        extraScripts: ["/js/little-logo.js", "/js/player-int.js"],
-        bodyClass: "player-int"
-    });
-});
-
-app.get("/player-int/submit", async (req, res) => {
-    try {
-        const playerName = req.query.name?.trim();
-        if (!playerName) throw new Error("Missing player name");
-
-        const killSelected = !!req.query.kill;
-        const deathSelected = !!req.query.death;
-
-        const promises = [];
-        if (killSelected || (!killSelected && !deathSelected)) {
-            promises.push(fetchAllPagesParallel(`https://echoes.mobi/api/killmails?killer_name=${encodeURIComponent(playerName)}`));
-        }
-        if (deathSelected || (!killSelected && !deathSelected)) {
-            promises.push(fetchAllPagesParallel(`https://echoes.mobi/api/killmails?victim_name=${encodeURIComponent(playerName)}`));
-        }
-
-        const allData = (await Promise.all(promises)).flat();
-
-        // Process regions, constellations, systems, etc. (same as your original code)
-        // ...
-
-        res.render("player-int", {
-            error: null,
-            playerName,
-            topRegions: [],
-            hourlyPercentages: [],
-            startDate: req.query.start || null,
-            endDate: req.query.end || null,
-            killSelected: true,
-            deathSelected: true,
-            extraStyles: ["/styles/player-int.css"],
-            extraScripts: ["/js/little-logo.js", "/js/player-int.js"],
-            bodyClass: "player-int"
-        });
-
-    } catch (err) {
-        console.error("Error in /player-int/submit:", err.message);
-        res.render("player-int", {
-            error: "Failed to fetch or process data.",
-            playerName: null,
-            topRegions: [],
-            hourlyPercentages: [],
-            startDate: req.query.start || null,
-            endDate: req.query.end || null,
-            killSelected: !!req.query.kill,
-            deathSelected: !!req.query.death,
-            extraStyles: ["/styles/player-int.css"],
-            extraScripts: ["/js/little-logo.js", "/js/player-int.js"],
-            bodyClass: "player-int"
-        });
-    }
 });
 
 // =====================
