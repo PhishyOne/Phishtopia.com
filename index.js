@@ -21,7 +21,7 @@ import project333Routes from "./app-brewery-server/routes/project33-3.js";
 // =====================
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const PORT = process.env.PORT || 3002;
-const CANVAS_PAGES = ["index", "projects", "contact"];q
+const CANVAS_PAGES = ["index", "projects", "contact"];
 // Logs setup
 const logDir = join(__dirname, "logs");
 mkdirSync(logDir, { recursive: true });

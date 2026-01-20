@@ -1,34 +1,28 @@
 import express from "express";
-import bodyParser from "body-parser";
+import db from "../db.js";
 
-const app = express();
-const port = 3000;
-
-app.use(bodyParser.urlencoded({ extended: true }));
-app.use(express.static("public"));
+const router = express.Router();
 
 let items = [
   { id: 1, title: "Buy milk" },
   { id: 2, title: "Finish homework" },
 ];
 
-app.get("/", (req, res) => {
-  res.render("index.ejs", {
+router.get("/", (req, res) => {
+  res.render("project33-3", {
     listTitle: "Today",
     listItems: items,
   });
 });
 
-app.post("/add", (req, res) => {
+router.post("/add", (req, res) => {
   const item = req.body.newItem;
   items.push({ title: item });
-  res.redirect("/");
+  res.redirect("/project33-3");
 });
 
-app.post("/edit", (req, res) => {});
+router.post("/edit", (req, res) => {});
 
-app.post("/delete", (req, res) => {});
+router.post("/delete", (req, res) => {});
 
-app.listen(port, () => {
-  console.log(`Server running on port ${port}`);
-});
+export default router;
