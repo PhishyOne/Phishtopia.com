@@ -8,7 +8,7 @@
   <div class="box">
     <% for(let item of listItems){%>
       <div class="item">
-        <form action="/delete" method="post">
+        <form action="/project33-3/delete" method="post">
           <input type="checkbox" onchange="this.form.submit()" name="deleteItemId" value="<%= item.id %>">
         </form>
 
@@ -16,7 +16,7 @@
           <%= item.title %>
         </p>
 
-        <form class="edit" action="/edit" method="post">
+        <form class="edit" action="/project33-3/edit" method="post">
           <input type="hidden" name="updatedItemId" value="<%= item.id %>">
           <input id="input<%=item.id%>" type="text" name="updatedItemTitle" value="<%= item.title %>" autocomplete="off"
             autofocus="true" hidden="true" />
@@ -28,7 +28,7 @@
       </div>
       <% } %>
 
-        <form class="item" action="/add" method="post">
+        <form class="item" action="/project33-3/add" method="post">
           <input type="text" name="newItem" placeholder="New Item" autocomplete="off" autofocus="true" />
           <button class="add" type="submit" name="list" value=<%=listTitle %> >+</button>
         </form>

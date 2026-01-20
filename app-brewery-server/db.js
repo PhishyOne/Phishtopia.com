@@ -23,4 +23,3 @@ try {
 }
 
 export default db;
-
