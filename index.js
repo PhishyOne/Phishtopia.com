@@ -15,6 +15,8 @@ import project30Routes from "./app-brewery-server/routes/project30.js";
 import project331Routes from "./app-brewery-server/routes/project33-1.js";
 import project332Routes from "./app-brewery-server/routes/project33-2.js";
 import project333Routes from "./app-brewery-server/routes/project33-3.js";
+import project34Routes from "./app-brewery-server/routes/project34.js";
+
 
 // =====================
 // Constants
@@ -87,6 +89,7 @@ const APP_ROUTES = {
     "project33-1": project331Routes,
     "project33-2": project332Routes,
     "project33-3": project333Routes,
+    "project34": project34Routes
 };
 Object.entries(APP_ROUTES).forEach(([name, router]) => {
     app.use(`/${name}`, router);
