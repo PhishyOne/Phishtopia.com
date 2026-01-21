@@ -2,6 +2,7 @@
 import dotenv from "dotenv";
 dotenv.config();
 import express from "express";
+import ejs from "ejs";
 import { readdirSync, mkdirSync, appendFileSync } from "fs";
 import { join, dirname } from "path";
 import { fileURLToPath } from "url";
@@ -16,7 +17,6 @@ import project331Routes from "./app-brewery-server/routes/project33-1.js";
 import project332Routes from "./app-brewery-server/routes/project33-2.js";
 import project333Routes from "./app-brewery-server/routes/project33-3.js";
 import project34Routes from "./app-brewery-server/routes/project34.js";
-
 
 // =====================
 // Constants
@@ -74,10 +74,12 @@ app.use((req, res, next) => {
 
 // View engine setup
 app.set("view engine", "ejs");
-app.set("views", [
-    join(__dirname, "views"),
-    join(__dirname, "app-brewery-server/views")
-]);
+app.set("views", join(__dirname, "views"));
+
+app.engine("ejs", ejs.__express);  // use the default Express engine
+
+app.locals.basedir = app.get("views");
+
 
 // Mount routers /////////////////////////////////////////////////////
 const APP_ROUTES = {
@@ -89,7 +91,7 @@ const APP_ROUTES = {
     "project33-1": project331Routes,
     "project33-2": project332Routes,
     "project33-3": project333Routes,
-    "project34": project34Routes
+    "project34": project34Routes,
 };
 Object.entries(APP_ROUTES).forEach(([name, router]) => {
     app.use(`/${name}`, router);
