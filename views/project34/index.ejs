@@ -9,9 +9,15 @@
   <!-- Search/Sort Bar -->
   <section class="search-sort-bar">
     <form class="search-form">
-      <input type="text" placeholder="Search movies..." class="search-input">
+      <div class="search-wrapper" style="position: relative;">
+        <input type="text" placeholder="Search movies..." class="search-input">
+        <button type="button" class="clear-input" title="Clear">&times;</button>
+      </div>
+      
       <button type="submit" class="search-button">Search</button>
+      
     </form>
+    
     <div class="sort-options">
       <button class="sort-button">Sort by Title</button>
       <button class="sort-button">Sort by Genre</button>

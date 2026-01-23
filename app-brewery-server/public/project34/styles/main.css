@@ -196,25 +196,55 @@
     background-color: #c56a09;
 }
 
+.search-wrapper {
+    position: relative;
+    display: inline-block;
+}
+
+.clear-input {
+    position: absolute;
+    right: 5px;
+    top: 50%;
+    transform: translateY(-50%);
+    background: transparent;
+    border: none;
+    font-size: 1.2rem;
+    cursor: pointer;
+    color: #888;
+}
+
+.clear-input:hover {
+    color: #333;
+}
+
 /* =========================
    Autocomplete
    ========================= */
    .autocomplete-dropdown {
        position: absolute;
-       top: calc(100% + 5px);
-       left: 0;
-       width: 100%;
-       max-width: 400px;
-       max-height: 300px;
-       overflow-y: auto;
-       background-color: var(--light-section-bg);
-       color: var(--dark-text);
+       background: var(--light-section-bg);
        border: 1px solid #ccc;
        border-radius: 6px;
-       z-index: 100;
        list-style: none;
-       padding: 0;
+       padding: 0.25rem 0;
        margin: 0;
+       width: 100%;
+       max-width: 400px;
+       box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+       z-index: 1000;
+   }
+
+   .autocomplete-dropdown .close-dropdown {
+       display: block;
+       text-align: right;
+       padding: 0 0.5rem;
+       font-weight: bold;
+       cursor: pointer;
+       color: #888;
+   }
+
+   .autocomplete-dropdown .close-dropdown:hover {
+       color: #000;
    }
 
    .autocomplete-item {
