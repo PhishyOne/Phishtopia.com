@@ -9,7 +9,7 @@ router.get("/", async (req, res) => {
         res.render("project34", {
             bodyClass: "project34",
             extraStyles: ["/project34/styles/main.css"],
-            extraScripts: ["/js/canvas.js", "/js/tmdb-autocomplete.js"],
+            extraScripts: ["/js/canvas.js", "/js/youlist.js"],
         });
     } catch (err) {
         console.error("DB error:", err);
@@ -64,6 +64,41 @@ router.get("/api/search", async (req, res) => {
     } catch (err) {
         console.error("TMDB search error:", err);
         res.status(500).json({ error: "TMDB search failed" });
+    }
+});
+
+// Get movie details by TMDB ID
+router.get("/api/movie/:id", async (req, res) => {
+    try {
+        const movieId = req.params.id;
+        const tmdbUrl = `https://api.themoviedb.org/3/movie/${movieId}?language=en-US&api_key=${process.env.TMDB_API_KEY}`;
+
+        const response = await fetch(tmdbUrl);
+        if (!response.ok) throw new Error("TMDB fetch failed");
+
+        const data = await response.json();
+
+        const movie = {
+            id: data.id,
+            title: data.title,
+            year: data.release_date?.slice(0, 4),
+            poster: data.poster_path ? `https://image.tmdb.org/t/p/w500${data.poster_path}` : '/project34/images/placeholder.png',
+            director: null, // will fill from credits
+            genre: data.genres?.map(g => g.name).join(', ') || 'N/A',
+            cast: null // will fill from credits
+        };
+
+        // Fetch credits to get director and cast
+        const creditsRes = await fetch(`https://api.themoviedb.org/3/movie/${movieId}/credits?api_key=${process.env.TMDB_API_KEY}`);
+        const credits = await creditsRes.json();
+        const director = credits.crew?.find(c => c.job === 'Director');
+        movie.director = director?.name || 'N/A';
+        movie.cast = credits.cast?.slice(0, 5).map(c => c.name).join(', ') || 'N/A';
+
+        res.json(movie);
+    } catch (err) {
+        console.error("TMDB movie detail error:", err);
+        res.status(500).json({ error: "Failed to fetch movie details" });
     }
 });
 

@@ -9,20 +9,49 @@
   <!-- Search/Sort Bar -->
   <section class="search-sort-bar">
     <form class="search-form">
-      <div class="search-wrapper" style="position: relative;">
+      <div class="search-wrapper">
         <input type="text" placeholder="Search movies..." class="search-input">
-        <button type="button" class="clear-input" title="Clear">&times;</button>
+        <button type="button" class="clear-input">×</button>
+        <!-- Dropdown will be appended here via JS -->
       </div>
-      
       <button type="submit" class="search-button">Search</button>
-      
     </form>
-    
     <div class="sort-options">
       <button class="sort-button">Sort by Title</button>
       <button class="sort-button">Sort by Genre</button>
     </div>
-  </section>
+    </section>
+  
+    <!-- Temporary movie card (hidden) -->
+    <section class="movielist-section temporary" id="temp-card"
+      style="display:none; grid-template-columns: minmax(150px,1fr) 4fr;">
+      <div class="movie-poster">
+        <img id="temp-poster" src="/project34/images/placeholder.png" alt="Movie Poster">
+      </div>
+      <div class="Details">
+        <div class="Title">
+          <h2 id="temp-title">Movie Title</h2>
+        </div>
+        <div class="Director">
+          <h3 id="temp-director">Director: N/A</h3>
+        </div>
+        <div class="ReleaseYear">
+          <h3 id="temp-year">Release Year: N/A</h3>
+        </div>
+        <div class="Genre">
+          <h3 id="temp-genre">Genre: N/A</h3>
+        </div>
+        <div class="Cast">
+          <h3 id="temp-cast">Stars: N/A</h3>
+        </div>
+        <textarea id="temp-comment" placeholder="Add your comment..."></textarea>
+        <div class="comment-buttons">
+          <button id="submit-comment">Submit</button>
+          <button id="cancel-comment">Cancel</button>
+        </div>
+      </div>
+    </section>
+    
   <!-- Movielist Section -->
   <section class="movielist-section">
         <div class="Title"><h2>Pulp Fiction:</h2></div>
