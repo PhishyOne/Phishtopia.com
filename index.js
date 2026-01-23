@@ -91,7 +91,7 @@ const APP_ROUTES = {
     "project33-1": project331Routes,
     "project33-2": project332Routes,
     "project33-3": project333Routes,
-    "project34": project34Routes,
+    "youlist": project34Routes,
 };
 Object.entries(APP_ROUTES).forEach(([name, router]) => {
     app.use(`/${name}`, router);
