@@ -1,0 +1,177 @@
+/* =========================
+   YouList Movie Card
+   ========================= */
+
+.movielist-section {
+    display: grid;
+    grid-column: span 2;
+    /* First column ~1/5 of container, second column ~4/5 */
+    grid-template-columns: minmax(150px, 1fr) 4fr;
+
+    /* Rows: title, stars, poster/details */
+    grid-template-rows: auto auto 1fr;
+
+    grid-template-areas:
+        "Title Title"
+        "Stars ."
+        "movie-poster Details";
+
+    gap: 1rem;
+    /* horizontal & vertical spacing */
+
+    min-height: 360px;
+    padding: 20px 20px 2rem;
+    border-radius: 10px;
+    background-color: var(--light-section-bg);
+    color: var(--dark-text);
+    opacity: 0.75;
+}
+
+/* =========================
+   Grid Areas (Top Level)
+   ========================= */
+
+.Title {
+    grid-area: Title;
+    font-size: 1.6rem;
+    font-weight: bold;
+}
+
+.Stars {
+    grid-area: Stars;
+    justify-self: center;
+    /* centers in first column */
+    margin-bottom: 0.5rem;
+}
+
+.movie-poster {
+    grid-area: movie-poster;
+    width: 100%;
+    /* fills the grid column */
+    height: auto;
+    /* maintain aspect ratio */
+    max-width: 100%;
+    /* never overflow column */
+    border-radius: 8px;
+    object-fit: contain;
+    /* fits nicely inside column */
+}
+
+.movie-poster a {
+    display: block;
+    /* ensures the anchor doesn’t shrink/expand */
+    width: 100%;
+}
+
+.movie-poster img {
+    width: 100%;
+    /* fills the column */
+    height: auto;
+    /* maintain aspect ratio */
+    display: block;
+    /* remove inline spacing below image */
+    border-radius: 8px;
+    object-fit: contain;
+}
+
+.Details {
+    grid-area: Details;
+    display: grid;
+    grid-template-rows: auto auto auto 1fr;
+    grid-template-areas:
+        "director"
+        "releaseYear"
+        "genre"
+        "cast";
+
+    gap: 0.25rem;
+    justify-items: start;
+    align-items: start;
+    text-align: left;
+}
+
+/* =========================
+   Details Subgrid Areas
+   ========================= */
+
+.Director {
+    grid-area: director;
+}
+
+.ReleaseYear {
+    grid-area: releaseYear;
+}
+
+.Genre {
+    grid-area: genre;
+}
+
+.Cast {
+    grid-area: cast;
+}
+
+/* =========================
+   User Comment
+   ========================= */
+
+.user-comment {
+    background-color: var(--dark-section-bg);
+    color: var(--dark-text);
+    padding: 0.5rem 1rem;
+    border-radius: 6px;
+    grid-column: 1 / -1;
+    /* spans the entire movie card */
+    margin-top: 1rem;
+}
+
+/* =========================
+   Star Rating
+   ========================= */
+
+.rating {
+    position: relative;
+    display: inline-block;
+    font-size: 3rem;
+    line-height: 1;
+}
+
+.stars {
+    color: #ccc;
+}
+
+.stars.filled {
+    color: gold;
+    position: absolute;
+    top: 0;
+    left: 0;
+    white-space: nowrap;
+    overflow: hidden;
+    pointer-events: none;
+}
+
+/* =========================
+   Responsive
+   ========================= */
+
+@media (max-width: 768px) {
+    .movielist-section {
+        grid-template-columns: 1fr;
+        /* single column layout */
+        grid-template-areas:
+            "Title"
+            "Stars"
+            "movie-poster"
+            "Details";
+    }
+
+    .movie-poster {
+        width: 80%;
+        /* scale down on mobile */
+        margin: 0 auto;
+        /* center the poster */
+    }
+
+    .Stars {
+        justify-self: center;
+    }
+}

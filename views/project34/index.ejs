@@ -1,12 +1,34 @@
-<%- include ('../partials/header', { title: 'Movie Database' }) %>
+<%- include ('../partials/header', { title: 'YouList - Movies' }) %>
 
-    <!-- Main Content -->
-    <main class="main-grid">
-        <!-- Hero Section -->
-        <section class="hero-section gradient-background rounded-3 pt-4 pb-3 ps-5">
-            <h1 class="gradient-text">Movie Database</h1>
-            <p>This will soon be a user-created movie database.</p>
-        </section>
-    </main>
+<!-- Main Content -->
+<main class="main-grid">
+  <!-- Hero Section -->
+  <section class="hero-section gradient-background rounded-3 pt-4 pb-3 ps-5">
+    <h1 class="gradient-text">YouList - Movies</h1>
+  </section>
+  <!-- YouList Sections -->
+  <!-- <div class="youlist-grid"> -->
+    <!-- Movielist Section -->
+    <section class="movielist-section">
+        <div class="Title"><h2>Pulp Fiction:</h2></div>
+        <div class="Stars"><div class="rating" aria-label="4.5 out of 5 stars">
+          <div class="stars">
+            ★★★★★
+          </div>
+          <div class="stars filled" style="width: 90%;">
+            ★★★★★
+          </div>
+          </div></div>
+        <div class="movie-poster"><a href="./#"><img src="/project34/images/pulp-fiction.jpeg" alt="Pulp Fiction Poster"></a></div>
+        <div class="Details">
+          <div class="Director"><h3>Director: Quentin Tarantino</h3></div>
+          <div class="ReleaseYear"><h3>Release Year: 1994</h3></div>
+          <div class="Genre"><h3>Genre: Crime, Drama</h3></div>
+          <div class="Cast"><h3>Stars: John Travolta, Uma Thurman, Samuel L. Jackson</h3></div>
+        </div>
+      <p class="user-comment">Best fkin movie ever! Watch several stories intertwine with action, comedy, and romance. This masterpiece has it all.</p>
+    </section>
+  <!-- </div> -->
+</main>
 
     <%- include ('../partials/footer') %>
