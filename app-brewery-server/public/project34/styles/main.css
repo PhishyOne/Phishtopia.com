@@ -1,3 +1,4 @@
+
 /* =========================
    YouList Movie Card
    ========================= */
@@ -159,9 +160,6 @@
     margin-bottom: 1rem;
 }
 
-.search-form {
-
-}
 .search-input {
     padding: 0.5rem;
     border: 1px solid #ccc;
@@ -197,6 +195,56 @@
 .sort-button:hover {
     background-color: #c56a09;
 }
+
+/* =========================
+   Autocomplete
+   ========================= */
+   .autocomplete-dropdown {
+       position: absolute;
+       top: calc(100% + 5px);
+       left: 0;
+       width: 100%;
+       max-width: 400px;
+       max-height: 300px;
+       overflow-y: auto;
+       background-color: var(--light-section-bg);
+       color: var(--dark-text);
+       border: 1px solid #ccc;
+       border-radius: 6px;
+       z-index: 100;
+       list-style: none;
+       padding: 0;
+       margin: 0;
+   }
+
+   .autocomplete-item {
+       display: flex;
+       align-items: center;
+       padding: 5px;
+       cursor: pointer;
+       gap: 10px;
+   }
+
+   .autocomplete-item:hover {
+       background-color: var(--dark-section-bg);
+   }
+
+   .autocomplete-poster {
+       width: 40px;
+       height: 60px;
+       object-fit: cover;
+       border-radius: 4px;
+   }
+
+   .autocomplete-title {
+       flex: 1;
+       font-size: 0.95rem;
+   }
+
+   .autocomplete-type {
+       font-size: 1rem;
+       margin-left: 5px;
+   }
 
 /* =========================
    Responsive
