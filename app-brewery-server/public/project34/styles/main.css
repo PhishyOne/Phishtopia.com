@@ -1,36 +1,70 @@
 /* =========================
-   YouList Movie Card
+   YouList Movie Card — Full Responsive & Hero + Top Poster Fix
    ========================= */
 
+/* -------------------------
+   Hero Section
+   ------------------------- */
+.hero-section {
+    grid-column: span 2;
+    margin-bottom: 20px;
+    padding: 2rem 1rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+}
+
+.hero-section h1 {
+    font-size: 5rem;
+    line-height: 1.1;
+    margin: 0;
+}
+
+/* Responsive Hero Text */
+@media (max-width: 1024px) {
+    .hero-section h1 {
+        font-size: 4rem;
+    }
+}
+
+@media (max-width: 768px) {
+    .hero-section h1 {
+        font-size: 3rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .hero-section h1 {
+        font-size: 2.25rem;
+    }
+}
+
+/* -------------------------
+   Movie Card Layout
+   ------------------------- */
 .movielist-section {
     display: grid;
     grid-column: span 2;
-    /* First column ~1/5 of container, second column ~4/5 */
     grid-template-columns: minmax(150px, 1fr) 4fr;
-
-    /* Rows: title, stars, poster/details */
     grid-template-rows: auto auto 1fr;
-
     grid-template-areas:
         "Title Title"
-        "Stars ."
+        "Stars Stars"
         "movie-poster Details";
-
     gap: 1rem;
-    /* horizontal & vertical spacing */
-
     min-height: 360px;
     padding: 20px 20px 2rem;
     border-radius: 10px;
     background-color: var(--light-section-bg);
     color: var(--dark-text);
     opacity: 0.75;
+    align-items: start;
+    /* ensures poster and details start at top */
 }
 
-/* =========================
-   Grid Areas (Top Level)
-   ========================= */
-
+/* Top-level areas */
 .Title {
     grid-area: Title;
     font-size: 1.6rem;
@@ -40,105 +74,58 @@
 .Stars {
     grid-area: Stars;
     justify-self: center;
-    /* centers in first column */
     margin-bottom: 0.5rem;
 }
 
 .movie-poster {
     grid-area: movie-poster;
     width: 100%;
-    /* fills the grid column */
-    height: auto;
-    /* maintain aspect ratio */
     max-width: 100%;
-    /* never overflow column */
+    height: auto;
     border-radius: 8px;
     object-fit: contain;
-    /* fits nicely inside column */
 }
 
 .movie-poster a {
     display: block;
-    /* ensures the anchor doesn’t shrink/expand */
     width: 100%;
 }
 
 .movie-poster img {
     width: 100%;
-    /* fills the column */
     height: auto;
-    /* maintain aspect ratio */
     display: block;
-    /* remove inline spacing below image */
     border-radius: 8px;
     object-fit: contain;
 }
 
 .Details {
     grid-area: Details;
-    display: grid;
-    grid-template-rows: auto auto auto 1fr;
-    grid-template-areas:
-        "director"
-        "releaseYear"
-        "genre"
-        "cast";
-
+    display: flex;
+    flex-direction: column;
     gap: 0.25rem;
-    justify-items: start;
+    justify-content: flex-start;
     align-items: start;
     text-align: left;
 }
 
-/* =========================
-   Details Subgrid Areas
-   ========================= */
+.Director {}
 
-.Director {
-    grid-area: director;
-}
+.ReleaseYear {}
 
-.ReleaseYear {
-    grid-area: releaseYear;
-}
+.Genre {}
 
-.Genre {
-    grid-area: genre;
-}
+.Cast {}
 
-.Cast {
-    grid-area: cast;
-}
-
-/* =========================
+/* -------------------------
    User Comment
-   ========================= */
-
-.user-comment {
-    background-color: var(--dark-section-bg);
-    color: var(--dark-text);
-    padding: 0.5rem 1rem;
-    border-radius: 6px;
-    grid-column: 1 / -1;
-    /* spans the entire movie card */
-    margin-top: 1rem;
-}
-
-#temp-card {
-    position: relative;
-    /* positioning context */
-}
-
+   ------------------------- */
+.user-comment,
 #temp-comment {
-    grid-column: 1 / -1;
-    /* spans the entire card */
     width: 100%;
     box-sizing: border-box;
-    /* ensures padding doesn’t break layout */
     min-height: 80px;
-    /* optional taller box */
     resize: vertical;
-    /* allow user to resize */
     background-color: #ffc587;
     color: rgb(78, 48, 9);
     border: none;
@@ -163,9 +150,6 @@
 }
 
 #cancel-comment {
-    position: absolute;
-    top: 10px;
-    right: 10px;
     background-color: #ff8f17;
     color: rgb(78, 48, 9);
     border: none;
@@ -173,17 +157,15 @@
     border-radius: 4px;
     cursor: pointer;
     margin-top: 0.5rem;
-    margin-left: 0.5rem;
 }
 
 #cancel-comment:hover {
     background-color: #c56a09;
 }
 
-/* =========================
+/* -------------------------
    Star Rating
-   ========================= */
-
+   ------------------------- */
 .rating {
     position: relative;
     display: inline-block;
@@ -205,9 +187,9 @@
     pointer-events: none;
 }
 
-/* =========================
+/* -------------------------
    Search and Sort Bar
-   ========================= */
+   ------------------------- */
 .search-sort-bar {
     display: flex;
     justify-content: space-between;
@@ -243,7 +225,6 @@
 
 .sort-button {
     background-color: #ffb76a;
-    ;
     color: white;
     border: none;
     padding: 0.5rem 1rem;
@@ -257,7 +238,6 @@
 
 .search-wrapper {
     position: relative;
-    /* relative positioning for absolute dropdown */
     display: inline-block;
 }
 
@@ -281,25 +261,22 @@
     color: #333;
 }
 
-/* =========================
+/* -------------------------
    Autocomplete
-   ========================= */
+   ------------------------- */
 .autocomplete-dropdown {
     position: absolute;
     top: 100%;
-    /* right below input */
     left: 0;
     right: 0;
     max-width: 400px;
     width: 100%;
-    /* match input width */
     background: var(--light-section-bg);
     border: 1px solid #ccc;
     border-radius: 6px;
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
     z-index: 1000;
     display: none;
-    /* start hidden */
 }
 
 .autocomplete-dropdown .close-dropdown {
@@ -344,29 +321,43 @@
     margin-left: 5px;
 }
 
-/* =========================
-   Responsive
-   ========================= */
-
+/* -------------------------
+   Responsive — Mobile
+   ------------------------- */
 @media (max-width: 768px) {
     .movielist-section {
-        grid-template-columns: 1fr;
-        /* single column layout */
-        grid-template-areas:
-            "Title"
-            "Stars"
-            "movie-poster"
-            "Details";
+        display: flex;
+        flex-direction: column;
+        align-items: stretch;
+        /* top-align all items */
+        gap: 1rem;
     }
 
     .movie-poster {
-        width: 80%;
-        /* scale down on mobile */
+        width: 90%;
         margin: 0 auto;
-        /* center the poster */
+    }
+
+    .Details {
+        width: 100%;
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+        text-align: left;
+        align-items: flex-start;
     }
 
     .Stars {
         justify-self: center;
+    }
+
+    .user-comment,
+    #temp-comment {
+        width: 100%;
+    }
+
+    #submit-comment,
+    #cancel-comment {
+        align-self: flex-start;
     }
 }
