@@ -14,7 +14,6 @@
         <button type="button" class="clear-input">×</button>
         <!-- Dropdown will be appended here via JS -->
       </div>
-      <button type="submit" class="search-button">Search</button>
     </form>
     <div class="sort-options">
       <button class="sort-button">Sort by Title</button>
@@ -44,15 +43,18 @@
         <div class="Cast">
           <h3 id="temp-cast">Stars: N/A</h3>
         </div>
-        <textarea id="temp-comment" placeholder="Add your comment..."></textarea>
+        <textarea id="temp-comment" aria-label="Movie comment" placeholder="Add your comment..."></textarea>
         <div class="comment-buttons">
           <button id="submit-comment">Submit</button>
           <button id="cancel-comment">Cancel</button>
         </div>
       </div>
     </section>
-    <!-- Make Movie List Section -->
-  <!-- </div> -->
+
+    <div id="movie-list"></div>
+    <button id="prev-page">Prev</button>
+    <button id="next-page" disabled>Next</button>
+
 </main>
 
     <%- include ('../partials/footer') %>

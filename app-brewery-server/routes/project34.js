@@ -1,59 +1,120 @@
-
 import express from "express";
+import fetch from "node-fetch";
 const router = express.Router();
-const cache = new Map();
+const cache = new Map();           // for autocomplete queries
+const tmdbCache = new Map();       // for TMDB items
+const CACHE_TTL = 24 * 60 * 60 * 1000; // 24 hours
+let movieList = []; // in-memory placeholder
 
-// Render the main project page
+/* =========================
+   Cached TMDB Fetch Helper
+========================= */
+async function fetchTMDBItem(type, id) {
+    const key = `${type}:${id}`;
+
+    // Return cached item if exists
+    if (tmdbCache.has(key)) return tmdbCache.get(key);
+
+    const baseUrl = `https://api.themoviedb.org/3/${type}/${id}?language=en-US&api_key=${process.env.TMDB_API_KEY}`;
+    const creditsUrl = `https://api.themoviedb.org/3/${type}/${id}/credits?api_key=${process.env.TMDB_API_KEY}`;
+
+    const [infoRes, creditsRes] = await Promise.all([
+        fetch(baseUrl),
+        fetch(creditsUrl)
+    ]);
+
+    if (!infoRes.ok || !creditsRes.ok) {
+        throw new Error(`TMDB fetch failed for ${type}:${id}`);
+    }
+
+    const data = await infoRes.json();
+    const credits = await creditsRes.json();
+
+    const director =
+        credits.crew?.find(c =>
+            type === "movie" ? c.job === "Director" : c.job === "Executive Producer"
+        )?.name || "N/A";
+
+    const item = {
+        id: data.id,
+        type,
+        title: type === "movie" ? data.title : data.name,
+        year:
+            type === "movie"
+                ? data.release_date?.slice(0, 4)
+                : data.first_air_date?.slice(0, 4),
+        poster: data.poster_path
+            ? `https://image.tmdb.org/t/p/w500${data.poster_path}`
+            : "/project34/images/placeholder.png",
+        genre: data.genres?.map(g => g.name).join(", ") || "N/A",
+        director,
+        cast: credits.cast?.slice(0, 5).map(c => c.name).join(", ") || "N/A"
+    };
+
+    // Cache it
+    tmdbCache.set(key, item);
+    setTimeout(() => tmdbCache.delete(key), CACHE_TTL);
+
+    return item;
+}
+
+/* =========================
+   Main Page
+========================= */
 router.get("/", async (req, res) => {
     try {
         res.render("project34", {
             bodyClass: "project34",
             extraStyles: ["/project34/styles/main.css"],
             extraScripts: ["/js/canvas.js", "/js/youlist.js"],
+            movieList: JSON.stringify(movieList)
         });
     } catch (err) {
-        console.error("DB error:", err);
-        res.status(500).send("Database error");
+        console.error("Render error:", err);
+        res.status(500).send("Server error");
     }
 });
 
-// TMDB Autocomplete API
+/* =========================
+   TMDB Autocomplete
+========================= */
 router.get("/api/search", async (req, res) => {
     try {
-        const query = req.query.q?.trim();
+        const query = req.query.q?.trim().toLowerCase();
         if (!query || query.length < 2) return res.json([]);
 
         if (cache.has(query)) return res.json(cache.get(query));
 
-        // Fetch TMDB data
         const tmdbUrl = `https://api.themoviedb.org/3/search/multi?query=${encodeURIComponent(
             query
         )}&language=en-US&page=1&include_adult=false&api_key=${process.env.TMDB_API_KEY}`;
 
         const response = await fetch(tmdbUrl);
+        if (!response.ok) throw new Error(`TMDB search failed: ${response.status}`);
+
         const data = await response.json();
 
-        // Map and sort results
         const results = (data.results || [])
             .filter(item => item.media_type === "movie" || item.media_type === "tv")
             .map(item => ({
                 id: item.id,
                 type: item.media_type,
                 title: item.media_type === "movie" ? item.title : item.name,
-                year: item.media_type === "movie"
-                    ? item.release_date?.slice(0, 4)
-                    : item.first_air_date?.slice(0, 4),
+                year:
+                    item.media_type === "movie"
+                        ? item.release_date?.slice(0, 4)
+                        : item.first_air_date?.slice(0, 4),
                 poster: item.poster_path
                     ? `https://image.tmdb.org/t/p/w92${item.poster_path}`
-                    : null,
-                popularity: item.popularity,
+                    : "/project34/images/placeholder.png",
+                popularity: item.popularity
             }))
             .sort((a, b) => {
-                const queryLower = query.toLowerCase();
-                const aExact = a.title.toLowerCase().startsWith(queryLower) ? 1 : 0;
-                const bExact = b.title.toLowerCase().startsWith(queryLower) ? 1 : 0;
-                if (aExact !== bExact) return bExact - aExact; // exact matches first
-                return b.popularity - a.popularity; // then popularity
+                const q = query;
+                const aExact = a.title.toLowerCase().startsWith(q);
+                const bExact = b.title.toLowerCase().startsWith(q);
+                if (aExact !== bExact) return bExact - aExact;
+                return b.popularity - a.popularity;
             })
             .slice(0, 10);
 
@@ -67,39 +128,97 @@ router.get("/api/search", async (req, res) => {
     }
 });
 
-// Get movie details by TMDB ID
-router.get("/api/movie/:id", async (req, res) => {
+/* =========================
+   Movie / TV Details (Cached)
+========================= */
+router.get("/api/item/:type/:id", async (req, res) => {
     try {
-        const movieId = req.params.id;
-        const tmdbUrl = `https://api.themoviedb.org/3/movie/${movieId}?language=en-US&api_key=${process.env.TMDB_API_KEY}`;
+        const { type, id } = req.params;
 
-        const response = await fetch(tmdbUrl);
-        if (!response.ok) throw new Error("TMDB fetch failed");
+        if (!["movie", "tv"].includes(type)) {
+            return res.status(400).json({ error: "Invalid media type" });
+        }
 
-        const data = await response.json();
-
-        const movie = {
-            id: data.id,
-            title: data.title,
-            year: data.release_date?.slice(0, 4),
-            poster: data.poster_path ? `https://image.tmdb.org/t/p/w500${data.poster_path}` : '/project34/images/placeholder.png',
-            director: null, // will fill from credits
-            genre: data.genres?.map(g => g.name).join(', ') || 'N/A',
-            cast: null // will fill from credits
-        };
-
-        // Fetch credits to get director and cast
-        const creditsRes = await fetch(`https://api.themoviedb.org/3/movie/${movieId}/credits?api_key=${process.env.TMDB_API_KEY}`);
-        const credits = await creditsRes.json();
-        const director = credits.crew?.find(c => c.job === 'Director');
-        movie.director = director?.name || 'N/A';
-        movie.cast = credits.cast?.slice(0, 5).map(c => c.name).join(', ') || 'N/A';
-
-        res.json(movie);
+        const item = await fetchTMDBItem(type, id);
+        res.json(item);
     } catch (err) {
-        console.error("TMDB movie detail error:", err);
-        res.status(500).json({ error: "Failed to fetch movie details" });
+        console.error("TMDB detail error:", err);
+        res.status(500).json({ error: "Failed to fetch item details" });
     }
 });
+
+/* =========================
+   Fetch Full List (Paginated + Cached)
+========================= */
+const PAGE_SIZE = 20;
+router.get("/api/list", async (req, res) => {
+    try {
+        const page = Math.max(parseInt(req.query.page) || 1, 1);
+        const offset = (page - 1) * PAGE_SIZE;
+
+        // 1️⃣ Get total count of movies
+        const countResult = await db.query(`SELECT COUNT(*) FROM fullstack.youlist_movies`);
+        const totalItems = parseInt(countResult.rows[0].count, 10);
+        const totalPages = Math.ceil(totalItems / PAGE_SIZE);
+
+        // 2️⃣ Fetch rows for this page
+        const { rows } = await db.query(
+            `
+            SELECT movie_id, type, comment
+            FROM fullstack.youlist_movies
+            ORDER BY id DESC
+            LIMIT $1 OFFSET $2
+            `,
+            [PAGE_SIZE, offset]
+        );
+
+        // 3️⃣ Fetch TMDB details (cached)
+        const results = await Promise.all(
+            rows.map(row =>
+                fetchTMDBItem(row.type, row.movie_id)
+                    .then(tmdb => ({ ...tmdb, comment: row.comment }))
+                    .catch(() => null)
+            )
+        );
+
+        res.json({
+            page,
+            pageSize: PAGE_SIZE,
+            totalItems,
+            totalPages,
+            results: results.filter(Boolean)
+        });
+    } catch (err) {
+        console.error("List fetch error:", err);
+        res.status(500).json({ error: "Failed to load list" });
+    }
+});
+
+async function prewarmCache() {
+    try {
+        const { rows } = await db.query(
+            `
+            SELECT movie_id, type, comment
+            FROM fullstack.youlist_movies
+            ORDER BY id DESC
+            LIMIT 20
+            `
+        );
+
+        await Promise.all(
+            rows.map(row =>
+                fetchTMDBItem(row.type, row.movie_id)
+                    .catch(() => null) // ignore failures
+            )
+        );
+
+        console.log("TMDB cache pre-warmed for first page!");
+    } catch (err) {
+        console.error("Cache pre-warm error:", err);
+    }
+}
+
+// Call prewarm on server start
+prewarmCache();
 
 export default router;
