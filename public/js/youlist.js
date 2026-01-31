@@ -37,11 +37,9 @@ async function renderResults(query) {
             dropdown.innerHTML += placeholderItem;
         } else {
             const regex = new RegExp(`(${query})`, "i");
-
             dropdown.innerHTML += results
                 .map(item => {
                     const title = item.title.replace(regex, "<b>$1</b>");
-
                     return `
                         <li class="autocomplete-item"
                             data-id="${item.id}"
@@ -73,12 +71,10 @@ async function renderResults(query) {
 input.addEventListener("input", () => {
     clearTimeout(timer);
     const query = input.value.trim();
-
     if (query.length < MIN_CHARS) {
         dropdown.style.display = "none";
         return;
     }
-
     timer = setTimeout(() => renderResults(query), 300);
 });
 
@@ -109,7 +105,6 @@ dropdown.addEventListener("click", async e => {
     if (!item || item.classList.contains("placeholder")) return;
 
     dropdown.style.display = "none";
-
     const id = item.dataset.id;
     const type = item.dataset.type;
 
@@ -127,6 +122,8 @@ dropdown.addEventListener("click", async e => {
         tempCard.querySelector("#temp-genre").textContent = `Genre: ${data.genre}`;
         tempCard.querySelector("#temp-cast").textContent = `Stars: ${data.cast}`;
 
+        tempCard.dataset.movieId = id;
+        tempCard.dataset.type = type;
         tempCard.querySelector("#temp-comment").value = "";
         tempCard.style.display = "grid";
     } catch (err) {
@@ -141,57 +138,22 @@ document.getElementById("cancel-comment")?.addEventListener("click", () => {
     document.getElementById("temp-card").style.display = "none";
 });
 
-/* =========================
-   Submit Comment
-========================= */
-document.getElementById("submit-comment")?.addEventListener("click", async () => {
-    const tempCard = document.getElementById("temp-card");
-    const comment = tempCard.querySelector("#temp-comment").value.trim();
-
-    if (!comment) return alert("Please enter a comment");
-
-    const payload = {
-        title: tempCard.querySelector("#temp-title").textContent,
-        poster: tempCard.querySelector("#temp-poster").src,
-        director: tempCard.querySelector("#temp-director").textContent.replace("Director: ", ""),
-        year: tempCard.querySelector("#temp-year").textContent.replace("Year: ", ""),
-        genre: tempCard.querySelector("#temp-genre").textContent.replace("Genre: ", ""),
-        cast: tempCard.querySelector("#temp-cast").textContent.replace("Stars: ", ""),
-        comment
-    };
-
-    const res = await fetch("/youlist/api/add-movie", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload)
-    });
-
-    const result = await res.json();
-
-    if (result.success) {
-        alert("Added!");
-        tempCard.style.display = "none";
-    } else {
-        alert(result.error || "Failed to add");
-    }
-});
-
 let currentPage = 1;
-let totalPages = 1; // updated from API
-const pageCache = {}; // stores already-fetched pages for instant navigation
+let totalPages = 1;
+const pageCache = {}; // stores fetched pages
 
+/* =========================
+   Render a page of movies
+========================= */
 async function loadPage(page = 1) {
-    // Check cache first
     let data = pageCache[page];
     if (!data) {
         const res = await fetch(`/youlist/api/list?page=${page}`);
         data = await res.json();
-        pageCache[page] = data; // cache it
+        pageCache[page] = data;
     }
 
     totalPages = data.totalPages;
-
-    // Render movies
     const container = document.getElementById("movie-list");
     container.innerHTML = "";
 
@@ -203,6 +165,11 @@ async function loadPage(page = 1) {
     data.results.forEach(movie => {
         const card = document.createElement("div");
         card.className = "movie-card";
+        card.dataset.movieId = movie.id;
+        card.dataset.type = movie.type;
+        card.dataset.comments = JSON.stringify(movie.comments || []);
+
+        const latestComment = movie.comments?.[0]?.comment || "No comments yet";
 
         card.innerHTML = `
             <img src="${movie.poster}" alt="${movie.title}">
@@ -210,36 +177,102 @@ async function loadPage(page = 1) {
             <p><strong>Director:</strong> ${movie.director}</p>
             <p><strong>Genre:</strong> ${movie.genre}</p>
             <p><strong>Stars:</strong> ${movie.cast}</p>
-            <p class="comment">💬 ${movie.comment}</p>
+            <p class="comment">💬 ${latestComment}</p>
+            <button class="expand-comments">Show all</button>
+            <div class="all-comments" style="display:none;"></div>
         `;
 
         container.appendChild(card);
+
+        // Expand button
+        const expandBtn = card.querySelector(".expand-comments");
+        const allCommentsDiv = card.querySelector(".all-comments");
+        expandBtn.addEventListener("click", () => {
+            const allComments = JSON.parse(card.dataset.comments);
+            if (allCommentsDiv.style.display === "none") {
+                allCommentsDiv.innerHTML = allComments
+                    .map(c => `<p>💬 ${c.comment}</p>`)
+                    .join("");
+                allCommentsDiv.style.display = "block";
+                expandBtn.textContent = "Hide all";
+            } else {
+                allCommentsDiv.style.display = "none";
+                expandBtn.textContent = "Show all";
+            }
+        });
     });
 
     currentPage = page;
-
-    // Enable/disable Prev/Next buttons
     document.getElementById("prev-page").disabled = currentPage === 1;
     document.getElementById("next-page").disabled = currentPage === totalPages;
 
-    // Preload next page if it exists
+    // Preload next page
     if (currentPage < totalPages && !pageCache[currentPage + 1]) {
         fetch(`/youlist/api/list?page=${currentPage + 1}`)
             .then(res => res.json())
             .then(nextData => { pageCache[currentPage + 1] = nextData; })
-            .catch(() => { }); // ignore preload errors
+            .catch(() => { });
     }
 }
 
-
-// Prev/Next button handlers
+/* =========================
+   Prev/Next navigation
+========================= */
 document.getElementById("prev-page").addEventListener("click", () => {
     if (currentPage > 1) loadPage(currentPage - 1);
 });
-
 document.getElementById("next-page").addEventListener("click", () => {
     if (currentPage < totalPages) loadPage(currentPage + 1);
 });
 
-// Initial load
+/* =========================
+   Submit Comment (Unified)
+========================= */
+document.getElementById("submit-comment")?.addEventListener("click", async () => {
+    const tempCard = document.getElementById("temp-card");
+    const comment = tempCard.querySelector("#temp-comment").value.trim();
+    if (!comment) return alert("Please enter a comment");
+
+    const movie_id = tempCard.dataset.movieId;
+    const type = tempCard.dataset.type;
+    const payload = { movie_id, type, comment };
+
+    try {
+        const res = await fetch("/youlist/api/comment", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload)
+        });
+        const result = await res.json();
+        if (!result.success) throw new Error(result.error || "Failed to add");
+
+        // Hide temp card
+        tempCard.style.display = "none";
+        tempCard.querySelector("#temp-comment").value = "";
+
+        // Update movie card UI immediately
+        const movieCard = document.querySelector(`.movie-card[data-movie-id="${movie_id}"][data-type="${type}"]`);
+        if (movieCard) {
+            const existingComments = JSON.parse(movieCard.dataset.comments || "[]");
+            const newComments = [{ comment }, ...existingComments];
+            movieCard.dataset.comments = JSON.stringify(newComments);
+            movieCard.querySelector(".comment").textContent = `💬 ${comment}`;
+
+            // Update expanded comments if visible
+            const allCommentsDiv = movieCard.querySelector(".all-comments");
+            if (allCommentsDiv.style.display === "block") {
+                allCommentsDiv.innerHTML = newComments.map(c => `<p>💬 ${c.comment}</p>`).join("");
+            }
+        }
+
+        // Refresh first page cache
+        Object.keys(pageCache).forEach(k => delete pageCache[k]);
+        loadPage(1);
+    } catch (err) {
+        console.error("Add comment error:", err);
+        alert("Failed to add comment");
+    }
+});
+
+// Initial page load
 loadPage(1);

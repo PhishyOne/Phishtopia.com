@@ -38,6 +38,7 @@ const seenIPs = new Set();
 // Body parsing
 const app = express();
 app.use(express.urlencoded({ extended: true }));
+app.use(express.json());
 
 // Default EJS locals
 app.use((req, res, next) => {

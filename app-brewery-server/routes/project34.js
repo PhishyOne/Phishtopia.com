@@ -1,5 +1,6 @@
 import express from "express";
 import fetch from "node-fetch";
+import db from "../db.js";
 const router = express.Router();
 const cache = new Map();           // for autocomplete queries
 const tmdbCache = new Map();       // for TMDB items
@@ -151,34 +152,54 @@ router.get("/api/item/:type/:id", async (req, res) => {
    Fetch Full List (Paginated + Cached)
 ========================= */
 const PAGE_SIZE = 20;
+
 router.get("/api/list", async (req, res) => {
     try {
         const page = Math.max(parseInt(req.query.page) || 1, 1);
         const offset = (page - 1) * PAGE_SIZE;
 
-        // 1️⃣ Get total count of movies
-        const countResult = await db.query(`SELECT COUNT(*) FROM fullstack.youlist_movies`);
-        const totalItems = parseInt(countResult.rows[0].count, 10);
+        // 1️⃣ Count DISTINCT movies
+        const countResult = await db.query(`SELECT COUNT(*) AS total FROM fullstack.youlist_movies`);
+        const totalItems = parseInt(countResult.rows[0].total, 10);
         const totalPages = Math.ceil(totalItems / PAGE_SIZE);
 
-        // 2️⃣ Fetch rows for this page
-        const { rows } = await db.query(
+        // 2️⃣ Get movie IDs for this page
+        const movieRows = await db.query(
             `
-            SELECT movie_id, type, comment
-            FROM fullstack.youlist_movies
-            ORDER BY id DESC
-            LIMIT $1 OFFSET $2
+            SELECT movie_id, type
+            FROM (
+                SELECT movie_id, type, MAX(id) AS last_id
+                FROM fullstack.youlist_movies
+                GROUP BY movie_id, type) 
+            AS t
+            ORDER BY last_id DESC
+            LIMIT $1 OFFSET $2;
             `,
             [PAGE_SIZE, offset]
         );
 
-        // 3️⃣ Fetch TMDB details (cached)
+        // 3️⃣ For each movie, fetch comments + TMDB once
         const results = await Promise.all(
-            rows.map(row =>
-                fetchTMDBItem(row.type, row.movie_id)
-                    .then(tmdb => ({ ...tmdb, comment: row.comment }))
-                    .catch(() => null)
-            )
+            movieRows.rows.map(async ({ movie_id, type }) => {
+                // fetch comments
+                const commentResult = await db.query(
+                    `
+                    SELECT id, comment
+                    FROM fullstack.youlist_movies
+                    WHERE movie_id = $1 AND type = $2
+                    ORDER BY id DESC
+                    `,
+                    [movie_id, type]
+                );
+
+                // fetch TMDB (cached)
+                const tmdb = await fetchTMDBItem(type, movie_id);
+
+                return {
+                    ...tmdb,
+                    comments: commentResult.rows
+                };
+            })
         );
 
         res.json({
@@ -186,14 +207,47 @@ router.get("/api/list", async (req, res) => {
             pageSize: PAGE_SIZE,
             totalItems,
             totalPages,
-            results: results.filter(Boolean)
+            results
         });
     } catch (err) {
-        console.error("List fetch error:", err);
+        console.error("Grouped list fetch error:", err);
         res.status(500).json({ error: "Failed to load list" });
     }
 });
 
+/* =========================
+   Add Comment (Movie/TV)
+========================= */
+router.post("/api/comment", async (req, res) => {
+    try {
+        const { movie_id, type, comment } = req.body;
+
+        if (!movie_id || !type || !comment) {
+            return res.status(400).json({ error: "Missing required fields" });
+        }
+
+        if (!["movie", "tv"].includes(type)) {
+            return res.status(400).json({ error: "Invalid media type" });
+        }
+
+        // TEMP user id (until auth exists)
+        const userId = 1;
+
+        await db.query(
+            `
+            INSERT INTO fullstack.youlist_movies (movie_id, type, comment, user_id)
+            VALUES ($1, $2, $3, $4)
+            `,
+            [movie_id, type, comment, userId]
+        );
+
+        res.json({ success: true });
+    } catch (err) {
+        console.error("Add comment error:", err);
+        res.status(500).json({ error: "Failed to add comment" });
+    }
+});
+/* ========================= */
 async function prewarmCache() {
     try {
         const { rows } = await db.query(
@@ -217,7 +271,6 @@ async function prewarmCache() {
         console.error("Cache pre-warm error:", err);
     }
 }
-
 // Call prewarm on server start
 prewarmCache();
 
