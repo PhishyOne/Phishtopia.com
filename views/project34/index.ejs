@@ -1,29 +1,29 @@
 <%- include ('../partials/header', { title: 'YouList - Movies' }) %>
 
-<!-- Main Content -->
-<main class="main-grid">
-  <!-- Hero Section -->
-  <section class="hero-section gradient-background rounded-3 pt-4 pb-3 ps-5">
-    <h1 class="gradient-text">YouList - Movies</h1>
-  </section>
-  <!-- Search/Sort Bar -->
-  <section class="search-sort-bar">
-    <form class="search-form">
-      <div class="search-wrapper">
-        <input type="text" placeholder="Search movies..." class="search-input">
-        <button type="button" class="clear-input">×</button>
-        <!-- Dropdown will be appended here via JS -->
-      </div>
-    </form>
-    <div class="sort-options">
-      <button class="sort-button">Sort by Title</button>
-      <button class="sort-button">Sort by Genre</button>
-    </div>
+  <main class="youlist-container">
+    <!-- Hero Section -->
+    <section class="hero-section gradient-background rounded-3 pt-4 pb-3 ps-5">
+      <h1 class="gradient-text">YouList - Movies</h1>
     </section>
-  
+
+    <!-- Search/Sort Bar -->
+    <section class="search-sort-bar">
+      <form class="search-form">
+        <div class="search-wrapper">
+          <input type="text" placeholder="Search movies..." class="search-input">
+          <button type="button" class="clear-input">×</button>
+          <!-- Autocomplete dropdown appended by JS -->
+        </div>
+      </form>
+      <div class="sort-options">
+        <button class="sort-button">Sort by Title</button>
+        <button class="sort-button">Sort by Genre</button>
+      </div>
+    </section>
+
     <!-- Temporary movie card (hidden) -->
-    <section class="movielist-section temporary" id="temp-card"
-      style="display:none; grid-template-columns: minmax(150px,1fr) 4fr;">
+    <section class="movielist-section temporary movie-card" id="temp-card" style="display:none;">
+
       <div class="movie-poster">
         <img id="temp-poster" src="/project34/images/placeholder.png" alt="Movie Poster">
       </div>
@@ -51,10 +51,14 @@
       </div>
     </section>
 
-    <section id="movie-list"></section>
-    <button id="prev-page">Prev</button>
-    <button id="next-page" disabled>Next</button>
+    <!-- Movie list container -->
+    <section id="movie-list" class="movie-list-grid"></section>
 
-</main>
+    <!-- Pagination -->
+    <div class="pagination">
+      <button id="prev-page">Prev</button>
+      <button id="next-page" disabled>Next</button>
+    </div>
+  </main>
 
-    <%- include ('../partials/footer') %>
+  <%- include ('../partials/footer') %>

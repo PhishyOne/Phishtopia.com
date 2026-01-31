@@ -125,7 +125,7 @@ dropdown.addEventListener("click", async e => {
         tempCard.dataset.movieId = id;
         tempCard.dataset.type = type;
         tempCard.querySelector("#temp-comment").value = "";
-        tempCard.style.display = "grid";
+        tempCard.style.display = "flex";
     } catch (err) {
         console.error("Item fetch error:", err);
     }
@@ -143,7 +143,7 @@ let totalPages = 1;
 const pageCache = {}; // stores fetched pages
 
 /* =========================
-   Render a page of movies
+   Render a page of movies — Flexbox Modern
 ========================= */
 async function loadPage(page = 1) {
     let data = pageCache[page];
@@ -172,34 +172,83 @@ async function loadPage(page = 1) {
         const latestComment = movie.comments?.[0]?.comment || "No comments yet";
 
         card.innerHTML = `
-            <img src="${movie.poster}" alt="${movie.title}">
-            <h3>${movie.title} (${movie.year || "N/A"})</h3>
-            <p><strong>Director:</strong> ${movie.director}</p>
-            <p><strong>Genre:</strong> ${movie.genre}</p>
-            <p><strong>Stars:</strong> ${movie.cast}</p>
-            <p class="comment">💬 ${latestComment}</p>
-            <button class="expand-comments">Show all</button>
-            <div class="all-comments" style="display:none;"></div>
+            <div class="movie-poster">
+                <img src="${movie.poster}" alt="${movie.title}">
+            </div>
+            <div class="Details">
+                <div class="Title"><h2>${movie.title} (${movie.year || "N/A"})</h2></div>
+                <div class="Stars">
+                    ${movie.rating ? "★".repeat(movie.rating) : ""}
+                </div>
+                <div class="Director"><h3>Director: ${movie.director}</h3></div>
+                <div class="ReleaseYear"><h3>Year: ${movie.year || "N/A"}</h3></div>
+                <div class="Genre"><h3>Genre: ${movie.genre}</h3></div>
+                <div class="Cast"><h3>Stars: ${movie.cast}</h3></div>
+                <textarea class="user-comment" placeholder="Add your comment..."></textarea>
+                <div class="comment-buttons">
+                    <button class="submit-comment">Submit</button>
+                    <button class="cancel-comment">Cancel</button>
+                </div>
+                <p class="comment">💬 ${latestComment}</p>
+                <div class="all-comments" style="display:none;"></div>
+            </div>
         `;
 
         container.appendChild(card);
 
-        // Expand button
+        // Expand comments
         const expandBtn = card.querySelector(".expand-comments");
         const allCommentsDiv = card.querySelector(".all-comments");
-        expandBtn.addEventListener("click", () => {
-            const allComments = JSON.parse(card.dataset.comments);
-            if (allCommentsDiv.style.display === "none") {
-                allCommentsDiv.innerHTML = allComments
-                    .map(c => `<p>💬 ${c.comment}</p>`)
-                    .join("");
-                allCommentsDiv.style.display = "block";
-                expandBtn.textContent = "Hide all";
-            } else {
-                allCommentsDiv.style.display = "none";
-                expandBtn.textContent = "Show all";
-            }
-        });
+        if (expandBtn) {
+            expandBtn.addEventListener("click", () => {
+                const allComments = JSON.parse(card.dataset.comments);
+                if (allCommentsDiv.style.display === "none") {
+                    allCommentsDiv.innerHTML = allComments.map(c => `<p>💬 ${c.comment}</p>`).join("");
+                    allCommentsDiv.style.display = "block";
+                    expandBtn.textContent = "Hide all";
+                } else {
+                    allCommentsDiv.style.display = "none";
+                    expandBtn.textContent = "Show all";
+                }
+            });
+        }
+
+        // Submit comment
+        const submitBtn = card.querySelector(".submit-comment");
+        const cancelBtn = card.querySelector(".cancel-comment");
+        const commentBox = card.querySelector(".user-comment");
+
+        if (submitBtn) {
+            submitBtn.addEventListener("click", async () => {
+                const comment = commentBox.value.trim();
+                if (!comment) return alert("Please enter a comment");
+
+                const payload = { movie_id: movie.id, type: movie.type, comment };
+                try {
+                    const res = await fetch("/youlist/api/comment", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify(payload)
+                    });
+                    const result = await res.json();
+                    if (!result.success) throw new Error(result.error || "Failed to add");
+
+                    // Update card comments
+                    const existing = JSON.parse(card.dataset.comments || "[]");
+                    const updated = [{ comment }, ...existing];
+                    card.dataset.comments = JSON.stringify(updated);
+                    card.querySelector(".comment").textContent = `💬 ${comment}`;
+                    commentBox.value = "";
+                } catch (err) {
+                    console.error(err);
+                    alert("Failed to add comment");
+                }
+            });
+        }
+
+        if (cancelBtn) {
+            cancelBtn.addEventListener("click", () => { commentBox.value = ""; });
+        }
     });
 
     currentPage = page;
@@ -214,6 +263,7 @@ async function loadPage(page = 1) {
             .catch(() => { });
     }
 }
+
 
 /* =========================
    Prev/Next navigation
