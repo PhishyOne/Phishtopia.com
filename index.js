@@ -50,6 +50,8 @@ app.use((req, res, next) => {
 // Serve static folders
 app.use(express.static(join(__dirname, "public"))); // Main public folder
 app.use("/static", express.static(join(__dirname, "views/app-brewery-static"))); // Old static projects
+app.use("/projects", express.static(join(__dirname, "public/projects")));
+
 
 // Auto-serve project public folders
 const projectsDir = join(__dirname, "app-brewery-server/public");
@@ -103,8 +105,9 @@ const viewFiles = readdirSync(join(__dirname, "views"))
     .filter(f => f.endsWith(".ejs") && f !== "player-int.ejs");
 viewFiles.forEach(file => {
     const name = file.replace(".ejs", "");
-    const isProject = name.startsWith("project");
+    const isProject = name.startsWith("project") && name !== "projects";
     app.get(name === "index" ? "/" : `/${name}`, (req, res) => {
+        if (req.url !== "/" && req.url !== `/${name}`) return res.sendStatus(404);
         const styles = isProject ? [`/${name}/styles/main.css`] : ["/styles/main.css"];
         if (name === "project33-2") styles.push(`/${name}/styles/new.css`);
         const scripts = [];

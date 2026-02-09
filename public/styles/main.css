@@ -169,6 +169,7 @@ a:not(.btn):active {
 /* ---------- Gradient Text ---------- */
 .gradient-text {
   animation: text-color-animation 18s ease infinite;
+  text-shadow: 1px 1px 4px rgba(0, 0, 0, 0.6);
 }
 
 @keyframes text-color-animation {
@@ -240,7 +241,7 @@ body {
 }
 
 /* Section containers */
-.storecalc-section,
+.new-section,
 .projects-section {
   display: flex;
   flex-direction: column;
@@ -249,21 +250,22 @@ body {
   border-radius: 10px;
   padding: 20px 20px 2rem;
   opacity: 0.75;
+  text-shadow: 1px 1px 4px rgba(0, 0, 0, 0.6);
 }
 
 .projects-section {
   background-color: var(--light-section-bg);
-  color: var(--dark-text);
+  color: var(--dark-section-bg);
 }
 
 /* Last child auto push */
 .projects-section:not(.just-in-section)> :last-child,
-.storecalc-section> :last-child {
+.new-section> :last-child {
   margin-top: auto;
 }
 
 /* Inner p for storecalc */
-body:not(.player-int) .storecalc-section p {
+body:not(.player-int) .new-section p {
   background-color: var(--dark-section-bg);
   color: var(--dark-text);
 }
@@ -353,7 +355,7 @@ body:not(.player-int) .storecalc-section p {
   }
 
   .hero-section,
-  .storecalc-section,
+  .new-section,
   .projects-section,
   .carousel-section,
   .birthday-section,
