@@ -6,7 +6,11 @@ import ejs from "ejs";
 import { readdirSync, mkdirSync, appendFileSync } from "fs";
 import { join, dirname } from "path";
 import { fileURLToPath } from "url";
-import "./app-brewery-server/db.js"; // Database connection (required)
+import "./app-brewery-server/db.js"; // Database connection
+import session from "express-session";
+import authRoutes from "./app-brewery-server/routes/auth.js";
+import { requireLogin } from "./app-brewery-server/routes/auth.js";
+
 // Routers ////////////////////////////////////////////////////////////////////
 import playerIntRoutes from "./app-brewery-server/routes/player-int.js";
 import project25Routes from "./app-brewery-server/routes/project25.js";
@@ -78,11 +82,34 @@ app.use((req, res, next) => {
 // View engine setup
 app.set("view engine", "ejs");
 app.set("views", join(__dirname, "views"));
-
 app.engine("ejs", ejs.__express);  // use the default Express engine
-
 app.locals.basedir = app.get("views");
 
+// Session setup
+app.use(session({
+    name: "sid",
+    secret: process.env.SESSION_SECRET || "devsecret",
+    resave: false,
+    saveUninitialized: false,
+    cookie: {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        maxAge: 1000 * 60 * 60 * 2 // 2 hours
+    }
+}));
+
+app.use("/auth", authRoutes);
+
+//Protect Route
+app.get("/projects", requireLogin, (req, res) => {
+    res.render("projects", { bodyClass: "projects" });
+});
+
+// Make the user ID available in all templates
+app.use((req, res, next) => {
+    res.locals.userId = req.session.userId || null;
+    next();
+});
 
 // Mount routers /////////////////////////////////////////////////////
 const APP_ROUTES = {

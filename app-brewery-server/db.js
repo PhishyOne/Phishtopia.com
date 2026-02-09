@@ -4,22 +4,16 @@ dotenv.config();
 
 const { DB_USER, DB_PASSWORD, DB_HOST, DB_NAME, DB_PORT } = process.env;
 
-const db = new pg.Client({
+const pool = new pg.Pool({
     user: DB_USER,
     password: DB_PASSWORD,
     host: DB_HOST,
     port: DB_PORT || 5432,
     database: DB_NAME,
-    ssl: {
-        rejectUnauthorized: false // required for some hosted Postgres like RDS
-    }
+    ssl: { rejectUnauthorized: false }
 });
 
-try {
-    await db.connect();
-    console.log("Connected to Postgres successfully!");
-} catch (err) {
-    console.error("Failed to connect to Postgres:", err);
-}
+pool.on("connect", () => console.log("Connected to Postgres successfully!"));
+pool.on("error", (err) => console.error("Postgres pool error:", err));
 
-export default db;
+export default pool;

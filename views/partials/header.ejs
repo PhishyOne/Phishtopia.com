@@ -11,7 +11,7 @@
     <meta name="author" content="PhishyOne">
     <meta name="theme-color" content="#05899E">
     <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#000000">
-    
+
     <!-- Open Graph -->
     <meta property="og:title" content="Phishtopia">
     <meta property="og:description" content="Home of the Improbable.">
@@ -19,7 +19,7 @@
     <meta property="og:url" content="https://phishtopia.com">
     <meta property="og:type" content="website">
     <meta property="og:site_name" content="Phishtopia">
-    
+
     <!-- Twitter -->
     <meta name="twitter:card" content="summary_large_image">
     <meta name="twitter:title" content="Phishtopia">
@@ -27,13 +27,13 @@
     <meta name="twitter:image" content="https://phishtopia.com/images/phishLogo.png">
     <meta name="twitter:site" content="@PhishyOne">
     <meta name="twitter:creator" content="@PhishyOne">
-    
+
     <!-- Canonical -->
     <link rel="canonical" href="https://phishtopia.com">
     <meta name="robots" content="index, follow">
     <link rel="alternate" hreflang="en" href="https://phishtopia.com/">
 
-    
+
     <!-- Icons -->
     <link rel="apple-touch-icon" sizes="180x180" href="https://phishtopia.com/images/phishLogo.png">
     <link rel="icon" href="https://phishtopia.com/images/phishLogo.png" type="image/png">
@@ -112,6 +112,21 @@
                         <a class="nav-link <%= bodyClass === 'player-int' ? 'active' : '' %>" href="/player-int">Echoes
                             PlayInt</a>
                     </li>
+                    <% if (!userId) { %>
+                        <!-- Not logged in -->
+                        <li class="nav-item"><a class="nav-link" href="/auth/login">Login</a></li>
+                        <li class="nav-item"><a class="nav-link" href="/auth/register">Register</a></li>
+                        <% } else { %>
+                            <!-- Logged in -->
+                            <li class="nav-item">
+                                <form action="/auth/logout" method="POST" class="d-inline">
+                                    <button type="submit" class="btn btn-link nav-link">Logout</button>
+                                </form>
+                            </li>
+                            <% } %>
+                </ul>
+
+                    
                 </ul>
             </div>
         </div>
