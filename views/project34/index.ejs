@@ -8,7 +8,7 @@
 
     <!-- Search/Sort Bar -->
     <section class="search-sort-bar">
-      <form class="search-form">
+      <form class="search-form" onsubmit="return false;">
         <div class="search-wrapper">
           <input type="text" placeholder="Search movies..." class="search-input">
           <button type="button" class="clear-input">×</button>
@@ -16,8 +16,8 @@
         </div>
       </form>
       <div class="sort-options">
-        <button class="sort-button">Sort by Title</button>
-        <button class="sort-button">Sort by Genre</button>
+        <button type="button" class="sort-button">Sort by Title</button>
+        <button type="button" class="sort-button">Sort by Genre</button>
       </div>
     </section>
 
@@ -43,7 +43,7 @@
         <div class="Cast">
           <h3 id="temp-cast">Stars: N/A</h3>
         </div>
-        <textarea id="temp-comment" aria-label="Movie comment" placeholder="Add your comment..."></textarea>
+        <textarea id="temp-comment" class="user-comment" aria-label="Movie comment" placeholder="Add your comment..."></textarea>
         <div class="comment-buttons">
           <button id="submit-comment">Submit</button>
           <button id="cancel-comment">Cancel</button>
