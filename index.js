@@ -54,8 +54,7 @@ app.use((req, res, next) => {
 // Serve static folders
 app.use(express.static(join(__dirname, "public"))); // Main public folder
 app.use("/static", express.static(join(__dirname, "views/app-brewery-static"))); // Old static projects
-app.use("/projects", express.static(join(__dirname, "public/projects")));
-
+app.use("/projects/assets", express.static(join(__dirname, "public/projects")));
 
 // Auto-serve project public folders
 const projectsDir = join(__dirname, "app-brewery-server/public");
@@ -98,17 +97,17 @@ app.use(session({
     }
 }));
 
+// Make the user ID available in all templates
+app.use((req, res, next) => {
+    res.locals.user = req.session?.user || null;
+    next();
+});
+
 app.use("/auth", authRoutes);
 
 //Protect Route
 app.get("/projects", requireLogin, (req, res) => {
     res.render("projects", { bodyClass: "projects" });
-});
-
-// Make the user ID available in all templates
-app.use((req, res, next) => {
-    res.locals.userId = req.session.userId || null;
-    next();
 });
 
 // Mount routers /////////////////////////////////////////////////////

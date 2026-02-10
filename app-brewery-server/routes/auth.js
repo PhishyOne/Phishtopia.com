@@ -5,6 +5,31 @@ import pool from "../db.js";
 const router = express.Router();
 const SALT_ROUNDS = 10;
 
+// Routes for rendering pages
+router.get("/register", (req, res) => {
+    res.render("register", {
+        title: "Register",
+        bodyClass: "register",
+        extraStyles: [],
+        extraScripts: [],
+        error: null,
+        username: "",
+        password: ""
+    });
+});
+
+router.get("/login", (req, res) => {
+    res.render("login", {
+        title: "Login",
+        bodyClass: "auth",
+        extraStyles: [],
+        extraScripts: [],
+        error: null,
+        username: "",
+        password: ""
+    });
+});
+
 // =====================
 // Register a new user
 // =====================

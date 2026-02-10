@@ -1,5 +1,6 @@
 /* =========================================
    Phishtopia Styles — Cleaned & Organized
+   Bootstrap removed
    ========================================= */
 
 /* ---------- Colors ---------- */
@@ -71,34 +72,34 @@ body:not(.player-int) {
 }
 
 body:not(.player-int) h1,
-body:not(.player-int) h2,
-body:not(.player-int) h3,
-body:not(.player-int) h4,
-body:not(.player-int) h5,
-body:not(.player-int) .pompiere-regular {
+h2,
+h3,
+h4,
+h5,
+.pompiere-regular {
   font-family: "Pompiere", sans-serif;
   font-weight: 400;
 }
 
-body:not(.player-int) h1 {
+h1 {
   font-size: 5rem;
 }
 
-body:not(.player-int) h2 {
+h2 {
   font-size: 3rem;
 }
 
-body:not(.player-int) h3,
-body:not(.player-int) h4 {
+h3,
+h4 {
   font-size: 2.5rem;
 }
 
-body:not(.player-int) h5 {
+h5 {
   font-size: 2.25rem;
   color: var(--dark-text);
 }
 
-body:not(.player-int) p {
+p {
   font-size: 1.5rem;
   color: var(--dark-text);
 }
@@ -113,7 +114,6 @@ a {
   text-decoration-skip-ink: none;
 }
 
-/* Remove possible underline artifacts */
 a::before,
 a::after {
   background-image: none !important;
@@ -121,7 +121,6 @@ a::after {
   border-bottom: none !important;
 }
 
-/* Link states */
 a:not(.btn):visited {
   color: var(--light-text);
 }
@@ -134,36 +133,9 @@ a:not(.btn):active {
   color: var(--light-section-bg);
 }
 
-/* Section-specific link colors */
-.just-in-section a,
-.projects-list-section a,
-.navbar a {
-  color: var(--dark-text) !important;
-  text-decoration-color: currentColor !important;
-}
-
-.just-in-section a:visited,
-.projects-list-section a:visited,
-.navbar a:visited {
-  color: var(--light-text) !important;
-}
-
-.just-in-section a:hover,
-.projects-list-section a:hover,
-.navbar a:hover {
-  color: var(--dark-section-bg) !important;
-}
-
-.just-in-section a:active,
-.projects-list-section a:active,
-.navbar a:active {
-  color: #2ac3c9ff !important;
-}
-
-/* Keep h2 link colors consistent */
-.projects-list-section h2,
-.projects-list-section h2 a {
-  color: inherit;
+a.login-register {
+  color: var(--dark-section-bg);
+  text-shadow: #331b01 1px 1px 4px;
 }
 
 /* ---------- Gradient Text ---------- */
@@ -188,21 +160,117 @@ a:not(.btn):active {
   }
 }
 
-/* ---------- Buttons ---------- */
-.btn {
-  font-size: 1.3rem;
+/* Navbar container */
+.main-nav {
+  display: flex;
+  align-items: center;
+  /* Vertically center logo & links */
+  justify-content: space-between;
+  /* Logo left, links right */
+  padding: 0.75rem 2rem;
+  border-bottom: 3px solid var(--dark-section-bg);
+  background: var(--blue-main-bg);
+  flex-wrap: wrap;
+  /* For smaller screens */
+  gap: 1rem;
 }
 
-.btn-outline-light {
-  border-color: var(--dark-text);
-  background-color: var(--light-text);
+/* Logo */
+.main-nav .logo {
+  width: 50px;
+  height: auto;
+  border-radius: 50%;
+}
+
+/* Nav links container */
+.nav-links {
+  display: flex;
+  gap: 1rem;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  align-items: center;
+  /* Vertically align links with logo */
+}
+
+/* Individual link styling */
+.nav-item {
+  position: relative;
+  /* For dropdown positioning */
+}
+
+.nav-link {
+  color: white;
+  text-decoration: none;
+  padding: 0.5rem 1rem;
+}
+
+.nav-link:hover {
+  text-decoration: underline;
+}
+
+/* Dropdown */
+.dropdown-menu {
+  display: none;
+  position: absolute;
+  top: 100%;
+  /* Right below the parent link */
+  left: 0;
+  background: var(--dark-section-bg);
+  border-radius: 4px;
+  padding: 0.5rem 0;
+  min-width: 180px;
+}
+
+.nav-item.dropdown:hover .dropdown-menu {
+  display: block;
+}
+
+.dropdown-item {
+  color: white;
+  display: block;
+  padding: 0.5rem 1rem;
+  text-decoration: none;
+}
+
+.dropdown-item:hover {
+  background: var(--light-section-bg);
   color: var(--dark-text);
 }
 
-.btn-outline-dark {
-  border-color: var(--dark-text);
-  background-color: var(--dark-section-bg);
-  color: var(--light-text);
+/* Responsive: stack nav items under logo */
+@media (max-width: 768px) {
+  .main-nav {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .nav-links {
+    flex-direction: column;
+    width: 100%;
+  }
+
+  .nav-item.dropdown:hover .dropdown-menu {
+    position: static;
+    /* dropdown flows naturally on mobile */
+  }
+}
+
+/* Buttons */
+.logout-btn,
+.login-register {
+  background: none;
+  border: none;
+  color: white;
+  cursor: pointer;
+  font: inherit;
+  text-decoration: none;
+  padding: 0.5rem 1rem;
+}
+
+.logout-btn:hover,
+.login-register:hover {
+  text-decoration: underline;
 }
 
 /* ---------- Layout ---------- */
@@ -214,15 +282,6 @@ body {
   min-height: 100vh;
 }
 
-.navbar {
-  border-bottom: 3px solid var(--dark-section-bg);
-}
-
-.navbar li {
-  font-size: 1.5rem;
-}
-
-/* Grid Layouts */
 .main-grid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
@@ -236,11 +295,6 @@ body {
   margin-bottom: 20px;
 }
 
-.subtitle {
-  margin-top: 10px;
-}
-
-/* Section containers */
 .new-section,
 .projects-section {
   display: flex;
@@ -258,14 +312,7 @@ body {
   color: var(--dark-section-bg);
 }
 
-/* Last child auto push */
-.projects-section:not(.just-in-section)> :last-child,
-.new-section> :last-child {
-  margin-top: auto;
-}
-
-/* Inner p for storecalc */
-body:not(.player-int) .new-section p {
+.new-section p {
   background-color: var(--dark-section-bg);
   color: var(--dark-text);
 }
@@ -274,10 +321,8 @@ body:not(.player-int) .new-section p {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
   gap: 10px;
-  grid-column: span 2;
 }
 
-/* ---------- Just-In Section ---------- */
 .just-in-section {
   grid-row: 1 / span 2;
   min-height: 100px;
@@ -305,7 +350,6 @@ body:not(.player-int) .new-section p {
   font-size: 1.2em;
 }
 
-/* ---------- Projects List Section ---------- */
 .projects-list-section {
   background-color: var(--light-section-bg);
   color: var(--dark-text);
@@ -323,11 +367,6 @@ body:not(.player-int) .new-section p {
   align-items: center;
   border-top: 3px solid var(--dark-text);
   opacity: 0.75;
-}
-
-#copyright {
-  margin-bottom: 10px;
-  font-size: 1.2rem;
 }
 
 .footer-links {
@@ -357,8 +396,6 @@ body:not(.player-int) .new-section p {
   .hero-section,
   .new-section,
   .projects-section,
-  .carousel-section,
-  .birthday-section,
   .projects-list-section {
     grid-column: span 1;
   }
