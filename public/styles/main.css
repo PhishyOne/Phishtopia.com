@@ -301,6 +301,72 @@ a.login-register {
   font-weight: 600;
 }
 
+.btn {
+  width: 8em;
+  position: relative;
+  height: 2.5em;
+  border: 3px ridge #149CEA;
+  outline: none;
+  background-color: transparent;
+  color: #0c6d7c;
+  text-shadow: #331b01 1px 1px 4px;
+  transition: 1s;
+  border-radius: 0.3em;
+  font-size: 1.5rem;
+  font-weight: bold;
+  cursor: pointer;
+  display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+}
+
+.projects-section .btn {
+  border: var(--dark-section-bg) ridge 3px;
+  color: var(--dark-section-bg);
+}
+
+.btn::after {
+  content: "";
+  position: absolute;
+  top: -10px;
+  left: 3%;
+  width: 95%;
+  height: 40%;
+  background-color: var(--light-section-bg);
+  transition: 0.5s;
+  transform-origin: center;
+}
+
+.new-section .btn::after, .new-section .btn::before {
+  background-color: var(--dark-section-bg);
+}
+
+.btn::before {
+  content: "";
+  transform-origin: center;
+  position: absolute;
+  top: 80%;
+  left: 3%;
+  width: 95%;
+  height: 40%;
+  background-color: var(--light-section-bg);
+  transition: 0.5s;
+}
+
+.btn:hover::before,
+.btn:hover::after {
+  transform: scale(0)
+}
+
+.btn:hover {
+  box-shadow: inset 0px 0px 25px #1479EA;
+}
+
+.projects-section .btn:hover {
+  box-shadow: inset 0px 0px 25px var(--dark-section-bg);
+}
+
 /* ---------- Layout ---------- */
 body {
   margin: 0;
@@ -320,7 +386,12 @@ body {
 
 .hero-section {
   grid-column: span 2;
-  margin-bottom: 20px;
+  margin-bottom: 10px;
+}
+
+.hero-section h1 {
+  margin-top: 5px;
+  margin-bottom: 15px;
 }
 
 .new-section,
@@ -328,11 +399,16 @@ body {
   display: flex;
   flex-direction: column;
   justify-content: space-between;
-  min-height: 360px;
+  min-height: 240px;
   border-radius: 10px;
   padding: 20px 20px 2rem;
   opacity: 0.75;
   text-shadow: 1px 1px 4px rgba(0, 0, 0, 0.6);
+}
+
+.new-section {
+  background-color: var(--dark-section-bg);
+  color: var(--light-section-bg);
 }
 
 .projects-section {
@@ -340,9 +416,14 @@ body {
   color: var(--dark-section-bg);
 }
 
-.new-section p {
-  background-color: var(--dark-section-bg);
-  color: var(--dark-text);
+.projects-section h2, .new-section h2 {
+  margin-top: 5px;
+  margin-bottom: 15px;
+}
+
+.projects-section p, .new-section p {
+  margin-top: 0px;
+  margin-bottom: 10px;
 }
 
 .projects-grid {
