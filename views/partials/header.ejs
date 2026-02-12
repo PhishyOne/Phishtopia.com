@@ -83,18 +83,24 @@
     <canvas id="bubble-canvas"></canvas>
 
     <nav class="main-nav">
-        <a href="https://phishtopia.com">
-            <img src="/images/phishLogo.png" alt="Phishtopia" class="logo">
-        </a>
+        <div class="nav-left">
+            <a href="https://phishtopia.com">
+                <img src="/images/phishLogo.png" alt="Phishtopia" class="logo">
+            </a>
+    
+            <ul class="nav-links">
+                <li class="nav-item dropdown">
+                    <span class="nav-link">Projects Showcase</span>
+                    <ul class="dropdown-menu">
+                        <li><a href="/projects" class="dropdown-item">Projects</a></li>
+                        <li><a href="/player-int" class="dropdown-item">Echoes PlayInt</a></li>
+                        <li><a href="/contact" class="dropdown-item">Got a Question?</a></li>
+                    </ul>
+                </li>
+            </ul>
+        </div>
+    
         <ul class="nav-links">
-            <li class="nav-item dropdown">
-                <span class="nav-link">Projects Showcase</span>
-                <ul class="dropdown-menu">
-                    <li><a href="/projects" class="dropdown-item">Projects</a></li>
-                    <li><a href="/player-int" class="dropdown-item">Echoes PlayInt</a></li>
-                    <li><a href="/contact" class="dropdown-item">Got a Question?</a></li>
-                </ul>
-            </li>
             <% if (user) { %>
                 <li class="nav-item"><span class="nav-link">Hi, <%= user.username %></span></li>
                 <li class="nav-item"><a class="nav-link" href="/dashboard">Dashboard</a></li>
@@ -109,4 +115,5 @@
                     <% } %>
         </ul>
     </nav>
+      
     

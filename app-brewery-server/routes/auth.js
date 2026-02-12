@@ -34,49 +34,88 @@ router.get("/login", (req, res) => {
 // Register a new user
 // =====================
 router.post("/register", async (req, res) => {
-    const { username, password } = req.body;
-    if (!username || !password) return res.status(400).json({ success: false, error: "Missing fields" });
+    const { username, password, email } = req.body;
+
+    if (!username || !password || !email) {
+        return res.render("register", {
+            title: "Register",
+            bodyClass: "register",
+            error: "All fields are required",
+            username,
+            password: ""
+        });
+    }
 
     try {
         const hashed = await bcrypt.hash(password, SALT_ROUNDS);
 
         const result = await pool.query(
-            "INSERT INTO users (username, password_hash) VALUES ($1, $2) RETURNING id, username",
-            [username, hashed]
+            "INSERT INTO users (username, password_hash, email) VALUES ($1, $2, $3) RETURNING id, username",
+            [username, hashed, email]
         );
 
-        res.json({ success: true, user: result.rows[0] });
+        req.session.user = result.rows[0];
+
+        res.redirect("/dashboard"); 
+
     } catch (err) {
         if (err.code === "23505") {
-            // unique violation
-            return res.status(409).json({ success: false, error: "Username already exists" });
+            return res.render("register", {
+                title: "Register",
+                bodyClass: "register",
+                error: "Username already exists",
+                username,
+                password: ""
+            });
         }
+
         console.error(err);
-        res.status(500).json({ success: false, error: "Server error" });
+        res.status(500).send("Server error");
     }
 });
+
 
 // =====================
 // Login
 // =====================
 router.post("/login", async (req, res) => {
     const { username, password } = req.body;
-    if (!username || !password) return res.status(400).json({ success: false, error: "Missing fields" });
 
     try {
-        const result = await pool.query("SELECT * FROM users WHERE username = $1", [username]);
+        const result = await pool.query(
+            "SELECT * FROM users WHERE username = $1",
+            [username]
+        );
+
         const user = result.rows[0];
-        if (!user) return res.status(401).json({ success: false, error: "Invalid credentials" });
+        if (!user) {
+            return res.render("login", {
+                title: "Login",
+                bodyClass: "auth",
+                error: "Invalid credentials",
+                username,
+                password: ""
+            });
+        }
 
         const valid = await bcrypt.compare(password, user.password_hash);
-        if (!valid) return res.status(401).json({ success: false, error: "Invalid credentials" });
+        if (!valid) {
+            return res.render("login", {
+                title: "Login",
+                bodyClass: "auth",
+                error: "Invalid credentials",
+                username,
+                password: ""
+            });
+        }
 
-        // Save user in session
         req.session.user = { id: user.id, username: user.username };
-        res.json({ success: true, user: { id: user.id, username: user.username } });
+
+        res.redirect("/dashboard"); 
+
     } catch (err) {
         console.error(err);
-        res.status(500).json({ success: false, error: "Server error" });
+        res.status(500).send("Server error");
     }
 });
 
@@ -85,11 +124,13 @@ router.post("/login", async (req, res) => {
 // =====================
 router.post("/logout", (req, res) => {
     req.session.destroy(err => {
-        if (err) return res.status(500).json({ success: false, error: "Logout failed" });
-        res.clearCookie("sid"); // clear cookie set by express-session
-        res.json({ success: true });
+        if (err) return res.status(500).send("Logout failed");
+
+        res.clearCookie("sid");
+        res.redirect("/"); 
     });
 });
+
 
 //Helper Function to protect routes
 export function requireLogin(req, res, next) {

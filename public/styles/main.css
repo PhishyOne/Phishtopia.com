@@ -1,7 +1,6 @@
-/* =========================================
-   Phishtopia Styles — Cleaned & Organized
-   Bootstrap removed
-   ========================================= */
+/* ==================
+   Phishtopia Styles
+   ================== */
 
 /* ---------- Colors ---------- */
 :root {
@@ -126,7 +125,7 @@ a:not(.btn):visited {
 }
 
 a:not(.btn):hover {
-  color: var(--dark-section-bg);
+  color: #9b550a
 }
 
 a:not(.btn):active {
@@ -196,46 +195,71 @@ a.login-register {
 /* Individual link styling */
 .nav-item {
   position: relative;
+  list-style: none;
   /* For dropdown positioning */
 }
 
+.nav-left {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+  /* space between logo and dropdown */
+}
+
 .nav-link {
-  color: white;
+  color: #581206;
+  text-shadow: #9b550a 1px 1px 4px;
   text-decoration: none;
   padding: 0.5rem 1rem;
+  font-size: 1.4rem;
+  font-weight: 600;
 }
 
 .nav-link:hover {
   text-decoration: underline;
+  color: var(--light-text);
 }
 
-/* Dropdown */
+.nav-item.dropdown {
+  position: relative;
+}
+
 .dropdown-menu {
   display: none;
   position: absolute;
   top: 100%;
-  /* Right below the parent link */
   left: 0;
+  width: 100%;
+  min-width: 100%;
   background: var(--dark-section-bg);
   border-radius: 4px;
-  padding: 0.5rem 0;
-  min-width: 180px;
+  padding: 0;
+  list-style: none;
 }
 
 .nav-item.dropdown:hover .dropdown-menu {
   display: block;
 }
 
+.nav-item.dropdown:hover {
+  background: var(--light-section-bg);
+  color: var(--dark-text);
+  cursor: pointer;
+}
+
 .dropdown-item {
-  color: white;
+  color: var(--dark-text);
   display: block;
   padding: 0.5rem 1rem;
   text-decoration: none;
+  font-size: 1.4rem;
+  font-weight: 600;
 }
 
 .dropdown-item:hover {
   background: var(--light-section-bg);
   color: var(--dark-text);
+  cursor: pointer;
 }
 
 /* Responsive: stack nav items under logo */
@@ -266,11 +290,15 @@ a.login-register {
   font: inherit;
   text-decoration: none;
   padding: 0.5rem 1rem;
+  font-size: 1.4rem;
+  font-weight: 600;
 }
 
 .logout-btn:hover,
 .login-register:hover {
   text-decoration: underline;
+  font-size: 1.4rem;
+  font-weight: 600;
 }
 
 /* ---------- Layout ---------- */

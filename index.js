@@ -138,7 +138,7 @@ viewFiles.forEach(file => {
         if (name === "project33-2") styles.push(`/${name}/styles/new.css`);
         const scripts = [];
         if (CANVAS_PAGES.includes(name)) scripts.push("/js/canvas.js");
-        if (name === "index") scripts.push("/index.js");
+        //if (name === "index") scripts.push("/index.js");
         res.render(name, {
             bodyClass: name,
             extraStyles: styles,
