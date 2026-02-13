@@ -55,8 +55,10 @@ router.post("/register", async (req, res) => {
         );
 
         req.session.user = result.rows[0];
-
-        res.redirect("/dashboard"); 
+        const redirectTo = req.session.returnTo || "/";
+        delete req.session.returnTo;
+        res.redirect(redirectTo);
+        
 
     } catch (err) {
         if (err.code === "23505") {
@@ -108,10 +110,10 @@ router.post("/login", async (req, res) => {
                 password: ""
             });
         }
-
         req.session.user = { id: user.id, username: user.username };
-
-        res.redirect("/dashboard"); 
+        const redirectTo = req.session.returnTo || "/";
+        delete req.session.returnTo;
+        res.redirect(redirectTo);
 
     } catch (err) {
         console.error(err);
@@ -135,7 +137,9 @@ router.post("/logout", (req, res) => {
 //Helper Function to protect routes
 export function requireLogin(req, res, next) {
     if (req.session?.user) return next();
-    return res.status(401).send("You must be logged in to access this page");
+    req.session.returnTo = req.originalUrl; // Save the page they were trying to visit
+    return res.redirect("/auth/login");
 }
+
 
 export default router;

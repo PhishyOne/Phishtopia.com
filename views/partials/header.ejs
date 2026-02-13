@@ -102,11 +102,10 @@
     
         <ul class="nav-links">
             <% if (user) { %>
-                <li class="nav-item"><span class="nav-link">Hi, <%= user.username %></span></li>
-                <li class="nav-item"><a class="nav-link" href="/dashboard">Dashboard</a></li>
+                <li class="nav-item"><span id="username">Hi, <%= user.username %></span></li>
                 <li class="nav-item">
                     <form action="/auth/logout" method="POST">
-                        <button type="submit" class="logout-btn">Logout</button>
+                        <button type="submit" class="btn logout-btn">Logout</button>
                     </form>
                 </li>
                 <% } else { %>

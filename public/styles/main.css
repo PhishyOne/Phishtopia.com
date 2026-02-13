@@ -213,11 +213,13 @@ a.login-register {
   padding: 0.5rem 1rem;
   font-size: 1.4rem;
   font-weight: 600;
+  transition: all 0.3s ease;
 }
 
 .nav-link:hover {
   text-decoration: underline;
   color: var(--light-text);
+  font-size: 2rem;
 }
 
 .nav-item.dropdown {
@@ -280,27 +282,35 @@ a.login-register {
   }
 }
 
+.container {
+  max-width: 800px;
+  padding: 20px;
+}
+
+.textbox {
+  width: 100%;
+  padding: 10px;
+  margin-bottom: 15px;
+  border: 2px solid var(--dark-section-bg);
+  border-radius: 5px;
+  font-size: 1.2rem;
+}
+
+.form-label {
+  display: block;
+  margin-bottom: 5px;
+  font-size: 1.2rem;
+  color: var(--dark-text);
+}
+
+#username {
+  font-size: 1.3rem;
+  color: var(--dark-text);
+  text-shadow: #331b01 1px 1px 4px;
+  cursor: default;
+}
+
 /* Buttons */
-.logout-btn,
-.login-register {
-  background: none;
-  border: none;
-  color: white;
-  cursor: pointer;
-  font: inherit;
-  text-decoration: none;
-  padding: 0.5rem 1rem;
-  font-size: 1.4rem;
-  font-weight: 600;
-}
-
-.logout-btn:hover,
-.login-register:hover {
-  text-decoration: underline;
-  font-size: 1.4rem;
-  font-weight: 600;
-}
-
 .btn {
   width: 8em;
   position: relative;
@@ -367,6 +377,52 @@ a.login-register {
   box-shadow: inset 0px 0px 25px var(--dark-section-bg);
 }
 
+#login-btn {
+  border: var(--dark-section-bg) ridge 3px;
+  color: var(--dark-section-bg);
+  margin-top: 20px;
+}
+
+#login-btn::after, #login-btn::before {
+  background-color: rgba(121, 208, 219, 1);
+}
+
+#login-btn:hover {
+  box-shadow: inset 0px 0px 25px var(--dark-section-bg);
+}
+
+.logout-btn,
+.login-register {
+  background: none;
+  border: none;
+  color: var(--dark-section-bg);
+  cursor: pointer;
+  font: inherit;
+  text-decoration: none;
+  padding: 0.5rem 1rem;
+  font-size: 1.2rem;
+  font-weight: 600;
+}
+
+.logout-btn:hover,
+.login-register:hover {
+  text-decoration: underline;
+  font-size: 1.4rem;
+  font-weight: 600;
+}
+
+.logout-btn {
+  border: #1479EA ridge 3px;
+  width: 7rem;
+  height: 2em;
+  box-shadow: inset 0px 0px 25px var(--light-section-bg);
+}
+
+.logout-btn::before,
+.logout-btn::after {
+  background-color: var(--blue-main-bg);
+}
+
 /* ---------- Layout ---------- */
 body {
   margin: 0;
@@ -409,6 +465,10 @@ body {
 .new-section {
   background-color: var(--dark-section-bg);
   color: var(--light-section-bg);
+}
+
+.new-section h2 {
+  color: #0c6d7c;
 }
 
 .projects-section {
