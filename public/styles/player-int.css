@@ -48,8 +48,16 @@ body.player-int .container {
     background: transparent;
 }
 
+body.player-int .container p {
+    font-size: 18px;
+    line-height: 1.6;
+    color: #ddd;
+    
+}
+
 /* ===== Titles ===== */
 body.player-int h2 {
+    font-family: 'Shentox', Arial, sans-serif;
     font-size: 28px;
     margin-bottom: 20px;
     color: #fff;
@@ -57,6 +65,7 @@ body.player-int h2 {
 }
 
 body.player-int h3 {
+    font-family: 'Shentox', Arial, sans-serif;
     font-size: 20px;
     margin: 20px 0 10px 0;
     color: #fff;
@@ -283,6 +292,7 @@ body.player-int .logo-bg {
 }
 
 body.player-int .join-container {
+    align-items: center;
     display: flex;
     gap: 15px;
 }
