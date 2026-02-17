@@ -221,13 +221,18 @@ a.login-register {
   padding: 0.5rem 1rem;
   font-size: 1.4rem;
   font-weight: 600;
-  transition: all 0.3s ease;
+  transition: transform 0.3s ease, color 0.3s ease;
 }
 
-.nav-link:hover {
-  text-decoration: underline;
-  color: var(--light-text);
-  font-size: 2rem;
+.dropdown-arrow {
+  display: inline-block;
+  margin-left: 0.4rem;
+  transition: transform 0.3s ease;
+  transform-origin: center;
+}
+
+.nav-item.dropdown.active .dropdown-arrow {
+  transform: rotate(180deg);
 }
 
 .nav-item.dropdown {
@@ -235,26 +240,49 @@ a.login-register {
 }
 
 .dropdown-menu {
-  display: none;
   position: absolute;
   top: 100%;
   left: 0;
   width: 100%;
   min-width: 100%;
-  background: var(--dark-section-bg);
-  border-radius: 4px;
-  padding: 0;
   list-style: none;
+  margin: 0;
+  padding: 0;
+  background: rgba(255, 183, 106, 0.6);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 6px;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+  opacity: 0;
+  transform: translateY(-10px) scale(0.95);
+  transform-origin: top;
+  visibility: hidden;
+  pointer-events: none;
+  transition: opacity 0.3s ease, transform 0.3s ease;
 }
 
-.nav-item.dropdown:hover .dropdown-menu {
-  display: block;
+.nav-item.dropdown.active .dropdown-menu {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+  visibility: visible;
+  pointer-events: auto;
 }
 
 .nav-item.dropdown:hover {
-  background: var(--light-section-bg);
   color: var(--dark-text);
   cursor: pointer;
+}
+
+.nav-item.dropdown.active .dropdown-item {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.nav-item.dropdown:hover .nav-link,
+.nav-item.dropdown.active .nav-link {
+  transform: scale(1.2);
+  color: var(--light-text);
 }
 
 .dropdown-item {
@@ -264,29 +292,72 @@ a.login-register {
   text-decoration: none;
   font-size: 1.4rem;
   font-weight: 600;
+  opacity: 0;
+  transform: translateY(-5px);
+  transition: opacity 0.2s ease, transform 0.2s ease;
 }
 
 .dropdown-item:hover {
   background: var(--light-section-bg);
   color: var(--dark-text);
   cursor: pointer;
+  border-radius: 5px;
 }
 
-/* Responsive: stack nav items under logo */
+/* Responsive */
 @media (max-width: 768px) {
+
+  /* Stack everything neatly */
   .main-nav {
     flex-direction: column;
-    align-items: flex-start;
+    align-items: stretch;
+    padding: 1rem;
   }
 
-  .nav-links {
-    flex-direction: column;
+  /* Top row: logo left, optional hamburger/menu toggle right */
+  .nav-left {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
     width: 100%;
   }
 
-  .nav-item.dropdown:hover .dropdown-menu {
-    position: static;
-    /* dropdown flows naturally on mobile */
+  /* Dropdown links stack vertically */
+  .nav-left .nav-links {
+    flex-direction: column;
+    width: 100%;
+    margin-top: 0.5rem;
+    gap: 0;
+  }
+
+  .nav-item.dropdown {
+    width: 100%;
+  }
+
+  .nav-item.dropdown .nav-link {
+    display: block;
+    width: 100%;
+    padding: 0.75rem 0;
+  }
+
+  /* Right-side login/register */
+  .nav-right {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    margin-top: 1rem;
+  }
+
+  .nav-right .nav-links {
+    flex-direction: column;
+    gap: 0.25rem;
+    width: 100%;
+  }
+
+  .nav-right a,
+  .nav-right button {
+    width: 100%;
+    text-align: left;
   }
 }
 
@@ -347,9 +418,9 @@ a.login-register {
   font-weight: bold;
   cursor: pointer;
   display: flex;
-    align-items: center;
-    justify-content: center;
-    text-align: center;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
 }
 
 .projects-section .btn {
@@ -369,7 +440,8 @@ a.login-register {
   transform-origin: center;
 }
 
-.new-section .btn::after, .new-section .btn::before {
+.new-section .btn::after,
+.new-section .btn::before {
   background-color: var(--dark-section-bg);
 }
 
@@ -404,7 +476,8 @@ a.login-register {
   margin-top: 20px;
 }
 
-#login-btn::after, #login-btn::before {
+#login-btn::after,
+#login-btn::before {
   background-color: rgba(121, 208, 219, 1);
 }
 
@@ -499,12 +572,14 @@ body {
   color: var(--dark-section-bg);
 }
 
-.projects-section h2, .new-section h2 {
+.projects-section h2,
+.new-section h2 {
   margin-top: 5px;
   margin-bottom: 15px;
 }
 
-.projects-section p, .new-section p {
+.projects-section p,
+.new-section p {
   margin-top: 0px;
   margin-bottom: 10px;
 }

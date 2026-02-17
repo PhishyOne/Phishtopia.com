@@ -90,29 +90,35 @@
     
             <ul class="nav-links">
                 <li class="nav-item dropdown">
-                    <span class="nav-link">Projects Showcase</span>
+                    <div class="dropdown-toggle">
+                        <span class="nav-link">Projects Showcase</span>
+                        <span class="dropdown-arrow">▾</span>
+                    </div>
                     <ul class="dropdown-menu">
                         <li><a href="/projects" class="dropdown-item">Projects</a></li>
                         <li><a href="/player-int" class="dropdown-item">Echoes PlayInt</a></li>
                         <li><a href="/contact" class="dropdown-item">Got a Question?</a></li>
                     </ul>
                 </li>
+                  
             </ul>
         </div>
     
-        <ul class="nav-links">
-            <% if (user) { %>
-                <li class="nav-item"><span id="username">Hi, <%= user.username %></span></li>
-                <li class="nav-item">
-                    <form action="/auth/logout" method="POST">
-                        <button type="submit" class="btn logout-btn">Logout</button>
-                    </form>
-                </li>
-                <% } else { %>
-                    <li class="nav-item"><a class="login-register" href="/auth/login">Login</a></li>
-                    <li class="nav-item"><a class="login-register" href="/auth/register">Register</a></li>
-                    <% } %>
-        </ul>
+        <!-- Right-side nav -->
+        <div class="nav-right">
+            <ul class="nav-links">
+                <% if (user) { %>
+                    <li class="nav-item"><span id="username">Hi, <%= user.username %></span></li>
+                    <li class="nav-item">
+                        <form action="/auth/logout" method="POST">
+                            <button type="submit" class="btn logout-btn">Logout</button>
+                        </form>
+                    </li>
+                    <% } else { %>
+                        <li class="nav-item"><a class="login-register" href="/auth/login">Login</a></li>
+                        <li class="nav-item"><a class="login-register" href="/auth/register">Register</a></li>
+                        <% } %>
+            </ul>
+        </div>
     </nav>
       
-    
