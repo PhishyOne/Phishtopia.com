@@ -305,32 +305,32 @@ a.login-register {
 }
 
 /* Responsive */
-@media (max-width: 768px) {
+/* @media (max-width: 768px) { */
 
   /* Stack everything neatly */
-  .main-nav {
+  /* .main-nav {
     flex-direction: column;
     align-items: stretch;
     padding: 1rem;
-  }
+  } */
 
   /* Top row: logo left, optional hamburger/menu toggle right */
-  .nav-left {
+  /* .nav-left {
     display: flex;
     justify-content: space-between;
     align-items: center;
     width: 100%;
-  }
+  } */
 
   /* Dropdown links stack vertically */
-  .nav-left .nav-links {
+  /* .nav-left .nav-links {
     flex-direction: column;
     width: 100%;
     margin-top: 0.5rem;
     gap: 0;
-  }
+  } */
 
-  .nav-item.dropdown {
+  /* .nav-item.dropdown {
     width: 100%;
   }
 
@@ -338,10 +338,10 @@ a.login-register {
     display: block;
     width: 100%;
     padding: 0.75rem 0;
-  }
+  } */
 
   /* Right-side login/register */
-  .nav-right {
+  /* .nav-right {
     width: 100%;
     display: flex;
     flex-direction: column;
@@ -359,7 +359,7 @@ a.login-register {
     width: 100%;
     text-align: left;
   }
-}
+} */
 
 .container {
   max-width: 800px;
