@@ -304,62 +304,6 @@ a.login-register {
   border-radius: 5px;
 }
 
-/* Responsive */
-/* @media (max-width: 768px) { */
-
-  /* Stack everything neatly */
-  /* .main-nav {
-    flex-direction: column;
-    align-items: stretch;
-    padding: 1rem;
-  } */
-
-  /* Top row: logo left, optional hamburger/menu toggle right */
-  /* .nav-left {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    width: 100%;
-  } */
-
-  /* Dropdown links stack vertically */
-  /* .nav-left .nav-links {
-    flex-direction: column;
-    width: 100%;
-    margin-top: 0.5rem;
-    gap: 0;
-  } */
-
-  /* .nav-item.dropdown {
-    width: 100%;
-  }
-
-  .nav-item.dropdown .nav-link {
-    display: block;
-    width: 100%;
-    padding: 0.75rem 0;
-  } */
-
-  /* Right-side login/register */
-  /* .nav-right {
-    width: 100%;
-    display: flex;
-    flex-direction: column;
-    margin-top: 1rem;
-  }
-
-  .nav-right .nav-links {
-    flex-direction: column;
-    gap: 0.25rem;
-    width: 100%;
-  }
-
-  .nav-right a,
-  .nav-right button {
-    width: 100%;
-    text-align: left;
-  }
-} */
 
 .container {
   max-width: 800px;
@@ -643,6 +587,10 @@ body {
 /* ---------- Responsive ---------- */
 @media (max-width: 768px) {
 
+  .main-grid {
+    flex-grow: 0;
+  }
+
   .main-grid,
   .projects-grid {
     grid-template-columns: 1fr;
@@ -653,5 +601,11 @@ body {
   .projects-section,
   .projects-list-section {
     grid-column: span 1;
+  }
+  .projects-section p, .new-section p {
+    margin-bottom: 20px;
+  }
+  .projects-section .btn, .new-section .btn {
+    margin-top: 10px;
   }
 }
