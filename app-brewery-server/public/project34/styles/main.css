@@ -112,10 +112,14 @@
     gap: 0.5rem;
 }
 
+.Details p, .Details h2, .Details h3 {
+    margin: 0;
+}
+
+
 /* Title + stars */
 .Title h2 {
     margin: 0;
-    font-size: 1.5rem;
     font-weight: 700;
 }
 
@@ -179,13 +183,24 @@
 }
 
 .comment {
-    margin-top: 0.5rem;
-    font-size: 0.95rem;
-    color: #333;
+    background-color: #0374a850;
+    border-radius: 5px;
+    padding: 0.5rem;
+    box-shadow: #ccc 4px 4px 8px;
+    color: #011946;
 }
 
 .all-comments p {
     margin: 0.25rem 0;
+    padding: 0.25rem;
+    font-size: 0.95rem;
+}
+
+.CommentsSection {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    align-self: stretch;
 }
 
 /* -------------------------

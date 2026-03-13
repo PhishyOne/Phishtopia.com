@@ -158,12 +158,12 @@ router.get("/api/list", async (req, res) => {
         const page = Math.max(parseInt(req.query.page) || 1, 1);
         const offset = (page - 1) * PAGE_SIZE;
 
-        // 1️⃣ Count DISTINCT movies
+        // Count DISTINCT movies
         const countResult = await db.query(`SELECT COUNT(*) AS total FROM fullstack.youlist_movies`);
         const totalItems = parseInt(countResult.rows[0].total, 10);
         const totalPages = Math.ceil(totalItems / PAGE_SIZE);
 
-        // 2️⃣ Get movie IDs for this page
+        // Get movie IDs for this page
         const movieRows = await db.query(
             `
             SELECT movie_id, type
@@ -178,19 +178,21 @@ router.get("/api/list", async (req, res) => {
             [PAGE_SIZE, offset]
         );
 
-        // 3️⃣ For each movie, fetch comments + TMDB once
+        // For each movie, fetch comments + TMDB once
         const results = await Promise.all(
             movieRows.rows.map(async ({ movie_id, type }) => {
                 // fetch comments
                 const commentResult = await db.query(
                     `
-                    SELECT id, comment
-                    FROM fullstack.youlist_movies
-                    WHERE movie_id = $1 AND type = $2
-                    ORDER BY id DESC
+                    SELECT m.id, m.comment, u.username
+                    FROM fullstack.youlist_movies m
+                    JOIN fullstack.youlist_users u
+                    ON m.user_id = u.id
+                    WHERE m.movie_id = $1 AND m.type = $2
+                    ORDER BY m.id DESC
                     `,
                     [movie_id, type]
-                );
+                    );
 
                 // fetch TMDB (cached)
                 const tmdb = await fetchTMDBItem(type, movie_id);

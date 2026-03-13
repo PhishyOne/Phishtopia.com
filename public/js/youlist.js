@@ -168,23 +168,25 @@ async function loadPage(page = 1) {
             card.dataset.movieId = movie.id;
             card.dataset.type = movie.type;
             card.dataset.comments = JSON.stringify(movie.comments || []);
-
             const latestComment = movie.comments?.[0]?.comment || "No comments yet";
-
             card.innerHTML = `
-                <div class="movie-poster">
-                    <img src="${movie.poster}" alt="${movie.title}">
-                </div>
-                <div class="Details">
-                    <div class="Title"><h2>${movie.title} (${movie.year || "N/A"})</h2></div>
-                    <div class="Director"><h3>Director: ${movie.director}</h3></div>
-                    <div class="Genre"><h3>Genre: ${movie.genre}</h3></div>
-                    <div class="Cast"><h3>Stars: ${movie.cast}</h3></div>
-                    <p class="comment">💬 ${latestComment}</p>
-                    <button class="expand-comments">Show all</button>
-                    <div class="all-comments" style="display:none;"></div>
-                </div>
-            `;
+  <div class="movie-poster">
+      <img src="${movie.poster}" alt="${movie.title}">
+  </div>
+  <div class="Details">
+      <div class="Title"><h2>${movie.title} (${movie.year || "N/A"})</h2></div>
+      <div class="Director"><h3>Director: ${movie.director}</h3></div>
+      <div class="Genre"><h3>Genre: ${movie.genre}</h3></div>
+      <div class="Cast"><h3>Stars: ${movie.cast}</h3></div>
+
+      <!-- Wrap comment in a container -->
+      <div class="CommentsSection">
+      <p class="comment">${movie.comments?.[0]?.username || "Anonymous"}: ${latestComment}</p>
+          <button class="expand-comments">Show all</button>
+          <div class="all-comments" style="display:none;"></div>
+      </div>
+  </div>
+`;
             container.appendChild(card);
 
             // Expand comments
@@ -194,7 +196,9 @@ async function loadPage(page = 1) {
                 const allComments = JSON.parse(card.dataset.comments || "[]");
                 if (allCommentsDiv.style.display === "none") {
                     card.querySelector("p.comment").style.display = "none"; // hide latest comment when showing all
-                    allCommentsDiv.innerHTML = allComments.map(c => `<p>💬 ${c.comment}</p>`).join("");
+                    allCommentsDiv.innerHTML = allComments
+                        .map(c => `<p>${c.username}: ${c.comment}</p>`)
+                        .join("");
                     allCommentsDiv.style.display = "block";
                     expandBtn.textContent = "Hide all";
                 } else {
@@ -258,7 +262,7 @@ document.getElementById("submit-comment")?.addEventListener("click", async () =>
         const result = await res.json();
         if (!result.success) throw new Error(result.error || "Failed to add comment");
 
-        // ✅ Comment succeeded — update only the UI
+        // Comment succeeded — update only the UI
         tempCard.style.display = "none";
         commentBox.value = "";
 
