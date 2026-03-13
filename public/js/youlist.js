@@ -125,7 +125,7 @@ dropdown.addEventListener("click", async e => {
         tempCard.dataset.movieId = id;
         tempCard.dataset.type = type;
         tempCard.querySelector("#temp-comment").value = "";
-        tempCard.style.display = "flex";
+        tempCard.style.display = "grid";
     } catch (err) {
         console.error("Item fetch error:", err);
     }

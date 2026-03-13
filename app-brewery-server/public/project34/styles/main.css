@@ -65,13 +65,10 @@
 
 .movielist-section {
     display: grid;
-    grid-template-columns: 140px 1fr;
-    grid-template-areas:
-        "Title   Title"
-        "Stars   Stars"
-        "Poster  Details";
+    grid-template-columns: 140px minmax(260px, 1fr);
     gap: 1.5rem;
     padding: 1.5rem;
+    width: min(100%, 760px);
     border-radius: 12px;
     background-color: var(--light-section-bg);
     color: var(--dark-text);
@@ -88,9 +85,7 @@
 
 /* Poster styling */
 .movie-poster {
-    flex: 0 0 150px;
-    /* fixed width for poster */
-    max-width: 150px;
+    max-width: 140px;
     border-radius: 10px;
     overflow: hidden;
 }
@@ -105,8 +100,6 @@
 
 /* Details column */
 .Details {
-    flex: 1;
-    /* remaining space */
     display: flex;
     flex-direction: column;
     gap: 0.5rem;
@@ -150,8 +143,9 @@
     margin-top: 0.25rem;
 }
 
-.submit-comment,
-.cancel-comment {
+#submit-comment,
+#cancel-comment,
+.expand-comments {
     padding: 0.4rem 0.8rem;
     border-radius: 6px;
     border: none;
@@ -160,21 +154,23 @@
     transition: background 0.2s ease;
 }
 
-.submit-comment {
+#submit-comment,
+.expand-comments {
     background-color: #03a9f4;
     color: white;
 }
 
-.submit-comment:hover {
+#submit-comment:hover,
+.expand-comments:hover {
     background-color: #06587e;
 }
 
-.cancel-comment {
+#cancel-comment {
     background-color: #ffb76a;
     color: #3a2c1a;
 }
 
-.cancel-comment:hover {
+#cancel-comment:hover {
     background-color: #c56a09;
 }
 
@@ -195,7 +191,7 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 1rem;
+    gap: 1rem;
     flex-wrap: wrap;
 }
 
@@ -203,7 +199,7 @@
     padding: 0.5rem;
     border: 1px solid #ccc;
     border-radius: 6px;
-    width: 250px;
+    width: min(70vw, 320px);
 }
 
 .search-button {
@@ -275,6 +271,9 @@
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
     z-index: 1000;
     display: none;
+    list-style: none;
+    margin: 0;
+    padding: 0;
 }
 
 .autocomplete-item {
@@ -312,11 +311,7 @@
    @media (max-width: 768px) {
        .movielist-section {
            grid-template-columns: 1fr;
-           grid-template-areas:
-               "Poster"
-               "Title"
-               "Stars"
-               "Details";
+           justify-items: center;
            text-align: center;
        }
 
