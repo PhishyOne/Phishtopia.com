@@ -429,6 +429,21 @@ a.login-register {
   box-shadow: inset 0px 0px 25px var(--dark-section-bg);
 }
 
+#register-btn {
+  border: var(--dark-section-bg) ridge 3px;
+  color: var(--dark-section-bg);
+  margin-top: 20px;
+}
+
+#register-btn::after,
+#register-btn::before {
+  background-color: rgba(121, 208, 219, 1);
+}
+
+#register-btn:hover {
+  box-shadow: inset 0px 0px 25px var(--dark-section-bg);
+}
+
 .logout-btn,
 .login-register {
   background: none;

@@ -187,7 +187,12 @@
     border-radius: 5px;
     padding: 0.5rem;
     box-shadow: #ccc 4px 4px 8px;
-    color: #011946;
+    color: #284881;
+}
+
+.username {
+    font-weight: bold;
+    color: #51e2b7;
 }
 
 .all-comments p {
@@ -290,6 +295,9 @@
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
     z-index: 1000;
     display: none;
+    list-style: none;
+    padding: 0;
+    margin: 0;
 }
 
 .autocomplete-item {
@@ -319,6 +327,13 @@
 .autocomplete-type {
     font-size: 1rem;
     margin-left: 5px;
+}
+
+.close-dropdown {
+    text-align: right;
+    cursor: pointer;
+    padding: 4px 8px;
+    font-weight: bold;
 }
 
 /* -------------------------

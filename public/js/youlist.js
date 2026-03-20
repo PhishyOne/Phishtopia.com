@@ -181,7 +181,7 @@ async function loadPage(page = 1) {
 
       <!-- Wrap comment in a container -->
       <div class="CommentsSection">
-      <p class="comment">${movie.comments?.[0]?.username || "Anonymous"}: ${latestComment}</p>
+      <p class="comment"><span class="username">${movie.comments?.[0]?.username || "Anonymous"}</span>: ${latestComment}</p>
           <button class="expand-comments">Show all</button>
           <div class="all-comments" style="display:none;"></div>
       </div>
@@ -197,7 +197,7 @@ async function loadPage(page = 1) {
                 if (allCommentsDiv.style.display === "none") {
                     card.querySelector("p.comment").style.display = "none"; // hide latest comment when showing all
                     allCommentsDiv.innerHTML = allComments
-                        .map(c => `<p>${c.username}: ${c.comment}</p>`)
+                        .map(c => `<p><span class="username">${c.username}:</span> ${c.comment}</p>`)
                         .join("");
                     allCommentsDiv.style.display = "block";
                     expandBtn.textContent = "Hide all";
