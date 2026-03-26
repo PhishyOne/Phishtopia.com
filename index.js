@@ -27,7 +27,7 @@ import project34Routes from "./app-brewery-server/routes/project34.js";
 // =====================
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const PORT = process.env.PORT || 3002;
-const CANVAS_PAGES = ["index", "projects", "contact"];
+const CANVAS_PAGES = ["index", "projects", "contact", "youlist", "register", "login"];
 // Logs setup
 const logDir = join(__dirname, "logs");
 mkdirSync(logDir, { recursive: true });
