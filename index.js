@@ -81,7 +81,7 @@ app.use((req, res, next) => {
 // View engine setup
 app.set("view engine", "ejs");
 app.set("views", join(__dirname, "views"));
-app.engine("ejs", ejs.__express);  // use the default Express engine
+app.engine("ejs", ejs.__express); 
 app.locals.basedir = app.get("views");
 
 // Session setup
@@ -104,9 +104,10 @@ app.use((req, res, next) => {
 });
 
 app.use("/auth", authRoutes);
+app.use("/youlist", requireLogin, project34Routes);
 
 //Protect Route
-app.get("/projects", requireLogin, (req, res) => {
+app.get("/projects", (req, res) => {
     res.render("projects", { bodyClass: "projects" });
 });
 
@@ -134,11 +135,11 @@ viewFiles.forEach(file => {
     const isProject = name.startsWith("project") && name !== "projects";
     app.get(name === "index" ? "/" : `/${name}`, (req, res) => {
         if (req.url !== "/" && req.url !== `/${name}`) return res.sendStatus(404);
+        if (name === "youlist") return;
         const styles = isProject ? [`/${name}/styles/main.css`] : ["/styles/main.css"];
         if (name === "project33-2") styles.push(`/${name}/styles/new.css`);
         const scripts = [];
         if (CANVAS_PAGES.includes(name)) scripts.push("/js/canvas.js");
-        //if (name === "index") scripts.push("/index.js");
         res.render(name, {
             bodyClass: name,
             extraStyles: styles,
