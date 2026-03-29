@@ -1,6 +1,7 @@
 import express from "express";
 import fetch from "node-fetch";
 import db from "../db.js";
+import { requireLogin } from "./auth.js"; // adjust path if needed
 const router = express.Router();
 const cache = new Map();           // for autocomplete queries
 const tmdbCache = new Map();       // for TMDB items
@@ -186,13 +187,13 @@ router.get("/api/list", async (req, res) => {
                     `
                     SELECT m.id, m.comment, u.username
                     FROM fullstack.youlist_movies m
-                    JOIN fullstack.youlist_users u
+                    JOIN public.users u
                     ON m.user_id = u.id
                     WHERE m.movie_id = $1 AND m.type = $2
                     ORDER BY m.id DESC
                     `,
                     [movie_id, type]
-                    );
+                );
 
                 // fetch TMDB (cached)
                 const tmdb = await fetchTMDBItem(type, movie_id);
@@ -220,7 +221,7 @@ router.get("/api/list", async (req, res) => {
 /* =========================
    Add Comment (Movie/TV)
 ========================= */
-router.post("/api/comment", async (req, res) => {
+router.post("/api/comment", requireLogin, async (req, res) => {
     try {
         const { movie_id, type, comment } = req.body;
 
@@ -232,8 +233,7 @@ router.post("/api/comment", async (req, res) => {
             return res.status(400).json({ error: "Invalid media type" });
         }
 
-        // TEMP user id (until auth exists)
-        const userId = 1;
+        const userId = req.session.user?.id;
 
         await db.query(
             `

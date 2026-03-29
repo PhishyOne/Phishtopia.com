@@ -1,8 +1,8 @@
-<%- include ('../partials/header', { title: 'YouList - Movies' }) %>
+<%- include('../partials/header', { title: 'YouList - Movies' }) %>
 
   <main class="youlist-container">
     <!-- Hero Section -->
-    <section class="hero-section gradient-background rounded-3 pt-4 pb-3 ps-5">
+    <section class="hero-section gradient-background">
       <h1 class="gradient-text">YouList - Movies</h1>
     </section>
 
@@ -10,15 +10,11 @@
     <section class="search-sort-bar">
       <form class="search-form" onsubmit="return false;">
         <div class="search-wrapper">
-          <input type="text" placeholder="Search movies..." class="search-input">
-          <button type="button" class="clear-input">×</button>
+          <input type="text" name="search"  placeholder="Search movies..." class="search-input">
+          <button type="button" name="button" class="clear-input">×</button>
           <!-- Autocomplete dropdown appended by JS -->
         </div>
       </form>
-      <div class="sort-options">
-        <button type="button" class="sort-button">Sort by Title</button>
-        <button type="button" class="sort-button">Sort by Genre</button>
-      </div>
     </section>
 
     <!-- Temporary movie card (hidden) -->
@@ -64,4 +60,4 @@
     </div>
   </main>
 
-  <%- include ('../partials/footer') %>
+  <%- include('../partials/footer') %>

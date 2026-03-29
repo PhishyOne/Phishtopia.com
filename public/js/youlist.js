@@ -1,16 +1,40 @@
+// =========================
+// Setup
+// =========================
 const input = document.querySelector(".search-input");
+if (!input) throw new Error("Search input not found");
+
 const wrapper = input.closest(".search-wrapper");
+if (!wrapper) throw new Error("Search wrapper not found");
 
 const dropdown = document.createElement("ul");
 dropdown.className = "autocomplete-dropdown";
 wrapper.appendChild(dropdown);
 
 let timer;
+let lastQuery = "";
 const MIN_CHARS = 2;
 
-/* =========================
-   Placeholder Item
-========================= */
+// =========================
+// Helpers (Security + Regex)
+// =========================
+function escapeHTML(str) {
+    return str.replace(/[&<>"']/g, s => ({
+        "&": "&amp;",
+        "<": "&lt;",
+        ">": "&gt;",
+        '"': "&quot;",
+        "'": "&#39;"
+    }[s]));
+}
+
+function escapeRegex(str) {
+    return str.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+// =========================
+// Placeholder Item
+// =========================
 const placeholderItem = `
   <li class="autocomplete-item placeholder">
     <img src="/project34/images/placeholder.png" class="autocomplete-poster">
@@ -18,9 +42,9 @@ const placeholderItem = `
   </li>
 `;
 
-/* =========================
-   Render Autocomplete
-========================= */
+// =========================
+// Render Autocomplete
+// =========================
 async function renderResults(query) {
     dropdown.innerHTML = `<li class="close-dropdown">✕</li>`;
 
@@ -36,25 +60,27 @@ async function renderResults(query) {
         if (!results.length) {
             dropdown.innerHTML += placeholderItem;
         } else {
-            const regex = new RegExp(`(${query})`, "i");
-            dropdown.innerHTML += results
-                .map(item => {
-                    const title = item.title.replace(regex, "<b>$1</b>");
-                    return `
-                        <li class="autocomplete-item"
-                            data-id="${item.id}"
-                            data-type="${item.type}">
-                            <img src="${item.poster}" class="autocomplete-poster">
-                            <span class="autocomplete-title">
-                                ${title} (${item.year || "N/A"})
-                            </span>
-                            <span class="autocomplete-type">
-                                ${item.type === "movie" ? "🎬" : "📺"}
-                            </span>
-                        </li>
-                    `;
-                })
-                .join("");
+            const safeQuery = escapeRegex(query);
+            const regex = new RegExp(`(${safeQuery})`, "i");
+
+            dropdown.innerHTML += results.map(item => {
+                const safeTitle = escapeHTML(item.title);
+                const title = safeTitle.replace(regex, "<b>$1</b>");
+
+                return `
+                    <li class="autocomplete-item"
+                        data-id="${item.id}"
+                        data-type="${item.type}">
+                        <img src="${item.poster}" class="autocomplete-poster">
+                        <span class="autocomplete-title">
+                            ${title} (${item.year || "N/A"})
+                        </span>
+                        <span class="autocomplete-type">
+                            ${item.type === "movie" ? "🎬" : "📺"}
+                        </span>
+                    </li>
+                `;
+            }).join("");
         }
 
         dropdown.style.display = "block";
@@ -65,22 +91,27 @@ async function renderResults(query) {
     }
 }
 
-/* =========================
-   Input (Debounced)
-========================= */
+// =========================
+// Input (Debounced)
+// =========================
 input.addEventListener("input", () => {
     clearTimeout(timer);
     const query = input.value.trim();
+
+    if (query === lastQuery) return;
+    lastQuery = query;
+
     if (query.length < MIN_CHARS) {
         dropdown.style.display = "none";
         return;
     }
+
     timer = setTimeout(() => renderResults(query), 300);
 });
 
-/* =========================
-   Clear Input
-========================= */
+// =========================
+// Clear Input
+// =========================
 document.querySelector(".clear-input")?.addEventListener("click", () => {
     input.value = "";
     dropdown.style.display = "none";
@@ -88,23 +119,33 @@ document.querySelector(".clear-input")?.addEventListener("click", () => {
     input.focus();
 });
 
-/* =========================
-   Close Dropdown
-========================= */
+// =========================
+// Close Dropdown (button)
+// =========================
 dropdown.addEventListener("click", e => {
     if (e.target.classList.contains("close-dropdown")) {
         dropdown.style.display = "none";
     }
 });
 
-/* =========================
-   Select Item
-========================= */
+// =========================
+// Close Dropdown (outside click)
+// =========================
+document.addEventListener("click", (e) => {
+    if (!wrapper.contains(e.target)) {
+        dropdown.style.display = "none";
+    }
+});
+
+// =========================
+// Select Item
+// =========================
 dropdown.addEventListener("click", async e => {
     const item = e.target.closest(".autocomplete-item");
     if (!item || item.classList.contains("placeholder")) return;
 
     dropdown.style.display = "none";
+
     const id = item.dataset.id;
     const type = item.dataset.type;
 
@@ -124,175 +165,217 @@ dropdown.addEventListener("click", async e => {
 
         tempCard.dataset.movieId = id;
         tempCard.dataset.type = type;
-        tempCard.querySelector("#temp-comment").value = "";
+
+        const commentBox = tempCard.querySelector("#temp-comment");
+        commentBox.value = "";
+
         tempCard.style.display = "flex";
+
+        // UX improvements
+        commentBox.focus();
+        tempCard.scrollIntoView({ behavior: "smooth", block: "center" });
+
     } catch (err) {
         console.error("Item fetch error:", err);
     }
 });
 
-/* =========================
-   Cancel Comment
-========================= */
+// =========================
+// Cancel Comment
+// =========================
 document.getElementById("cancel-comment")?.addEventListener("click", () => {
     document.getElementById("temp-card").style.display = "none";
 });
 
+// =========================
+// Pagination State
+// =========================
 let currentPage = 1;
 let totalPages = 1;
-const pageCache = {}; // stores fetched pages
+const pageCache = {};
 
-/* =========================
-   Render a page of movies — Flexbox Modern
-========================= */
+// =========================
+// Render Page
+// =========================
+function renderPage(data) {
+    const container = document.getElementById("movie-list");
+    container.innerHTML = "";
+
+    if (!data.results.length) {
+        container.innerHTML = "<p>No movies to show.</p>";
+        return;
+    }
+
+    totalPages = data.totalPages;
+
+    data.results.forEach(movie => {
+        const card = document.createElement("section");
+        card.className = "movielist-section movie-card";
+        card.dataset.movieId = movie.id;
+        card.dataset.type = movie.type;
+        card.dataset.comments = JSON.stringify(movie.comments || []);
+
+        const latestComment = movie.comments?.[0]?.comment || "No comments yet";
+
+        card.innerHTML = `
+            <div class="movie-poster">
+                <img src="${movie.poster}" alt="${movie.title}">
+            </div>
+            <div class="Details">
+                <div class="Title"><h2>${movie.title} (${movie.year || "N/A"})</h2></div>
+                <div class="Director"><h3>Director: ${movie.director}</h3></div>
+                <div class="Genre"><h3>Genre: ${movie.genre}</h3></div>
+                <div class="Cast"><h3>Stars: ${movie.cast}</h3></div>
+
+                <div class="CommentsSection">
+                    <p class="comment">
+                        <span class="username">${movie.comments?.[0]?.username || "Anonymous"}</span>: ${latestComment}
+                    </p>
+                    <button class="expand-comments">Show all</button>
+                    <div class="all-comments" style="display:none;"></div>
+                </div>
+            </div>
+        `;
+
+        container.appendChild(card);
+
+        const expandBtn = card.querySelector(".expand-comments");
+        const allCommentsDiv = card.querySelector(".all-comments");
+
+        expandBtn?.addEventListener("click", () => {
+            const allComments = JSON.parse(card.dataset.comments || "[]");
+
+            if (allCommentsDiv.style.display === "none") {
+                card.querySelector("p.comment").style.display = "none";
+
+                allCommentsDiv.innerHTML = allComments
+                    .map(c => `<p><span class="username">${c.username || "Anonymous"}:</span> ${c.comment}</p>`)
+                    .join("");
+
+                allCommentsDiv.style.display = "block";
+                expandBtn.textContent = "Hide all";
+            } else {
+                card.querySelector("p.comment").style.display = "block";
+                allCommentsDiv.style.display = "none";
+                expandBtn.textContent = "Show all";
+            }
+        });
+    });
+
+    currentPage = data.page;
+    document.getElementById("prev-page").disabled = currentPage === 1;
+    document.getElementById("next-page").disabled = currentPage === totalPages;
+}
+
+// =========================
+// Load Page (with cache)
+// =========================
 async function loadPage(page = 1) {
     const container = document.getElementById("movie-list");
+
+    if (pageCache[page]) {
+        renderPage(pageCache[page]);
+        return;
+    }
+
     container.innerHTML = "<p>Loading movies...</p>";
 
     try {
         const res = await fetch(`/youlist/api/list?page=${page}`);
         if (!res.ok) throw new Error("Failed to fetch list");
+
         const data = await res.json();
 
-        if (!data.results.length) {
-            container.innerHTML = "<p>No movies to show.</p>";
-            return;
-        }
-
-        totalPages = data.totalPages;
-        container.innerHTML = ""; // clear loading
-
-        data.results.forEach(movie => {
-            const card = document.createElement("section");
-            card.className = "movielist-section movie-card";
-            card.dataset.movieId = movie.id;
-            card.dataset.type = movie.type;
-            card.dataset.comments = JSON.stringify(movie.comments || []);
-            const latestComment = movie.comments?.[0]?.comment || "No comments yet";
-            card.innerHTML = `
-  <div class="movie-poster">
-      <img src="${movie.poster}" alt="${movie.title}">
-  </div>
-  <div class="Details">
-      <div class="Title"><h2>${movie.title} (${movie.year || "N/A"})</h2></div>
-      <div class="Director"><h3>Director: ${movie.director}</h3></div>
-      <div class="Genre"><h3>Genre: ${movie.genre}</h3></div>
-      <div class="Cast"><h3>Stars: ${movie.cast}</h3></div>
-
-      <!-- Wrap comment in a container -->
-      <div class="CommentsSection">
-      <p class="comment"><span class="username">${movie.comments?.[0]?.username || "Anonymous"}</span>: ${latestComment}</p>
-          <button class="expand-comments">Show all</button>
-          <div class="all-comments" style="display:none;"></div>
-      </div>
-  </div>
-`;
-            container.appendChild(card);
-
-            // Expand comments
-            const expandBtn = card.querySelector(".expand-comments");
-            const allCommentsDiv = card.querySelector(".all-comments");
-            expandBtn?.addEventListener("click", () => {
-                const allComments = JSON.parse(card.dataset.comments || "[]");
-                if (allCommentsDiv.style.display === "none") {
-                    card.querySelector("p.comment").style.display = "none"; // hide latest comment when showing all
-                    allCommentsDiv.innerHTML = allComments
-                        .map(c => `<p><span class="username">${c.username}:</span> ${c.comment}</p>`)
-                        .join("");
-                    allCommentsDiv.style.display = "block";
-                    expandBtn.textContent = "Hide all";
-                } else {
-                    card.querySelector("p.comment").style.display = "block";
-                    allCommentsDiv.style.display = "none";
-                    expandBtn.textContent = "Show all";
-                }
-            });
-        });
-
-        currentPage = page;
-        document.getElementById("prev-page").disabled = currentPage === 1;
-        document.getElementById("next-page").disabled = currentPage === totalPages;
+        pageCache[page] = data;
+        renderPage(data);
 
         // Preload next page
-        if (currentPage < totalPages && !pageCache[currentPage + 1]) {
-            fetch(`/youlist/api/list?page=${currentPage + 1}`)
+        if (page < data.totalPages && !pageCache[page + 1]) {
+            fetch(`/youlist/api/list?page=${page + 1}`)
                 .then(res => res.json())
-                .then(nextData => { pageCache[currentPage + 1] = nextData; })
+                .then(nextData => pageCache[page + 1] = nextData)
                 .catch(() => { });
         }
+
     } catch (err) {
         console.error("Load page error:", err);
         container.innerHTML = "<p>Failed to load movies — try refreshing.</p>";
     }
 }
 
-/* =========================
-   Prev/Next navigation
-========================= */
-document.getElementById("prev-page").addEventListener("click", () => {
+// =========================
+// Pagination Buttons
+// =========================
+document.getElementById("prev-page")?.addEventListener("click", () => {
     if (currentPage > 1) loadPage(currentPage - 1);
 });
-document.getElementById("next-page").addEventListener("click", () => {
+
+document.getElementById("next-page")?.addEventListener("click", () => {
     if (currentPage < totalPages) loadPage(currentPage + 1);
 });
 
-/* =========================
-   Submit Comment — Temp Card
-========================= */
+// =========================
+// Submit Comment
+// =========================
 document.getElementById("submit-comment")?.addEventListener("click", async () => {
     const tempCard = document.getElementById("temp-card");
     const commentBox = tempCard.querySelector("#temp-comment");
     const comment = commentBox.value.trim();
+
     if (!comment) return alert("Please enter a comment");
 
     const movie_id = tempCard.dataset.movieId;
     const type = tempCard.dataset.type;
 
-    const payload = { movie_id, type, comment };
-
     try {
         const res = await fetch("/youlist/api/comment", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(payload)
+            body: JSON.stringify({ movie_id, type, comment })
         });
 
         if (!res.ok) throw new Error("Network response not OK");
 
         const result = await res.json();
-        if (!result.success) throw new Error(result.error || "Failed to add comment");
+        if (!result.success) throw new Error(result.error);
 
-        // Comment succeeded — update only the UI
         tempCard.style.display = "none";
         commentBox.value = "";
 
         const movieCard = document.querySelector(`.movie-card[data-movie-id="${movie_id}"][data-type="${type}"]`);
+
         if (movieCard) {
             const existingComments = JSON.parse(movieCard.dataset.comments || "[]");
-            const newComments = [{ comment }, ...existingComments];
+
+            const newComments = [
+                { comment, username: "You" },
+                ...existingComments
+            ];
+
             movieCard.dataset.comments = JSON.stringify(newComments);
 
-            // Update latest comment
             const latestCommentEl = movieCard.querySelector(".comment");
-            if (latestCommentEl) latestCommentEl.textContent = `💬 ${comment}`;
+            if (latestCommentEl) {
+                latestCommentEl.innerHTML = `<span class="username">You</span>: ${comment}`;
+            }
 
-            // Update expanded comments if visible
             const allCommentsDiv = movieCard.querySelector(".all-comments");
             if (allCommentsDiv?.style.display === "block") {
                 allCommentsDiv.innerHTML = newComments
-                    .map(c => `<p>💬 ${c.comment}</p>`)
+                    .map(c => `<p><span class="username">${c.username}:</span> ${c.comment}</p>`)
                     .join("");
             }
         }
 
-        // Reload first page in background, but don't block the user
-        loadPage(1).catch(err => console.warn("Background page reload failed:", err));
+        window.location.reload();
 
     } catch (err) {
         console.error("Add comment error:", err);
-        alert("Failed to add comment — check console");
+        alert("Failed to add comment");
     }
 });
 
-// Initial page load
+// =========================
+// Initial Load
+// =========================
 loadPage(1);
