@@ -9,7 +9,6 @@ import { fileURLToPath } from "url";
 import "./app-brewery-server/db.js"; // Database connection
 import session from "express-session";
 import authRoutes from "./app-brewery-server/routes/auth.js";
-import { requireLogin } from "./app-brewery-server/routes/auth.js";
 
 // Routers ////////////////////////////////////////////////////////////////////
 import playerIntRoutes from "./app-brewery-server/routes/player-int.js";
@@ -103,8 +102,14 @@ app.use((req, res, next) => {
     next();
 });
 
+// TEMP LOG
+app.use((req, res, next) => {
+    console.log("SESSION:", req.session);
+    next();
+});
+
 app.use("/auth", authRoutes);
-app.use("/youlist", requireLogin, project34Routes);
+app.use("/youlist", project34Routes);
 
 //Protect Route
 app.get("/projects", (req, res) => {
@@ -121,7 +126,6 @@ const APP_ROUTES = {
     "project33-1": project331Routes,
     "project33-2": project332Routes,
     "project33-3": project333Routes,
-    "youlist": project34Routes,
 };
 Object.entries(APP_ROUTES).forEach(([name, router]) => {
     app.use(`/${name}`, router);

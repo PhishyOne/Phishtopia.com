@@ -188,6 +188,46 @@ document.getElementById("cancel-comment")?.addEventListener("click", () => {
 });
 
 // =========================
+// Edit Comment 
+// =========================
+document.addEventListener("click", (e) => {
+    if (!e.target.classList.contains("edit-comment")) return;
+
+    const commentId = e.target.dataset.id;
+    const commentText = e.target.dataset.comment;
+
+    const tempCard = document.getElementById("temp-card");
+    tempCard.style.display = "flex";
+
+    const commentBox = tempCard.querySelector("#temp-comment");
+    commentBox.value = commentText;
+
+    tempCard.dataset.editingCommentId = commentId; // save id for submit
+    commentBox.focus();
+    tempCard.scrollIntoView({ behavior: "smooth", block: "center" });
+});
+
+// =========================
+// Delete Comment
+// =========================
+document.addEventListener("click", async (e) => {
+    if (!e.target.classList.contains("delete-comment")) return;
+    const commentId = e.target.dataset.id;
+    if (!confirm("Delete this comment?")) return;
+    try {
+        const res = await fetch(`/youlist/api/comment/${commentId}`, {
+            method: "DELETE"
+        });
+        if (!res.ok) throw new Error("Delete failed");
+        window.location.reload();
+
+    } catch (err) {
+        console.error(err);
+        alert("Failed to delete comment");
+    }
+});
+
+// =========================
 // Pagination State
 // =========================
 let currentPage = 1;
@@ -249,7 +289,17 @@ function renderPage(data) {
                 card.querySelector("p.comment").style.display = "none";
 
                 allCommentsDiv.innerHTML = allComments
-                    .map(c => `<p><span class="username">${c.username || "Anonymous"}:</span> ${c.comment}</p>`)
+                    .map(c => {
+                        const isOwner = window.currentUser && c.user_id === window.currentUser.id;
+
+                        return `
+            <p>
+                <span class="username">${c.username || "Anonymous"}:</span> ${c.comment}
+                <button class="edit-comment" data-id="${c.id}" data-comment="${escapeHTML(c.comment)}">Edit</button>
+                ${isOwner ? `<button class="delete-comment" data-id="${c.id}">Delete</button>` : ""}
+            </p>
+        `;
+                    })
                     .join("");
 
                 allCommentsDiv.style.display = "block";
@@ -326,52 +376,39 @@ document.getElementById("submit-comment")?.addEventListener("click", async () =>
 
     const movie_id = tempCard.dataset.movieId;
     const type = tempCard.dataset.type;
+    const editingId = tempCard.dataset.editingCommentId;
 
     try {
-        const res = await fetch("/youlist/api/comment", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ movie_id, type, comment })
-        });
+        let res;
+        if (editingId) {
+            // Edit existing comment
+            res = await fetch(`/youlist/api/comment/${editingId}`, {
+                method: "PUT",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ comment })
+            });
+        } else {
+            // Add new comment
+            res = await fetch("/youlist/api/comment", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ movie_id, type, comment })
+            });
+        }
 
         if (!res.ok) throw new Error("Network response not OK");
-
         const result = await res.json();
         if (!result.success) throw new Error(result.error);
 
         tempCard.style.display = "none";
         commentBox.value = "";
+        delete tempCard.dataset.editingCommentId;
 
-        const movieCard = document.querySelector(`.movie-card[data-movie-id="${movie_id}"][data-type="${type}"]`);
-
-        if (movieCard) {
-            const existingComments = JSON.parse(movieCard.dataset.comments || "[]");
-
-            const newComments = [
-                { comment, username: "You" },
-                ...existingComments
-            ];
-
-            movieCard.dataset.comments = JSON.stringify(newComments);
-
-            const latestCommentEl = movieCard.querySelector(".comment");
-            if (latestCommentEl) {
-                latestCommentEl.innerHTML = `<span class="username">You</span>: ${comment}`;
-            }
-
-            const allCommentsDiv = movieCard.querySelector(".all-comments");
-            if (allCommentsDiv?.style.display === "block") {
-                allCommentsDiv.innerHTML = newComments
-                    .map(c => `<p><span class="username">${c.username}:</span> ${c.comment}</p>`)
-                    .join("");
-            }
-        }
-
-        window.location.reload();
+        window.location.reload(); // simple refresh to update the list
 
     } catch (err) {
-        console.error("Add comment error:", err);
-        alert("Failed to add comment");
+        console.error("Comment submit error:", err);
+        alert("Failed to submit comment");
     }
 });
 

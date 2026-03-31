@@ -58,6 +58,9 @@
       <button id="prev-page">Prev</button>
       <button id="next-page" disabled>Next</button>
     </div>
+    <script>
+      window.currentUser = <%- JSON.stringify(user || null) %>;
+    </script>
   </main>
 
   <%- include('../partials/footer') %>

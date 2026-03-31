@@ -1,12 +1,12 @@
 import express from "express";
 import fetch from "node-fetch";
 import db from "../db.js";
-import { requireLogin } from "./auth.js"; // adjust path if needed
+import { requireLogin } from "./auth.js";
 const router = express.Router();
 const cache = new Map();           // for autocomplete queries
 const tmdbCache = new Map();       // for TMDB items
 const CACHE_TTL = 24 * 60 * 60 * 1000; // 24 hours
-let movieList = []; // in-memory placeholder
+let movieList = [];
 
 /* =========================
    Cached TMDB Fetch Helper
@@ -69,8 +69,10 @@ router.get("/", async (req, res) => {
             bodyClass: "project34",
             extraStyles: ["/project34/styles/main.css"],
             extraScripts: ["/js/canvas.js", "/js/youlist.js"],
-            movieList: JSON.stringify(movieList)
+            movieList: JSON.stringify(movieList),
+            user: req.session.user || null
         });
+        
     } catch (err) {
         console.error("Render error:", err);
         res.status(500).send("Server error");
@@ -185,7 +187,7 @@ router.get("/api/list", async (req, res) => {
                 // fetch comments
                 const commentResult = await db.query(
                     `
-                    SELECT m.id, m.comment, u.username
+                    SELECT m.id, m.comment, m.user_id, u.username
                     FROM fullstack.youlist_movies m
                     JOIN public.users u
                     ON m.user_id = u.id
@@ -249,6 +251,76 @@ router.post("/api/comment", requireLogin, async (req, res) => {
         res.status(500).json({ error: "Failed to add comment" });
     }
 });
+
+/* =========================
+   Edit Comment
+========================= */
+router.put("/api/comment/:id", requireLogin,  async (req, res) => {
+    try {
+        const commentId = req.params.id;
+        const { comment } = req.body;
+        const userId = req.session.user?.id;
+
+        if (!userId || !comment) {
+            return res.status(400).json({ error: "Invalid request" });
+        }
+
+        const result = await db.query(
+            `
+            UPDATE fullstack.youlist_movies
+            SET comment = $1
+            WHERE id = $2 AND user_id = $3
+            RETURNING id
+            `,
+            [comment, commentId, userId]
+        );
+
+        if (!result.rows.length) {
+            return res.status(403).json({ error: "Not allowed" });
+        }
+
+        res.json({ success: true });
+
+    } catch (err) {
+        console.error("Edit comment error:", err);
+        res.status(500).json({ error: "Failed to edit comment" });
+    }
+});
+
+/* =========================
+   Delete Comment
+========================= */
+router.delete("/api/comment/:id", requireLogin,  async (req, res) => {
+    try {
+        const commentId = req.params.id;
+        const userId = req.session.user?.id;
+
+        if (!userId) {
+            return res.status(401).json({ error: "Unauthorized" });
+        }
+
+        // Only delete if it belongs to the user
+        const result = await db.query(
+            `
+            DELETE FROM fullstack.youlist_movies
+            WHERE id = $1 AND user_id = $2
+            RETURNING id
+            `,
+            [commentId, userId]
+        );
+
+        if (!result.rows.length) {
+            return res.status(403).json({ error: "Not allowed" });
+        }
+
+        res.json({ success: true });
+
+    } catch (err) {
+        console.error("Delete comment error:", err);
+        res.status(500).json({ error: "Failed to delete comment" });
+    }
+});
+
 /* ========================= */
 async function prewarmCache() {
     try {
@@ -273,6 +345,7 @@ async function prewarmCache() {
         console.error("Cache pre-warm error:", err);
     }
 }
+
 // Call prewarm on server start
 prewarmCache();
 
