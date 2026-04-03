@@ -137,9 +137,11 @@ router.post("/logout", (req, res) => {
 //Helper Function to protect routes
 export function requireLogin(req, res, next) {
     if (req.session?.user) return next();
-    req.session.returnTo = req.originalUrl; // Save the page they were trying to visit
+
+    // Save the page they came from
+    const referer = req.get("Referer");
+    req.session.returnTo = referer || "/";
     return res.redirect("/auth/login");
 }
-
 
 export default router;

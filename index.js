@@ -84,6 +84,8 @@ app.engine("ejs", ejs.__express);
 app.locals.basedir = app.get("views");
 
 // Session setup
+const isProd = process.env.NODE_ENV === "production";
+
 app.use(session({
     name: "sid",
     secret: process.env.SESSION_SECRET || "devsecret",
@@ -91,8 +93,9 @@ app.use(session({
     saveUninitialized: false,
     cookie: {
         httpOnly: true,
-        secure: process.env.NODE_ENV === "production",
-        maxAge: 1000 * 60 * 60 * 2 // 2 hours
+        secure: isProd ? true : false, // <-- force false locally
+        sameSite: "lax",
+        maxAge: 1000 * 60 * 60 * 2
     }
 }));
 

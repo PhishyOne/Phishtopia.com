@@ -194,15 +194,48 @@ document.addEventListener("click", (e) => {
     if (!e.target.classList.contains("edit-comment")) return;
 
     const commentId = e.target.dataset.id;
-    const commentText = e.target.dataset.comment;
+    const commentText = decodeURIComponent(e.target.dataset.comment);
 
+    // Find parent movie card
+    const movieCard = e.target.closest(".movie-card");
+    if (!movieCard) return;
+
+    const movieId = movieCard.dataset.movieId;
+    const type = movieCard.dataset.type;
+
+    //  Get temp card
     const tempCard = document.getElementById("temp-card");
-    tempCard.style.display = "flex";
 
+    // Copy movie data into temp card
+    tempCard.dataset.movieId = movieId;
+    tempCard.dataset.type = type;
+    tempCard.dataset.editingCommentId = commentId;
+
+    // Copy movie info (so it's not blank)
+    tempCard.querySelector("#temp-title").textContent =
+        movieCard.querySelector(".Title h2").textContent;
+
+    tempCard.querySelector("#temp-poster").src =
+        movieCard.querySelector(".movie-poster img").src;
+
+    tempCard.querySelector("#temp-director").textContent =
+        movieCard.querySelector(".Director h3").textContent;
+
+    tempCard.querySelector("#temp-genre").textContent =
+        movieCard.querySelector(".Genre h3").textContent;
+
+    tempCard.querySelector("#temp-cast").textContent =
+        movieCard.querySelector(".Cast h3").textContent;
+
+    tempCard.querySelector("#temp-year").textContent =
+        movieCard.querySelector(".Title h2").textContent;
+
+    // Set comment text
     const commentBox = tempCard.querySelector("#temp-comment");
     commentBox.value = commentText;
 
-    tempCard.dataset.editingCommentId = commentId; // save id for submit
+    tempCard.style.display = "flex";
+
     commentBox.focus();
     tempCard.scrollIntoView({ behavior: "smooth", block: "center" });
 });
@@ -293,12 +326,14 @@ function renderPage(data) {
                         const isOwner = window.currentUser && c.user_id === window.currentUser.id;
 
                         return `
-            <p>
-                <span class="username">${c.username || "Anonymous"}:</span> ${c.comment}
-                <button class="edit-comment" data-id="${c.id}" data-comment="${escapeHTML(c.comment)}">Edit</button>
-                ${isOwner ? `<button class="delete-comment" data-id="${c.id}">Delete</button>` : ""}
-            </p>
-        `;
+  <p>
+    <span class="username">${c.username || "Anonymous"}:</span> ${c.comment}
+    ${isOwner ? `
+      <button class="edit-comment" data-id="${c.id}" data-comment='${encodeURIComponent(c.comment)}'>Edit</button>
+      <button class="delete-comment" data-id="${c.id}">Delete</button>
+    ` : ""}
+  </p>
+`;
                     })
                     .join("");
 
