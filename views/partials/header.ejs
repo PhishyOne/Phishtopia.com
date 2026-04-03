@@ -33,7 +33,6 @@
     <meta name="robots" content="index, follow">
     <link rel="alternate" hreflang="en" href="https://phishtopia.com/">
 
-
     <!-- Icons -->
     <link rel="apple-touch-icon" sizes="180x180" href="https://phishtopia.com/images/phishLogo.png">
     <link rel="icon" href="https://phishtopia.com/images/phishLogo.png" type="image/png">
@@ -87,7 +86,7 @@
             <a href="https://phishtopia.com">
                 <img src="/images/phishLogo.png" alt="Phishtopia" class="logo">
             </a>
-    
+
             <ul class="nav-links">
                 <li class="nav-item dropdown">
                     <div class="dropdown-toggle">
@@ -100,10 +99,9 @@
                         <li><a href="/contact" class="dropdown-item">Got a Question?</a></li>
                     </ul>
                 </li>
-                  
             </ul>
         </div>
-    
+
         <!-- Right-side nav -->
         <div class="nav-right">
             <ul class="nav-links">
@@ -115,10 +113,12 @@
                         </form>
                     </li>
                     <% } else { %>
-                        <li class="nav-item"><a class="login-register" href="/auth/login">Login</a></li>
+                        <li class="nav-item">
+                            <a class="login-register"
+                                href="/auth/login?returnTo=<%= encodeURIComponent(currentUrl || '/') %>">Login</a>
+                        </li>
                         <li class="nav-item"><a class="login-register" href="/auth/register">Register</a></li>
                         <% } %>
             </ul>
         </div>
     </nav>
-      

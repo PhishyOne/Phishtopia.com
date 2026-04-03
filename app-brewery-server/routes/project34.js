@@ -60,19 +60,16 @@ async function fetchTMDBItem(type, id) {
     return item;
 }
 
-/* =========================
-   Main Page
-========================= */
 router.get("/", requireLogin, async (req, res) => {
     try {
         res.render("project34", {
             bodyClass: "project34",
             extraStyles: ["/project34/styles/main.css"],
             extraScripts: ["/js/canvas.js", "/js/youlist.js"],
-            movieList: JSON.stringify(movieList),
-            user: req.session.user || null
+            movieList: JSON.stringify([]),
+            user: req.session.user || null,
+            currentUrl: req.originalUrl
         });
-        
     } catch (err) {
         console.error("Render error:", err);
         res.status(500).send("Server error");
@@ -223,7 +220,7 @@ router.get("/api/list", async (req, res) => {
 /* =========================
    Add Comment (Movie/TV)
 ========================= */
-router.post("/api/comment", saveReturnTo, requireLogin, async (req, res) => {
+router.post("/api/comment", requireLogin, async (req, res) => {
     try {
         const { movie_id, type, comment } = req.body;
 
@@ -255,7 +252,7 @@ router.post("/api/comment", saveReturnTo, requireLogin, async (req, res) => {
 /* =========================
    Edit Comment
 ========================= */
-router.put("/api/comment/:id", saveReturnTo, requireLogin, async (req, res) => {
+router.put("/api/comment/:id", requireLogin, async (req, res) => {
     try {
         const commentId = req.params.id;
         const { comment } = req.body;
@@ -290,7 +287,7 @@ router.put("/api/comment/:id", saveReturnTo, requireLogin, async (req, res) => {
 /* =========================
    Delete Comment
 ========================= */
-router.delete("/api/comment/:id", saveReturnTo,  requireLogin,  async (req, res) => {
+router.delete("/api/comment/:id", requireLogin,  async (req, res) => {
     try {
         const commentId = req.params.id;
         const userId = req.session.user?.id;
@@ -320,20 +317,6 @@ router.delete("/api/comment/:id", saveReturnTo,  requireLogin,  async (req, res)
         res.status(500).json({ error: "Failed to delete comment" });
     }
 });
-
-function saveReturnTo(req, res, next) {
-    if (!req.session.returnTo) {
-        const referer = req.get("Referer");
-
-        // Only save real pages (not API routes)
-        if (referer && !referer.includes("/api/")) {
-            req.session.returnTo = referer;
-        } else {
-            req.session.returnTo = "/youlist";
-        }
-    }
-    next();
-}
 
 /* ========================= */
 async function prewarmCache() {

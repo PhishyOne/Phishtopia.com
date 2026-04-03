@@ -47,6 +47,8 @@ app.use(express.json());
 app.use((req, res, next) => {
     res.locals.extraStyles = [];
     res.locals.extraScripts = [];
+    res.locals.user = req.session?.user || null;
+    res.locals.currentUrl = req.originalUrl;
     next();
 });
 
@@ -116,7 +118,13 @@ app.use("/youlist", project34Routes);
 
 //Protect Route
 app.get("/projects", (req, res) => {
-    res.render("projects", { bodyClass: "projects" });
+    res.render("projects", {
+        bodyClass: "projects",
+        user: req.session?.user || null,
+        currentUrl: req.originalUrl,
+        extraStyles: ["/styles/main.css"],
+        extraScripts: []
+    });
 });
 
 // Mount routers /////////////////////////////////////////////////////
@@ -150,7 +158,9 @@ viewFiles.forEach(file => {
         res.render(name, {
             bodyClass: name,
             extraStyles: styles,
-            extraScripts: scripts
+            extraScripts: scripts,
+            user: req.session?.user || null,
+            currentUrl: req.originalUrl
         });
     });
 });
