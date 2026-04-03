@@ -63,7 +63,7 @@ async function fetchTMDBItem(type, id) {
 /* =========================
    Main Page
 ========================= */
-router.get("/", async (req, res) => {
+router.get("/", requireLogin, async (req, res) => {
     try {
         res.render("project34", {
             bodyClass: "project34",
@@ -322,8 +322,15 @@ router.delete("/api/comment/:id", saveReturnTo,  requireLogin,  async (req, res)
 });
 
 function saveReturnTo(req, res, next) {
-    if (!req.session.returnTo && req.originalUrl) {
-        req.session.returnTo = req.originalUrl;
+    if (!req.session.returnTo) {
+        const referer = req.get("Referer");
+
+        // Only save real pages (not API routes)
+        if (referer && !referer.includes("/api/")) {
+            req.session.returnTo = referer;
+        } else {
+            req.session.returnTo = "/youlist";
+        }
     }
     next();
 }

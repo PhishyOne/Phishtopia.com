@@ -125,11 +125,15 @@ router.post("/login", async (req, res) => {
 // Logout
 // =====================
 router.post("/logout", (req, res) => {
+    const referer = req.get("Referer"); // where user came from
+
     req.session.destroy(err => {
         if (err) return res.status(500).send("Logout failed");
 
         res.clearCookie("sid");
-        res.redirect("/"); 
+
+        // Redirect back or fallback to home
+        res.redirect(referer || "/");
     });
 });
 
