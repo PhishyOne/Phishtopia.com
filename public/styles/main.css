@@ -331,7 +331,6 @@ a.login-register {
   font-size: 1.3rem;
   color: var(--dark-text);
   text-shadow: #331b01 1px 1px 4px;
-  cursor: default;
 }
 
 .contact-section h1 {
