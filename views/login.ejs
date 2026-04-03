@@ -1,0 +1,29 @@
+<%- include('partials/header', { title: 'Login' }) %>
+
+    <div class="container">
+        <h2>Login</h2>
+
+        <% if (error) { %>
+            <div class="alert alert-danger">
+                <%= error %>
+            </div>
+            <% } %>
+
+                <form action="/auth/login" method="POST">
+                    <div>
+                        <label for="username" class="form-label">Username</label>
+                        <input type="text" autocomplete="username"  id="username" name="username" class="textbox" required>
+                    </div>
+
+                    <div>
+                        <label for="password" class="form-label">Password</label>
+                        <input type="password" autocomplete="current-password" id="password" name="password" class="textbox" required>
+                    </div>
+
+                    <button class="btn" id="login-btn">Login</button>
+                </form>
+
+                <p>Don't have an account? <a href="/auth/register">Register</a></p>
+    </div>
+
+    <%- include('partials/footer') %>

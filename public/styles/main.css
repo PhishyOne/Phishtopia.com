@@ -1,6 +1,6 @@
-/* =========================================
-   Phishtopia Styles — Cleaned & Organized
-   ========================================= */
+/* ==================
+   Phishtopia Styles
+   ================== */
 
 /* ---------- Colors ---------- */
 :root {
@@ -71,36 +71,44 @@ body:not(.player-int) {
 }
 
 body:not(.player-int) h1,
-body:not(.player-int) h2,
-body:not(.player-int) h3,
-body:not(.player-int) h4,
-body:not(.player-int) h5,
-body:not(.player-int) .pompiere-regular {
+h2,
+h3,
+h4,
+h5,
+.pompiere-regular {
   font-family: "Pompiere", sans-serif;
   font-weight: 400;
 }
 
-body:not(.player-int) h1 {
+h1 {
   font-size: 5rem;
 }
 
-body:not(.player-int) h2 {
+h2 {
   font-size: 3rem;
 }
 
-body:not(.player-int) h3,
-body:not(.player-int) h4 {
+h3,
+h4 {
   font-size: 2.5rem;
 }
 
-body:not(.player-int) h5 {
+h5 {
   font-size: 2.25rem;
   color: var(--dark-text);
 }
 
-body:not(.player-int) p {
+p {
   font-size: 1.5rem;
   color: var(--dark-text);
+}
+
+hr {
+  border: none;
+  border-top: 2px solid #331b01;
+  margin: 0 0 20px 0;
+  width: 80%;
+  opacity: 0.5;
 }
 
 /* ---------- Links ---------- */
@@ -113,7 +121,6 @@ a {
   text-decoration-skip-ink: none;
 }
 
-/* Remove possible underline artifacts */
 a::before,
 a::after {
   background-image: none !important;
@@ -121,54 +128,27 @@ a::after {
   border-bottom: none !important;
 }
 
-/* Link states */
 a:not(.btn):visited {
   color: var(--light-text);
 }
 
 a:not(.btn):hover {
-  color: var(--dark-section-bg);
+  color: #9b550a
 }
 
 a:not(.btn):active {
   color: var(--light-section-bg);
 }
 
-/* Section-specific link colors */
-.just-in-section a,
-.projects-list-section a,
-.navbar a {
-  color: var(--dark-text) !important;
-  text-decoration-color: currentColor !important;
-}
-
-.just-in-section a:visited,
-.projects-list-section a:visited,
-.navbar a:visited {
-  color: var(--light-text) !important;
-}
-
-.just-in-section a:hover,
-.projects-list-section a:hover,
-.navbar a:hover {
-  color: var(--dark-section-bg) !important;
-}
-
-.just-in-section a:active,
-.projects-list-section a:active,
-.navbar a:active {
-  color: #2ac3c9ff !important;
-}
-
-/* Keep h2 link colors consistent */
-.projects-list-section h2,
-.projects-list-section h2 a {
-  color: inherit;
+a.login-register {
+  color: var(--dark-section-bg);
+  text-shadow: #331b01 1px 1px 4px;
 }
 
 /* ---------- Gradient Text ---------- */
 .gradient-text {
   animation: text-color-animation 18s ease infinite;
+  text-shadow: 1px 1px 4px rgba(0, 0, 0, 0.6);
 }
 
 @keyframes text-color-animation {
@@ -187,21 +167,314 @@ a:not(.btn):active {
   }
 }
 
-/* ---------- Buttons ---------- */
-.btn {
-  font-size: 1.3rem;
+/* Navbar container */
+.main-nav {
+  display: flex;
+  align-items: center;
+  /* Vertically center logo & links */
+  justify-content: space-between;
+  /* Logo left, links right */
+  padding: 0.75rem 2rem;
+  border-bottom: 3px solid var(--dark-section-bg);
+  background: var(--blue-main-bg);
+  flex-wrap: wrap;
+  /* For smaller screens */
+  gap: 1rem;
 }
 
-.btn-outline-light {
-  border-color: var(--dark-text);
-  background-color: var(--light-text);
+/* Logo */
+.main-nav .logo {
+  width: 50px;
+  height: auto;
+  border-radius: 50%;
+}
+
+/* Nav links container */
+.nav-links {
+  display: flex;
+  gap: 1rem;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  align-items: center;
+  /* Vertically align links with logo */
+}
+
+/* Individual link styling */
+.nav-item {
+  position: relative;
+  list-style: none;
+  /* For dropdown positioning */
+}
+
+.nav-left {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+  /* space between logo and dropdown */
+}
+
+.nav-link {
+  color: #581206;
+  text-shadow: #9b550a 1px 1px 4px;
+  text-decoration: none;
+  padding: 0.5rem 1rem;
+  font-size: 1.4rem;
+  font-weight: 600;
+  transition: transform 0.3s ease, color 0.3s ease;
+}
+
+.dropdown-arrow {
+  display: inline-block;
+  margin-left: 0.4rem;
+  transition: transform 0.3s ease;
+  transform-origin: center;
+}
+
+.nav-item.dropdown.active .dropdown-arrow {
+  transform: rotate(180deg);
+}
+
+.nav-item.dropdown {
+  position: relative;
+}
+
+.dropdown-menu {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  width: 100%;
+  min-width: 100%;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  background: rgba(255, 183, 106, 0.6);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 6px;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+  opacity: 0;
+  transform: translateY(-10px) scale(0.95);
+  transform-origin: top;
+  visibility: hidden;
+  pointer-events: none;
+  transition: opacity 0.3s ease, transform 0.3s ease;
+}
+
+.nav-item.dropdown.active .dropdown-menu {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+  visibility: visible;
+  pointer-events: auto;
+}
+
+.nav-item.dropdown:hover {
+  color: var(--dark-text);
+  cursor: pointer;
+}
+
+.nav-item.dropdown.active .dropdown-item {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.nav-item.dropdown:hover .nav-link,
+.nav-item.dropdown.active .nav-link {
+  transform: scale(1.2);
+  color: var(--light-text);
+}
+
+.dropdown-item {
+  color: var(--dark-text);
+  display: block;
+  padding: 0.5rem 1rem;
+  text-decoration: none;
+  font-size: 1.4rem;
+  font-weight: 600;
+  opacity: 0;
+  transform: translateY(-5px);
+  transition: opacity 0.2s ease, transform 0.2s ease;
+}
+
+.dropdown-item:hover {
+  background: var(--light-section-bg);
+  color: var(--dark-text);
+  cursor: pointer;
+  border-radius: 5px;
+}
+
+
+.container {
+  max-width: 800px;
+  padding: 20px;
+}
+
+.textbox {
+  width: 100%;
+  padding: 10px;
+  margin-bottom: 15px;
+  border: 2px solid var(--dark-section-bg);
+  border-radius: 5px;
+  font-size: 1.2rem;
+}
+
+.form-label {
+  display: block;
+  margin-bottom: 5px;
+  font-size: 1.2rem;
   color: var(--dark-text);
 }
 
-.btn-outline-dark {
-  border-color: var(--dark-text);
+#username {
+  font-size: 1.3rem;
+  color: var(--dark-text);
+  text-shadow: #331b01 1px 1px 4px;
+  cursor: default;
+}
+
+.contact-section h1 {
+  margin-top: 10px;
+  text-shadow: #331b01 1px 1px 4px;
+  cursor: default;
+}
+
+.contact-section p {
+  font-size: 1.7rem;
+  margin: 20px 0 10px 20px;
+  text-shadow: #331b01 1px 1px 4px;
+  cursor: default;
+}
+
+/* Buttons */
+.btn {
+  width: 8em;
+  position: relative;
+  height: 2.5em;
+  border: 3px ridge #149CEA;
+  outline: none;
+  background-color: transparent;
+  color: #0c6d7c;
+  text-shadow: #331b01 1px 1px 4px;
+  transition: 1s;
+  border-radius: 0.3em;
+  font-size: 1.5rem;
+  font-weight: bold;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+}
+
+.projects-section .btn {
+  border: var(--dark-section-bg) ridge 3px;
+  color: var(--dark-section-bg);
+}
+
+.btn::after {
+  content: "";
+  position: absolute;
+  top: -10px;
+  left: 3%;
+  width: 95%;
+  height: 40%;
+  background-color: var(--light-section-bg);
+  transition: 0.5s;
+  transform-origin: center;
+}
+
+.new-section .btn::after,
+.new-section .btn::before {
   background-color: var(--dark-section-bg);
-  color: var(--light-text);
+}
+
+.btn::before {
+  content: "";
+  transform-origin: center;
+  position: absolute;
+  top: 80%;
+  left: 3%;
+  width: 95%;
+  height: 40%;
+  background-color: var(--light-section-bg);
+  transition: 0.5s;
+}
+
+.btn:hover::before,
+.btn:hover::after {
+  transform: scale(0)
+}
+
+.btn:hover {
+  box-shadow: inset 0px 0px 25px #1479EA;
+}
+
+.projects-section .btn:hover {
+  box-shadow: inset 0px 0px 25px var(--dark-section-bg);
+}
+
+#login-btn {
+  border: var(--dark-section-bg) ridge 3px;
+  color: var(--dark-section-bg);
+  margin-top: 20px;
+}
+
+#login-btn::after,
+#login-btn::before {
+  background-color: rgba(121, 208, 219, 1);
+}
+
+#login-btn:hover {
+  box-shadow: inset 0px 0px 25px var(--dark-section-bg);
+}
+
+#register-btn {
+  border: var(--dark-section-bg) ridge 3px;
+  color: var(--dark-section-bg);
+  margin-top: 20px;
+}
+
+#register-btn::after,
+#register-btn::before {
+  background-color: rgba(121, 208, 219, 1);
+}
+
+#register-btn:hover {
+  box-shadow: inset 0px 0px 25px var(--dark-section-bg);
+}
+
+.logout-btn,
+.login-register {
+  background: none;
+  border: none;
+  color: var(--dark-section-bg);
+  cursor: pointer;
+  font: inherit;
+  text-decoration: none;
+  padding: 0.5rem 1rem;
+  font-size: 1.4rem;
+  font-weight: 600;
+  text-shadow: #9b550a 1px 1px 4px;
+}
+
+.logout-btn:hover,
+.login-register:hover {
+  text-decoration: underline;
+  font-size: 1.4rem;
+  font-weight: 600;
+}
+
+.logout-btn {
+  border: #1479EA ridge 3px;
+  width: 7rem;
+  height: 2em;
+  box-shadow: inset 0px 0px 25px var(--light-section-bg);
+}
+
+.logout-btn::before,
+.logout-btn::after {
+  background-color: var(--blue-main-bg);
 }
 
 /* ---------- Layout ---------- */
@@ -213,15 +486,6 @@ body {
   min-height: 100vh;
 }
 
-.navbar {
-  border-bottom: 3px solid var(--dark-section-bg);
-}
-
-.navbar li {
-  font-size: 1.5rem;
-}
-
-/* Grid Layouts */
 .main-grid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
@@ -232,85 +496,81 @@ body {
 
 .hero-section {
   grid-column: span 2;
-  margin-bottom: 20px;
+  margin-bottom: 10px;
+  cursor: default;
+  border-radius: 10px;
 }
 
-.subtitle {
-  margin-top: 10px;
+.hero-section h1 {
+  margin: 10px 0 10px 20px;
 }
 
-/* Section containers */
-.storecalc-section,
+.new-section,
 .projects-section {
   display: flex;
   flex-direction: column;
   justify-content: space-between;
-  min-height: 360px;
+  min-height: 240px;
   border-radius: 10px;
   padding: 20px 20px 2rem;
   opacity: 0.75;
+  text-shadow: 1px 1px 4px rgba(0, 0, 0, 0.6);
+}
+
+.new-section {
+  background-color: var(--dark-section-bg);
+  color: var(--light-section-bg);
+}
+
+.new-section h2 {
+  color: #0c6d7c;
 }
 
 .projects-section {
   background-color: var(--light-section-bg);
-  color: var(--dark-text);
+  color: var(--dark-section-bg);
 }
 
-/* Last child auto push */
-.projects-section:not(.just-in-section)> :last-child,
-.storecalc-section> :last-child {
-  margin-top: auto;
-}
-
-/* Inner p for storecalc */
-body:not(.player-int) .storecalc-section p {
-  background-color: var(--dark-section-bg);
-  color: var(--dark-text);
-}
-
-.projects-grid {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 10px;
-  grid-column: span 2;
-}
-
-/* ---------- Just-In Section ---------- */
-.just-in-section {
-  grid-row: 1 / span 2;
-  min-height: 100px;
-  justify-content: center;
-  padding: 20px;
-}
-
-.just-in-section h2 {
+.projects-section h2,
+.new-section h2 {
+  margin-top: 5px;
   margin-bottom: 15px;
 }
 
-.just-in-section ul {
-  list-style: none;
-  padding: 0;
+.projects-section p,
+.new-section p {
+  margin-top: 0px;
+  margin-bottom: 10px;
 }
 
-.just-in-section li {
+.projects-section.just-in-section {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  min-height: auto;
+  padding: 10px 20px;
+}
+
+.projects-section.just-in-section ul {
+  padding: 0;
+  margin: 0;
+}
+
+.projects-section.just-in-section li {
   display: flex;
   align-items: center;
+  height: 60px;
+  margin-bottom: 5px;
 }
 
-.just-in-section li::before {
+.projects-section.just-in-section h2 {
+  margin: 10px 0 0 10px;
+}
+
+.projects-section.just-in-section li::before {
   content: "•";
   margin-right: 0.5em;
   font-size: 1.2em;
-}
-
-/* ---------- Projects List Section ---------- */
-.projects-list-section {
-  background-color: var(--light-section-bg);
-  color: var(--dark-text);
-  padding: 20px 10px 15px 20px;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
 }
 
 /* ---------- Footer ---------- */
@@ -321,11 +581,6 @@ body:not(.player-int) .storecalc-section p {
   align-items: center;
   border-top: 3px solid var(--dark-text);
   opacity: 0.75;
-}
-
-#copyright {
-  margin-bottom: 10px;
-  font-size: 1.2rem;
 }
 
 .footer-links {
@@ -347,17 +602,25 @@ body:not(.player-int) .storecalc-section p {
 /* ---------- Responsive ---------- */
 @media (max-width: 768px) {
 
+  .main-grid {
+    flex-grow: 0;
+  }
+
   .main-grid,
   .projects-grid {
     grid-template-columns: 1fr;
   }
 
   .hero-section,
-  .storecalc-section,
+  .new-section,
   .projects-section,
-  .carousel-section,
-  .birthday-section,
   .projects-list-section {
     grid-column: span 1;
+  }
+  .projects-section p, .new-section p {
+    margin-bottom: 20px;
+  }
+  .projects-section .btn, .new-section .btn {
+    margin-top: 10px;
   }
 }

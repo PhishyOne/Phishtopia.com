@@ -1,12 +1,27 @@
-
+// =====================
+// Canvas Setup
+// =====================
 const canvas = document.querySelector('#bubble-canvas');
-canvas.width = window.innerWidth;
-canvas.height = window.innerHeight;
 const c = canvas.getContext('2d');
-const numCircles = 100;
 
+let cw = window.innerWidth;
+let ch = window.innerHeight;
+canvas.width = cw;
+canvas.height = ch;
+
+// Resize handler
+window.addEventListener('resize', () => {
+    cw = window.innerWidth;
+    ch = window.innerHeight;
+    canvas.width = cw;
+    canvas.height = ch;
+});
+
+// =====================
+// Circle Class
+// =====================
 class Circle {
-    constructor(x, y, dx, dy, radius, color = 'red') {
+    constructor(x, y, dx, dy, radius, color) {
         this.x = x;
         this.y = y;
         this.dx = dx;
@@ -23,39 +38,52 @@ class Circle {
     }
 
     update() {
-        if (this.x + this.radius > innerWidth || this.x - this.radius < 0) {
-            this.dx = -this.dx;
-        }
-        if (this.y + this.radius > innerHeight || this.y - this.radius < 0) {
-            this.dy = -this.dy;
-        }
+        if (this.x + this.radius > cw || this.x - this.radius < 0) this.dx = -this.dx;
+        if (this.y + this.radius > ch || this.y - this.radius < 0) this.dy = -this.dy;
+
         this.x += this.dx;
         this.y += this.dy;
         this.draw();
     }
 }
 
+// =====================
+// Initialize Circles
+// =====================
+const numCircles = 50; // Reduced for performance
 const circleArray = [];
+
 for (let i = 0; i < numCircles; i++) {
     const radius = Math.random() * 15 + 2;
-    const x = Math.random() * (innerWidth - radius * 2) + radius;
-    const y = Math.random() * (innerHeight - radius * 2) + radius;
-    const dx = (Math.random() - 0.5) * 3;
-    const dy = (Math.random() - 0.5) * 3;
-    const alpha = Math.random() * 0.8;
-    const color = `rgba(${Math.floor(Math.random() * 10)},
-                        ${Math.floor(Math.random() * 25)},
-                        ${Math.floor(Math.random() * 255)}, ${alpha.toFixed(1)})`;
+    const x = Math.random() * (cw - radius * 2) + radius;
+    const y = Math.random() * (ch - radius * 2) + radius;
+    const dx = (Math.random() - 0.5) * 2; // slightly slower
+    const dy = (Math.random() - 0.5) * 2;
+    const alpha = Math.random() * 0.7 + 0.2; // visible alpha
+    const color = `rgba(${Math.floor(Math.random() * 50)},
+                        ${Math.floor(Math.random() * 50)},
+                        ${Math.floor(Math.random() * 255)}, ${alpha.toFixed(2)})`;
 
     circleArray.push(new Circle(x, y, dx, dy, radius, color));
 }
 
+// =====================
+// Animation Loop
+// =====================
+let frame = 0;
 function animate() {
     requestAnimationFrame(animate);
-    c.clearRect(0, 0, innerWidth, innerHeight);
+    frame++;
+
+    // Optional: skip every other frame to reduce CPU
+    if (frame % 2 === 0) return;
+
+    c.clearRect(0, 0, cw, ch);
+
     for (const circle of circleArray) {
         circle.update();
     }
 }
 
+// Start animation
 animate();

@@ -6,7 +6,10 @@ import ejs from "ejs";
 import { readdirSync, mkdirSync, appendFileSync } from "fs";
 import { join, dirname } from "path";
 import { fileURLToPath } from "url";
-import "./app-brewery-server/db.js"; // Database connection (required)
+import "./app-brewery-server/db.js"; // Database connection
+import session from "express-session";
+import authRoutes from "./app-brewery-server/routes/auth.js";
+
 // Routers ////////////////////////////////////////////////////////////////////
 import playerIntRoutes from "./app-brewery-server/routes/player-int.js";
 import project25Routes from "./app-brewery-server/routes/project25.js";
@@ -23,7 +26,7 @@ import project34Routes from "./app-brewery-server/routes/project34.js";
 // =====================
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const PORT = process.env.PORT || 3002;
-const CANVAS_PAGES = ["index", "projects", "contact"];
+const CANVAS_PAGES = ["index", "projects", "contact", "youlist", "register", "login"];
 // Logs setup
 const logDir = join(__dirname, "logs");
 mkdirSync(logDir, { recursive: true });
@@ -38,17 +41,21 @@ const seenIPs = new Set();
 // Body parsing
 const app = express();
 app.use(express.urlencoded({ extended: true }));
+app.use(express.json());
 
 // Default EJS locals
 app.use((req, res, next) => {
     res.locals.extraStyles = [];
     res.locals.extraScripts = [];
+    res.locals.user = req.session?.user || null;
+    res.locals.currentUrl = req.originalUrl;
     next();
 });
 
 // Serve static folders
 app.use(express.static(join(__dirname, "public"))); // Main public folder
 app.use("/static", express.static(join(__dirname, "views/app-brewery-static"))); // Old static projects
+app.use("/projects/assets", express.static(join(__dirname, "public/projects")));
 
 // Auto-serve project public folders
 const projectsDir = join(__dirname, "app-brewery-server/public");
@@ -75,11 +82,50 @@ app.use((req, res, next) => {
 // View engine setup
 app.set("view engine", "ejs");
 app.set("views", join(__dirname, "views"));
-
-app.engine("ejs", ejs.__express);  // use the default Express engine
-
+app.engine("ejs", ejs.__express); 
 app.locals.basedir = app.get("views");
 
+// Session setup
+const isProd = process.env.NODE_ENV === "production";
+
+app.use(session({
+    name: "sid",
+    secret: process.env.SESSION_SECRET || "devsecret",
+    resave: false,
+    saveUninitialized: false,
+    cookie: {
+        httpOnly: true,
+        secure: isProd ? true : false, // <-- force false locally
+        sameSite: "lax",
+        maxAge: 1000 * 60 * 60 * 2
+    }
+}));
+
+// Make the user ID available in all templates
+app.use((req, res, next) => {
+    res.locals.user = req.session?.user || null;
+    next();
+});
+
+// TEMP LOG
+app.use((req, res, next) => {
+    console.log("SESSION:", req.session);
+    next();
+});
+
+app.use("/auth", authRoutes);
+app.use("/youlist", project34Routes);
+
+//Protect Route
+app.get("/projects", (req, res) => {
+    res.render("projects", {
+        bodyClass: "projects",
+        user: req.session?.user || null,
+        currentUrl: req.originalUrl,
+        extraStyles: ["/styles/main.css"],
+        extraScripts: []
+    });
+});
 
 // Mount routers /////////////////////////////////////////////////////
 const APP_ROUTES = {
@@ -102,17 +148,20 @@ const viewFiles = readdirSync(join(__dirname, "views"))
     .filter(f => f.endsWith(".ejs") && f !== "player-int.ejs");
 viewFiles.forEach(file => {
     const name = file.replace(".ejs", "");
-    const isProject = name.startsWith("project");
+    const isProject = name.startsWith("project") && name !== "projects";
     app.get(name === "index" ? "/" : `/${name}`, (req, res) => {
+        if (req.url !== "/" && req.url !== `/${name}`) return res.sendStatus(404);
+        if (name === "youlist") return;
         const styles = isProject ? [`/${name}/styles/main.css`] : ["/styles/main.css"];
         if (name === "project33-2") styles.push(`/${name}/styles/new.css`);
         const scripts = [];
         if (CANVAS_PAGES.includes(name)) scripts.push("/js/canvas.js");
-        if (name === "index") scripts.push("/index.js");
         res.render(name, {
             bodyClass: name,
             extraStyles: styles,
-            extraScripts: scripts
+            extraScripts: scripts,
+            user: req.session?.user || null,
+            currentUrl: req.originalUrl
         });
     });
 });
