@@ -4,7 +4,7 @@ dotenv.config();
 import express from "express";
 import ejs from "ejs";
 import { readdirSync, mkdirSync, appendFileSync } from "fs";
-import { join, dirname } from "path";
+import { join, dirname, extname } from "path";
 import { fileURLToPath } from "url";
 import "./app-brewery-server/db.js"; // Database connection
 import session from "express-session";
@@ -33,6 +33,7 @@ mkdirSync(logDir, { recursive: true });
 const errorLogFile = join(logDir, "errors.log");
 const accessLogFile = join(logDir, "unique_ips.log");
 const seenIPs = new Set();
+const ASSET_EXTENSIONS = new Set([".css", ".js", ".png", ".jpg", ".jpeg", ".svg", ".webp", ".ico"]);
 
 // =====================
 // Middleware
@@ -68,7 +69,8 @@ readdirSync(projectsDir, { withFileTypes: true })
 
 // Logging middleware for unique IPs requesting static assets
 app.use((req, res, next) => {
-    const isStatic = /\.(css|js|png)$/.test(req.url);
+    const pathWithoutQuery = req.path || req.url;
+    const isStatic = ASSET_EXTENSIONS.has(extname(pathWithoutQuery).toLowerCase());
     const ip = req.ip || req.socket.remoteAddress;
     if (isStatic && !seenIPs.has(ip)) {
         seenIPs.add(ip);
@@ -101,18 +103,6 @@ app.use(session({
         maxAge: 1000 * 60 * 60 * 2
     }
 }));
-
-// Make the user ID available in all templates
-app.use((req, res, next) => {
-    res.locals.user = req.session?.user || null;
-    next();
-});
-
-// TEMP LOG
-app.use((req, res, next) => {
-    console.log("SESSION:", req.session);
-    next();
-});
 
 app.use("/auth", authRoutes);
 app.use("/youlist", project34Routes);
