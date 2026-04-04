@@ -215,8 +215,8 @@ a.login-register {
 }
 
 .nav-link {
-  color: #581206;
-  text-shadow: #9b550a 1px 1px 4px;
+  color: #ffaf47;
+  text-shadow: #6d3800 2px 2px 3px;
   text-decoration: none;
   padding: 0.5rem 1rem;
   font-size: 1.4rem;
@@ -304,6 +304,11 @@ a.login-register {
   border-radius: 5px;
 }
 
+#contact.dropdown-item {
+  border-top: #581206 solid 1px;
+  color: #0c6d7c;
+  text-shadow: rgb(81, 104, 255) 2px 2px 3px;
+}
 
 .container {
   max-width: 800px;
