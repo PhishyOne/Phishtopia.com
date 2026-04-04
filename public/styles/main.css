@@ -214,6 +214,14 @@ a.login-register {
   /* space between logo and dropdown */
 }
 
+.nav-right {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem; /* space between username & logout */
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
 .nav-link {
   color: #ffaf47;
   text-shadow: #6d3800 2px 2px 3px;
@@ -308,6 +316,10 @@ a.login-register {
   border-top: #581206 solid 1px;
   color: #0c6d7c;
   text-shadow: rgb(81, 104, 255) 2px 2px 3px;
+}
+
+#username {
+  font-size: clamp(0.8rem, 1vw, 1.3rem);
 }
 
 .container {
@@ -605,7 +617,7 @@ body {
 }
 
 /* ---------- Responsive ---------- */
-@media (max-width: 768px) {
+@media (max-width: 700px) {
 
   .main-grid {
     flex-grow: 0;
@@ -628,4 +640,20 @@ body {
   .projects-section .btn, .new-section .btn {
     margin-top: 10px;
   }
+
+  .nav-right {
+    font-size: 0.9rem;
+  }
+
+  .logout-btn {
+    padding: 0.3rem 0.5rem;
+    font-size: 1rem;
+  }
+
+  .nav-left {
+    flex-wrap: wrap; /* left links can wrap */
+  }
+    #username {
+      display: none;
+    }
 }
