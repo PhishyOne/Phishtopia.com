@@ -245,6 +245,7 @@ a.login-register {
 
 .nav-item.dropdown {
   position: relative;
+  z-index: 1000;
 }
 
 .dropdown-menu {
@@ -268,6 +269,7 @@ a.login-register {
   visibility: hidden;
   pointer-events: none;
   transition: opacity 0.3s ease, transform 0.3s ease;
+  z-index: 9999;
 }
 
 .nav-item.dropdown.active .dropdown-menu {
@@ -303,6 +305,7 @@ a.login-register {
   opacity: 0;
   transform: translateY(-5px);
   transition: opacity 0.2s ease, transform 0.2s ease;
+  text-shadow: rgb(235, 149, 21) 6px 4px 7px;
 }
 
 .dropdown-item:hover {
@@ -314,12 +317,17 @@ a.login-register {
 
 #contact.dropdown-item {
   border-top: #581206 solid 1px;
-  color: #0c6d7c;
-  text-shadow: rgb(81, 104, 255) 2px 2px 3px;
+  color: #073a29;
+  text-shadow: rgb(81, 104, 255) 6px 4px 7px;
+}
+
+#projects.dropdown-item {
+  color: #127483;
+  text-shadow: rgb(178, 250, 160) 6px 4px 7px;
 }
 
 #username {
-  font-size: clamp(0.8rem, 1vw, 1.3rem);
+  font-size: clamp(1.2rem, 1vw, 1.3rem);
 }
 
 .container {
@@ -344,7 +352,7 @@ a.login-register {
   color: var(--dark-text);
 }
 
-#username {
+#username-tb {
   font-size: 1.3rem;
   color: var(--dark-text);
   text-shadow: #331b01 1px 1px 4px;
