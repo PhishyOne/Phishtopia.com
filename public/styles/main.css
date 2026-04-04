@@ -469,7 +469,7 @@ a.login-register {
   border: #1479EA ridge 3px;
   width: 7rem;
   height: 2em;
-  box-shadow: inset 0px 0px 25px var(--light-section-bg);
+  /* box-shadow: inset 0px 0px 25px var(--light-section-bg); */
 }
 
 .logout-btn::before,
