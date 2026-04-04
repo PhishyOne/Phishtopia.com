@@ -44,12 +44,30 @@ const app = express();
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 
+// Session setup
+const isProd = process.env.NODE_ENV === "production";
+
+app.set("trust proxy", 1);
+app.use(session({
+    name: "sid",
+    secret: process.env.SESSION_SECRET || "devsecret",
+    resave: false,
+    saveUninitialized: false,
+    cookie: {
+        httpOnly: true,
+        secure: isProd,
+        sameSite: isProd ? "none" : "lax",
+        maxAge: 1000 * 60 * 60 * 2
+    }
+}));
+
 // Default EJS locals
 app.use((req, res, next) => {
     res.locals.extraStyles = [];
     res.locals.extraScripts = [];
     res.locals.user = req.session?.user || null;
     res.locals.currentUrl = req.originalUrl;
+    console.log("SESSION:", req.session);
     next();
 });
 
@@ -86,23 +104,6 @@ app.set("view engine", "ejs");
 app.set("views", join(__dirname, "views"));
 app.engine("ejs", ejs.__express); 
 app.locals.basedir = app.get("views");
-
-// Session setup
-const isProd = process.env.NODE_ENV === "production";
-
-app.set("trust proxy", 1);
-app.use(session({
-    name: "sid",
-    secret: process.env.SESSION_SECRET || "devsecret",
-    resave: false,
-    saveUninitialized: false,
-    cookie: {
-        httpOnly: true,
-        secure: isProd ? true : false, // <-- force false locally
-        sameSite: "lax",
-        maxAge: 1000 * 60 * 60 * 2
-    }
-}));
 
 app.use("/auth", authRoutes);
 app.use("/youlist", project34Routes);
