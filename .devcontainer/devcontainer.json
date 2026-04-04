@@ -7,7 +7,8 @@
         "GitHub.copilot",
         "GitHub.copilot-chat",
         "cweijan.vscode-postgresql-client2",
-        "cweijan.dbclient-jdbc"
+        "cweijan.dbclient-jdbc",
+        "openai.chatgpt"
       ]
     }
   },
