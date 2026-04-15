@@ -7,14 +7,22 @@
                 <%= error %>
             </div>
             <% } %>
-                <form action="/auth/register" method="POST">
+                <form action="/auth/register" method="POST" onsubmit="return validatePasswords()">
                     <div>
                         <label for="username" class="form-label">Username</label>
-                        <input type="text" autocomplete="username" id="username-tb"  class="textbox" name="username" required>
+                        <input type="text" autocomplete="username" id="username-tb" class="textbox" name="username"
+                            required>
                     </div>
                     <div>
                         <label for="password" class="form-label">Password</label>
-                        <input type="password" autocomplete="new-password" id="password"  class="textbox" name="password" required>
+                        <input type="password" autocomplete="new-password" id="password" class="textbox" name="password"
+                            required>
+                    </div>
+                    <div id="password-match" style="font-size: 0.9em;"></div>
+                    <div>
+                        <label for="confirm-password" class="form-label">Confirm Password</label> <input type="password"
+                            autocomplete="new-password" id="confirm-password" class="textbox" name="confirm_password"
+                            required>
                     </div>
                     <div>
                         <label for="email" class="form-label">Email</label>
@@ -22,7 +30,7 @@
                     </div>
                     <button class="btn" id="register-btn">Register</button>
                 </form>
+                <div class="alert alert-danger" id="error-box" style="display:none;"></div>
                 <p class="h3">Already have an account? <a href="/auth/login">Login</a></p>
     </div>
-
-    <%- include('partials/footer') %>
+    <%- include('partials/footer', { extraScripts: ["/js/register.js"] }) %>

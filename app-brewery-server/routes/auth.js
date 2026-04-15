@@ -1,9 +1,28 @@
 import express from "express";
 import bcrypt from "bcrypt";
 import pool from "../db.js";
+import rateLimit from "express-rate-limit";
+import crypto from "crypto";
+import nodemailer from "nodemailer";
+
+
 
 const router = express.Router();
 const SALT_ROUNDS = 10;
+const loginLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000, // 15 minutes
+    max: 10, // limit each IP to 10 requests
+    message: "Too many login attempts. Try again later."
+});
+const transporter = nodemailer.createTransport({
+    host: "smtp.gmail.com", // or your SMTP provider
+    port: 465,
+    secure: true,
+    auth: {
+        user: process.env.EMAIL_USER,
+        pass: process.env.EMAIL_PASS
+    }
+});
 
 // =====================
 // GET /register
@@ -16,6 +35,7 @@ router.get("/register", (req, res) => {
         extraScripts: [],
         error: null,
         username: "",
+        email: "",
         password: ""
     });
 });
@@ -27,7 +47,6 @@ router.get("/login", (req, res) => {
     if (req.query.returnTo) {
         req.session.returnTo = req.query.returnTo;
     }
-
     res.render("login", {
         title: "Login",
         bodyClass: "auth",
@@ -39,18 +58,63 @@ router.get("/login", (req, res) => {
     });
 });
 
+router.get("/verify-email", async (req, res) => {
+    const { token } = req.query;
+    if (!token) return res.send("Invalid token");
+
+    try {
+        const result = await pool.query(
+            "UPDATE users SET email_verified = true, verify_token = NULL WHERE verify_token = $1 RETURNING username",
+            [token]
+        );
+
+        if (!result.rows.length) return res.send("Token invalid or expired");
+
+        res.send("Email verified! You can now log in.");
+    } catch (err) {
+        console.error(err);
+        res.status(500).send("Server error");
+    }
+});
+
 // =====================
 // POST /register
 // =====================
 router.post("/register", async (req, res) => {
-    const { username, password, email } = req.body;
+    const verificationToken = crypto.randomBytes(32).toString("hex");
+    const { username, password, confirm_password, email } = req.body;
 
-    if (!username || !password || !email) {
+    if (!username || !password || !confirm_password || !email) {
         return res.render("register", {
             title: "Register",
             bodyClass: "register",
+            extraStyles: [],
+            extraScripts: [],
             error: "All fields are required",
             username,
+            email,
+            password: ""
+        });
+    }
+
+    if (password !== confirm_password) {
+        return res.render("register", {
+            title: "Register",
+            bodyClass: "register",
+            error: "Passwords do not match",
+            username,
+            email,
+            password: ""
+        });
+    }
+
+    if (password.length < 8) {
+        return res.render("register", {
+            title: "Register",
+            bodyClass: "register",
+            error: "Password must be at least 8 characters",
+            username,
+            email,
             password: ""
         });
     }
@@ -58,11 +122,18 @@ router.post("/register", async (req, res) => {
     try {
         const hashed = await bcrypt.hash(password, SALT_ROUNDS);
         const result = await pool.query(
-            "INSERT INTO users (username, password_hash, email) VALUES ($1, $2, $3) RETURNING id, username",
-            [username, hashed, email]
+            "INSERT INTO users (username, password_hash, email, verify_token) VALUES ($1, $2, $3, $4) RETURNING id, username",
+            [username, hashed, email, verificationToken]
         );
+        const verifyUrl = `https://phishtopia.com/auth/verify-email?token=${verificationToken}`;
 
-        req.session.user = result.rows[0];
+        await transporter.sendMail({
+            from: `"Phishtopia" <${process.env.EMAIL_USER}>`,
+            to: email,
+            subject: "Verify your email",
+            html: `<p>Click the link to verify your email:</p><a href="${verifyUrl}">${verifyUrl}</a>`
+        });
+        res.render("check-email", { email });
 
         // Redirect to saved returnTo or home
         const redirectTo = req.session.returnTo || "/";
@@ -71,11 +142,20 @@ router.post("/register", async (req, res) => {
 
     } catch (err) {
         if (err.code === "23505") {
+            let message = "Already exists";
+
+            if (err.constraint.includes("username")) {
+                message = "Username already exists";
+            } else if (err.constraint.includes("email")) {
+                message = "Email already exists";
+            }
+
             return res.render("register", {
                 title: "Register",
                 bodyClass: "register",
-                error: "Username already exists",
+                error: message,
                 username,
+                email,
                 password: ""
             });
         }
@@ -87,7 +167,7 @@ router.post("/register", async (req, res) => {
 // =====================
 // POST /login
 // =====================
-router.post("/login", async (req, res) => {
+router.post("/login", loginLimiter, async (req, res) => {
     const { username, password } = req.body;
     console.log("Login attempt:", req.body);
     try {
@@ -106,13 +186,16 @@ router.post("/login", async (req, res) => {
                 password: ""
             });
         }
-
+        if (!user.email_verified) {
+            return res.render("login", {
+                title: "Login",
+                bodyClass: "auth",
+                error: "Please verify your email first",
+                username,
+                password: ""
+            });
+        }
         req.session.user = { id: user.id, username: user.username };
-
-        // Redirect to saved returnTo or home
-        const redirectTo = req.session.returnTo || "/";
-        delete req.session.returnTo;
-        res.redirect(redirectTo);
 
     } catch (err) {
         console.error(err);

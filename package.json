@@ -25,12 +25,15 @@
   "dependencies": {
     "axios": "^1.12.2",
     "bcrypt": "^6.0.0",
+    "crypto": "^1.0.1",
     "csv-parse": "^6.1.0",
     "dotenv": "^17.2.3",
     "ejs": "^3.1.10",
     "express": "^5.1.0",
+    "express-rate-limit": "^8.3.2",
     "express-session": "^1.19.0",
     "node-fetch": "^3.3.2",
+    "nodemailer": "^8.0.5",
     "nodemon": "^3.1.14",
     "pg": "^8.17.1"
   },
