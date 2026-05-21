@@ -67,7 +67,11 @@ app.use((req, res, next) => {
     res.locals.extraScripts = [];
     res.locals.user = req.session?.user || null;
     res.locals.currentUrl = req.originalUrl;
-    console.log("SESSION:", req.session);
+
+    if (!isProd) {
+        console.log("SESSION:", req.session);
+    }
+
     next();
 });
 
@@ -106,7 +110,6 @@ app.engine("ejs", ejs.__express);
 app.locals.basedir = app.get("views");
 
 app.use("/auth", authRoutes);
-app.use("/youlist", project34Routes);
 
 //Protect Route
 app.get("/projects", (req, res) => {
@@ -122,6 +125,7 @@ app.get("/projects", (req, res) => {
 // Mount routers /////////////////////////////////////////////////////
 const APP_ROUTES = {
     "player-int": playerIntRoutes,
+    "echotrace": playerIntRoutes,
     "project25": project25Routes,
     "project28": project28Routes,
     "project29": project29Routes,
