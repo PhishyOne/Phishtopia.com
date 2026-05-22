@@ -6,8 +6,9 @@ import ejs from "ejs";
 import { readdirSync, mkdirSync, appendFileSync } from "fs";
 import { join, dirname, extname } from "path";
 import { fileURLToPath } from "url";
-import "./app-brewery-server/db.js"; // Database connection
+import pool from "./app-brewery-server/db.js"; // Database connection
 import session from "express-session";
+import connectPgSimple from "connect-pg-simple";
 import authRoutes from "./app-brewery-server/routes/auth.js";
 
 // Routers ////////////////////////////////////////////////////////////////////
@@ -29,6 +30,7 @@ const PORT = process.env.PORT || 3002;
 const CANVAS_PAGES = ["index", "projects", "contact", "youlist", "register", "login"];
 const LOG_SESSIONS = process.env.LOG_SESSIONS === "true";
 const LOG_UNIQUE_STATIC_IPS = process.env.LOG_UNIQUE_STATIC_IPS === "true";
+const PgSession = connectPgSimple(session);
 
 // Logs setup
 const logDir = join(__dirname, "logs");
@@ -62,6 +64,11 @@ const isProd = process.env.NODE_ENV === "production";
 app.set("trust proxy", 1);
 app.use(session({
     name: "sid",
+    store: new PgSession({
+        pool,
+        tableName: "session",
+        createTableIfMissing: true
+    }),
     secret: process.env.SESSION_SECRET || "devsecret",
     resave: false,
     saveUninitialized: false,
