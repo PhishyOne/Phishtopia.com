@@ -44,6 +44,15 @@ const app = express();
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 
+// Health check for uptime checks, Cloud Run, and deployment smoke tests
+app.get("/health", (req, res) => {
+    res.status(200).json({
+        status: "ok",
+        service: "phishtopia",
+        timestamp: new Date().toISOString()
+    });
+});
+
 // Session setup
 const isProd = process.env.NODE_ENV === "production";
 
