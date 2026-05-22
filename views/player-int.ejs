@@ -1,4 +1,4 @@
-<%- include('partials/header', { title: 'Echoes Player Intelligence' , extraStyles: ['/styles/player-int.css'],
+<%- include('partials/header', { title: 'EchoTrace' , extraStyles: ['/styles/player-int.css'],
     bodyClass: 'player-int' }) %>
   
 
@@ -9,7 +9,7 @@
                 <canvas id="gearCanvas"></canvas>
                 <img src="/images/logoBG.jpg" alt="Logo Background" class="logo-bg">
             </div>
-            <h1 id="eve-title">Eve Echoes: INTM</h1>
+            <h1 id="eve-title">EchoTrace</h1>
         </div>
         <div class="join-container">
             <h2>Join International Team [INTM]:</h2>
@@ -21,15 +21,15 @@
             <a href="https://www.youtube.com/watch?v=3JE9PedLWqE&list=PLPlRnK8RqmvoasFKFmFRS55O12O6PvD4Z&index=1"><img
                     src="/images/youtube.svg" alt="YouTube Logo" class="youtube-logo"></a>
         </div>
-        <h2 id="pig-title">Player Intelligence Gatherer</h2>
+        <h2 id="pig-title">Trace player activity by killmail patterns</h2>
         <p>Current UTC Time: <span id="utc-time"></span></p>
 
         <!-- Search Box -->
         <div class="search-box">
-            <form id="playerForm" action="/player-int/submit" method="GET">
+            <form id="playerForm" action="/echotrace/submit" method="GET">
                 <div class="search-row">
-                    <label for="playerInput">Enter Player Name:</label>
-                    <input type="text" id="playerInput" name="name" placeholder="(Case Sensitive)" required
+                    <label for="playerInput">Enter Player Name or ID:</label>
+                    <input type="text" id="playerInput" name="name" placeholder="Name or numeric player ID" required
                         value="<%= playerName ? playerName : '' %>">
                 </div>
         
@@ -39,7 +39,6 @@
                     <span class="toggle-arrow">&#9656;</span>
                 </div>
         
-                <!-- Filters Row (Collapsed by default) -->
                 <!-- Filters Row (Collapsed by default) -->
                 <div class="filters-row">
                     <!-- Date Range -->
