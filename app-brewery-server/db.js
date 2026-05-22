@@ -17,6 +17,18 @@ const isProd = NODE_ENV === "production";
 const sslDisabled = DB_SSL === "false";
 const sslConfig = sslDisabled ? false : { rejectUnauthorized: false };
 
+console.log("Database env check:", {
+    hasDatabaseUrl: Boolean(DATABASE_URL),
+    hasDbHost: Boolean(DB_HOST),
+    hasDbName: Boolean(DB_NAME),
+    nodeEnv: NODE_ENV || null,
+    sslDisabled
+});
+
+if (!DATABASE_URL && !DB_HOST) {
+    throw new Error("Database configuration missing: set DATABASE_URL or DB_HOST.");
+}
+
 const poolConfig = DATABASE_URL
     ? {
         connectionString: DATABASE_URL,
