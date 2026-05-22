@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="./assets/phishtopia-logo-animated.gif" alt="Phishtopia animated logo" width="220">
+  <img src="public/images/phishtopia-logo-animated-1.gif" alt="Phishtopia animated logo" width="220">
 </p>
 
 <h1 align="center">Phishtopia.com</h1>
