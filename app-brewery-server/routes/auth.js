@@ -5,8 +5,6 @@ import rateLimit from "express-rate-limit";
 import crypto from "crypto";
 import nodemailer from "nodemailer";
 
-
-
 const router = express.Router();
 const SALT_ROUNDS = 10;
 const loginLimiter = rateLimit({
@@ -70,10 +68,10 @@ router.get("/verify-email", async (req, res) => {
 
         if (!result.rows.length) return res.send("Token invalid or expired");
 
-        res.send("Email verified! You can now log in.");
+        return res.send("Email verified! You can now log in.");
     } catch (err) {
         console.error(err);
-        res.status(500).send("Server error");
+        return res.status(500).send("Server error");
     }
 });
 
@@ -121,7 +119,7 @@ router.post("/register", async (req, res) => {
 
     try {
         const hashed = await bcrypt.hash(password, SALT_ROUNDS);
-        const result = await pool.query(
+        await pool.query(
             "INSERT INTO users (username, password_hash, email, verify_token) VALUES ($1, $2, $3, $4) RETURNING id, username",
             [username, hashed, email, verificationToken]
         );
@@ -133,12 +131,8 @@ router.post("/register", async (req, res) => {
             subject: "Verify your email",
             html: `<p>Click the link to verify your email:</p><a href="${verifyUrl}">${verifyUrl}</a>`
         });
-        res.render("check-email", { email });
 
-        // Redirect to saved returnTo or home
-        const redirectTo = req.session.returnTo || "/";
-        delete req.session.returnTo;
-        res.redirect(redirectTo);
+        return res.render("check-email", { email });
 
     } catch (err) {
         if (err.code === "23505") {
@@ -160,7 +154,7 @@ router.post("/register", async (req, res) => {
             });
         }
         console.error(err);
-        res.status(500).send("Server error");
+        return res.status(500).send("Server error");
     }
 });
 
@@ -169,7 +163,7 @@ router.post("/register", async (req, res) => {
 // =====================
 router.post("/login", loginLimiter, async (req, res) => {
     const { username, password } = req.body;
-    console.log("Login attempt:", req.body);
+    console.log("Login attempt:", { username });
     try {
         const result = await pool.query(
             "SELECT * FROM users WHERE username = $1",
@@ -195,11 +189,17 @@ router.post("/login", loginLimiter, async (req, res) => {
                 password: ""
             });
         }
+
         req.session.user = { id: user.id, username: user.username };
+
+        const redirectTo = req.session.returnTo || "/";
+        delete req.session.returnTo;
+
+        return res.redirect(redirectTo);
 
     } catch (err) {
         console.error(err);
-        res.status(500).send("Server error");
+        return res.status(500).send("Server error");
     }
 });
 
