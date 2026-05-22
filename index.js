@@ -46,6 +46,16 @@ const ASSET_EXTENSIONS = new Set([".css", ".js", ".png", ".jpg", ".jpeg", ".svg"
 
 // Body parsing
 const app = express();
+app.disable("x-powered-by");
+
+app.use((req, res, next) => {
+    if (req.hostname === "www.phishtopia.com") {
+        return res.redirect(301, `https://phishtopia.com${req.originalUrl}`);
+    }
+
+    next();
+});
+
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 
