@@ -11,7 +11,7 @@ import session from "express-session";
 import authRoutes from "./app-brewery-server/routes/auth.js";
 
 // Routers ////////////////////////////////////////////////////////////////////
-import playerIntRoutes from "./app-brewery-server/routes/player-int.js";
+import echoTraceRoutes from "./routes/echotrace.js";
 import project25Routes from "./app-brewery-server/routes/project25.js";
 import project28Routes from "./app-brewery-server/routes/project28.js";
 import project29Routes from "./app-brewery-server/routes/project29.js";
@@ -124,8 +124,8 @@ app.get("/projects", (req, res) => {
 
 // Mount routers /////////////////////////////////////////////////////
 const APP_ROUTES = {
-    "player-int": playerIntRoutes,
-    "echotrace": playerIntRoutes,
+    "player-int": echoTraceRoutes,
+    "echotrace": echoTraceRoutes,
     "project25": project25Routes,
     "project28": project28Routes,
     "project29": project29Routes,
