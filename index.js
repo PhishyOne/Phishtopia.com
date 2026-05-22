@@ -27,6 +27,9 @@ import project34Routes from "./app-brewery-server/routes/project34.js";
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const PORT = process.env.PORT || 3002;
 const CANVAS_PAGES = ["index", "projects", "contact", "youlist", "register", "login"];
+const LOG_SESSIONS = process.env.LOG_SESSIONS === "true";
+const LOG_UNIQUE_STATIC_IPS = process.env.LOG_UNIQUE_STATIC_IPS === "true";
+
 // Logs setup
 const logDir = join(__dirname, "logs");
 mkdirSync(logDir, { recursive: true });
@@ -77,8 +80,11 @@ app.use((req, res, next) => {
     res.locals.user = req.session?.user || null;
     res.locals.currentUrl = req.originalUrl;
 
-    if (!isProd) {
-        console.log("SESSION:", req.session);
+    if (LOG_SESSIONS) {
+        console.log("SESSION:", {
+            user: req.session?.user || null,
+            returnTo: req.session?.returnTo || null
+        });
     }
 
     next();
@@ -98,8 +104,10 @@ readdirSync(projectsDir, { withFileTypes: true })
         app.use(`/${projName}`, express.static(join(projectsDir, projName)));
     });
 
-// Logging middleware for unique IPs requesting static assets
+// Optional logging middleware for unique IPs requesting static assets
 app.use((req, res, next) => {
+    if (!LOG_UNIQUE_STATIC_IPS) return next();
+
     const pathWithoutQuery = req.path || req.url;
     const isStatic = ASSET_EXTENSIONS.has(extname(pathWithoutQuery).toLowerCase());
     const ip = req.ip || req.socket.remoteAddress;
