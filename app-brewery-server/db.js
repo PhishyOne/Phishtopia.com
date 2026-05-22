@@ -10,20 +10,24 @@ const {
     DB_NAME,
     DB_PORT,
     DB_SSL,
-    NODE_ENV
+    NODE_ENV,
+    LOG_DB_CONFIG
 } = process.env;
 
 const isProd = NODE_ENV === "production";
 const sslDisabled = DB_SSL === "false";
 const sslConfig = sslDisabled ? false : { rejectUnauthorized: false };
+const logDbConfig = LOG_DB_CONFIG === "true";
 
-console.log("Database env check:", {
-    hasDatabaseUrl: Boolean(DATABASE_URL),
-    hasDbHost: Boolean(DB_HOST),
-    hasDbName: Boolean(DB_NAME),
-    nodeEnv: NODE_ENV || null,
-    sslDisabled
-});
+if (logDbConfig) {
+    console.log("Database env check:", {
+        hasDatabaseUrl: Boolean(DATABASE_URL),
+        hasDbHost: Boolean(DB_HOST),
+        hasDbName: Boolean(DB_NAME),
+        nodeEnv: NODE_ENV || null,
+        sslDisabled
+    });
+}
 
 if (!DATABASE_URL && !DB_HOST) {
     throw new Error("Database configuration missing: set DATABASE_URL or DB_HOST.");
@@ -53,18 +57,22 @@ const poolConfig = DATABASE_URL
         ssl: isProd && !sslDisabled ? sslConfig : false
     };
 
-console.log("Database connection target:", {
-    host: poolConfig.host,
-    port: poolConfig.port,
-    database: poolConfig.database,
-    hasUser: Boolean(poolConfig.user),
-    hasPassword: Boolean(poolConfig.password),
-    ssl: Boolean(poolConfig.ssl)
-});
+if (logDbConfig) {
+    console.log("Database connection target:", {
+        host: poolConfig.host,
+        port: poolConfig.port,
+        database: poolConfig.database,
+        hasUser: Boolean(poolConfig.user),
+        hasPassword: Boolean(poolConfig.password),
+        ssl: Boolean(poolConfig.ssl)
+    });
+}
 
 const pool = new pg.Pool(poolConfig);
 
-pool.on("connect", () => console.log("Connected to Postgres successfully!"));
+pool.on("connect", () => {
+    if (logDbConfig) console.log("Connected to Postgres successfully!");
+});
 pool.on("error", (err) => console.error("Postgres pool error:", err));
 
 export default pool;
