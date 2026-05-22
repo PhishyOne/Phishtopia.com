@@ -29,19 +29,38 @@ if (!DATABASE_URL && !DB_HOST) {
     throw new Error("Database configuration missing: set DATABASE_URL or DB_HOST.");
 }
 
-const poolConfig = DATABASE_URL
-    ? {
-        connectionString: DATABASE_URL,
+function buildDatabaseUrlConfig(databaseUrl) {
+    const url = new URL(databaseUrl);
+
+    return {
+        user: decodeURIComponent(url.username),
+        password: decodeURIComponent(url.password),
+        host: url.hostname,
+        port: Number(url.port || 5432),
+        database: url.pathname.replace("/", ""),
         ssl: sslConfig
-    }
+    };
+}
+
+const poolConfig = DATABASE_URL
+    ? buildDatabaseUrlConfig(DATABASE_URL)
     : {
         user: DB_USER,
         password: DB_PASSWORD,
         host: DB_HOST,
-        port: DB_PORT || 5432,
+        port: Number(DB_PORT || 5432),
         database: DB_NAME,
         ssl: isProd && !sslDisabled ? sslConfig : false
     };
+
+console.log("Database connection target:", {
+    host: poolConfig.host,
+    port: poolConfig.port,
+    database: poolConfig.database,
+    hasUser: Boolean(poolConfig.user),
+    hasPassword: Boolean(poolConfig.password),
+    ssl: Boolean(poolConfig.ssl)
+});
 
 const pool = new pg.Pool(poolConfig);
 
