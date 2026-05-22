@@ -343,7 +343,9 @@ async function prewarmCache() {
     }
 }
 
-// Call prewarm on server start
-prewarmCache();
+// Optionally prewarm on server start. Keep disabled on Cloud Run unless explicitly needed.
+if (process.env.PREWARM_TMDB_CACHE === "true") {
+    prewarmCache();
+}
 
 export default router;
