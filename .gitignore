@@ -36,3 +36,4 @@ pids
 .cache/
 .svelte-kit/
 Fullstack-Course
+backups/
