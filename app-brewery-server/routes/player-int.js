@@ -33,6 +33,22 @@ function topN(items, n) {
     return items.sort((a, b) => b.count - a.count).slice(0, n);
 }
 
+function renderPlayerInt(res, options = {}) {
+    return res.render("player-int", {
+        error: options.error ?? null,
+        playerName: options.playerName ?? null,
+        topRegions: options.topRegions ?? [],
+        hourlyPercentages: options.hourlyPercentages ?? [],
+        startDate: options.startDate ?? null,
+        endDate: options.endDate ?? null,
+        killSelected: options.killSelected ?? true,
+        deathSelected: options.deathSelected ?? true,
+        extraStyles: ["/styles/player-int.css"],
+        extraScripts: ["/js/little-logo.js", "/js/player-int.js"],
+        bodyClass: "player-int"
+    });
+}
+
 async function fetchAllPagesParallel(baseUrl) {
     const MAX_PAGES = 10;
     const promises = [];
@@ -61,52 +77,38 @@ async function fetchAllPagesParallel(baseUrl) {
 // Routes
 // =====================
 
-// Main player-int page
+// Main EchoTrace page
 router.get("/", (req, res) => {
-    res.render("player-int", {
-        error: null,
-        playerName: null,
-        topRegions: [],
-        hourlyPercentages: [],
-        startDate: null,
-        endDate: null,
-        killSelected: true,
-        deathSelected: true,
-        extraStyles: ["styles/playint.css"],
-        extraScripts: ["js/little-logo.js", "js/playint.js"],
-        bodyClass: "playint"
-    });
+    renderPlayerInt(res);
 });
 
-// player-int submit route
+// EchoTrace submit route
 router.get("/submit", async (req, res) => {
     try {
-        const playerName = req.query.name?.trim();
-        if (!playerName) {
-            return res.render("player-int", {
-                error: "Please enter a player name.",
-                playerName: null,
-                topRegions: [],
-                hourlyPercentages: [],
-                startDate: req.query.start || null,
-                endDate: req.query.end || null,
-                killSelected: !!req.query.kill,
-                deathSelected: !!req.query.death,
-                extraStyles: ["styles/playint.css"],
-                extraScripts: ["js/little-logo.js", "js/playint.js"],
-                bodyClass: "playint"
-            });
-        }
-
+        const playerInput = req.query.name?.trim();
         const killSelected = !!req.query.kill;
         const deathSelected = !!req.query.death;
 
+        if (!playerInput) {
+            return renderPlayerInt(res, {
+                error: "Please enter a player name or ID.",
+                startDate: req.query.start || null,
+                endDate: req.query.end || null,
+                killSelected,
+                deathSelected
+            });
+        }
+
+        const isPlayerId = /^\d+$/.test(playerInput);
+        const killerParam = isPlayerId ? "killer_id" : "killer_name";
+        const victimParam = isPlayerId ? "victim_id" : "victim_name";
+
         const promises = [];
         if (killSelected || (!killSelected && !deathSelected)) {
-            promises.push(fetchAllPagesParallel(`https://echoes.mobi/api/killmails?killer_name=${encodeURIComponent(playerName)}`));
+            promises.push(fetchAllPagesParallel(`https://echoes.mobi/api/killmails?${killerParam}=${encodeURIComponent(playerInput)}`));
         }
         if (deathSelected || (!killSelected && !deathSelected)) {
-            promises.push(fetchAllPagesParallel(`https://echoes.mobi/api/killmails?victim_name=${encodeURIComponent(playerName)}`));
+            promises.push(fetchAllPagesParallel(`https://echoes.mobi/api/killmails?${victimParam}=${encodeURIComponent(playerInput)}`));
         }
 
         let allData = (await Promise.all(promises)).flat();
@@ -195,34 +197,24 @@ router.get("/submit", async (req, res) => {
             percent: Number(((count / totalCount) * 100).toFixed(1)),
         }));
 
-        res.render("player-int", {
-            error: null,
-            playerName,
+        renderPlayerInt(res, {
+            playerName: playerInput,
             topRegions,
             hourlyPercentages,
             startDate: req.query.start || null,
             endDate: req.query.end || null,
-            killSelected: true,
-            deathSelected: true,
-            extraStyles: ["styles/playint.css"],
-            extraScripts: ["js/little-logo.js", "js/playint.js"],
-            bodyClass: "playint"
+            killSelected,
+            deathSelected
         });
 
     } catch (err) {
         console.error("Error in /player-int/submit:", err);
-        res.render("player-int", {
+        renderPlayerInt(res, {
             error: "Failed to fetch or process data.",
-            playerName: null,
-            topRegions: [],
-            hourlyPercentages: [],
             startDate: req.query.start || null,
             endDate: req.query.end || null,
             killSelected: !!req.query.kill,
-            deathSelected: !!req.query.death,
-            extraStyles: ["styles/playint.css"],
-            extraScripts: ["js/little-logo.js", "js/playint.js"],
-            bodyClass: "playint"
+            deathSelected: !!req.query.death
         });
     }
 });
