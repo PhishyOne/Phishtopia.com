@@ -1,21 +1,10 @@
 import express from "express";
 import bodyParser from "body-parser";
-import pg from "pg";
+import db from "../db.js";
 
 const router = express.Router();
 
 router.use(bodyParser.urlencoded({ extended: true }));
-
-const db = new pg.Client({
-  user: process.env.DB_USER,
-  host: process.env.DB_HOST,
-  database: process.env.DB_NAME,
-  password: process.env.DB_PASSWORD,
-  port: process.env.DB_PORT,
-  ssl: { rejectUnauthorized: false },
-});
-
-await db.connect();
 
 // GET route: display all visited countries and optional error
 router.get("/", async (req, res) => {
@@ -109,7 +98,7 @@ router.get("/search", async (req, res) => {
 
 router.post("/clear", async (req, res) => {
   try {
-    await db.query("DELETE FROM fullstack.visited_countries_33_1");
+    await db.query("TRUNCATE fullstack.visited_countries_33_1");
     console.log("Cleared all visited countries");
     res.redirect("/project33-1");
   } catch (err) {
