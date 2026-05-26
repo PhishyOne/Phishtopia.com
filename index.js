@@ -53,6 +53,24 @@ app.use((req, res, next) => {
         return res.redirect(301, `https://phishtopia.com${req.originalUrl}`);
     }
 
+    const normalizedPath = req.path.toLowerCase();
+
+    if (normalizedPath === "/home") {
+        return res.redirect(301, "https://phishtopia.com/");
+    }
+
+    if (req.path === "/PlayerInt") {
+        return res.redirect(301, "https://phishtopia.com/player-int");
+    }
+
+    if (req.path === "/" && ["SA", "SD"].some(param => Object.hasOwn(req.query, param))) {
+        return res.redirect(301, "https://phishtopia.com/");
+    }
+
+    if (normalizedPath === "/static/8-agency" || normalizedPath === "/static/8-agency/") {
+        return res.redirect(301, "https://phishtopia.com/projects");
+    }
+
     next();
 });
 
