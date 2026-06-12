@@ -9,7 +9,7 @@ import project30Routes from "../../app-brewery-server/routes/project30.js";
 import project331Routes from "../../app-brewery-server/routes/project33-1.js";
 import project332Routes from "../../app-brewery-server/routes/project33-2.js";
 import project333Routes from "../../app-brewery-server/routes/project33-3.js";
-import youListRoutes from "../../app-brewery-server/routes/project34.js";
+import youListRoutes from "./youlist.routes.js";
 
 import { buildPagesRouter } from "./pages.routes.js";
 
