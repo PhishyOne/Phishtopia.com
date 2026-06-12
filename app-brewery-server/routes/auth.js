@@ -7,6 +7,7 @@ import nodemailer from "nodemailer";
 
 const router = express.Router();
 const SALT_ROUNDS = 10;
+const LOG_AUTH_EVENTS = process.env.LOG_AUTH_EVENTS === "true";
 const loginLimiter = rateLimit({
     windowMs: 15 * 60 * 1000, // 15 minutes
     max: 10, // limit each IP to 10 requests
@@ -163,7 +164,7 @@ router.post("/register", async (req, res) => {
 // =====================
 router.post("/login", loginLimiter, async (req, res) => {
     const { username, password } = req.body;
-    console.log("Login attempt:", { username });
+    if (LOG_AUTH_EVENTS) console.log("Login attempt:", { username });
     try {
         const result = await pool.query(
             "SELECT * FROM users WHERE username = $1",
