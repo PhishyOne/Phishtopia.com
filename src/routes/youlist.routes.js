@@ -1,5 +1,5 @@
 import express from "express";
-import { requireLogin } from "../../app-brewery-server/routes/auth.js";
+import { requireLogin } from "../middleware/requireLogin.js";
 import {
     createComment,
     deleteComment,
