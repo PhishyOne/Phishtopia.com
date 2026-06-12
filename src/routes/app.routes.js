@@ -1,6 +1,6 @@
 import express from "express";
 
-import authRoutes from "../../app-brewery-server/routes/auth.js";
+import authRoutes from "./auth.routes.js";
 import echoTraceRoutes from "../../routes/echotrace.js";
 import project25Routes from "../../app-brewery-server/routes/project25.js";
 import project28Routes from "../../app-brewery-server/routes/project28.js";
