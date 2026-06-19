@@ -1,5 +1,9 @@
 import nodemailer from "nodemailer";
 
+function getAppBaseUrl() {
+    return (process.env.APP_BASE_URL || "https://phishtopia.com").replace(/\/$/, "");
+}
+
 function createTransporter() {
     return nodemailer.createTransport({
         host: "smtp.gmail.com",
@@ -13,11 +17,15 @@ function createTransporter() {
 }
 
 export async function sendVerificationEmail({ email, verificationToken }) {
-    const verifyUrl = `https://phishtopia.com/auth/verify-email?token=${verificationToken}`;
+    const verifyUrl = `${getAppBaseUrl()}/auth/verify-email?token=${verificationToken}`;
 
     if (process.env.SEND_EMAIL === "false") {
         console.log("Email sending disabled. Verification link:", verifyUrl);
         return { sent: false, verifyUrl };
+    }
+
+    if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) {
+        throw new Error("Email credentials missing. Set EMAIL_USER and EMAIL_PASS or SEND_EMAIL=false.");
     }
 
     const transporter = createTransporter();
