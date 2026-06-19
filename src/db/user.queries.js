@@ -1,11 +1,11 @@
 import db from "../../app-brewery-server/db.js";
 
-export async function createUser({ username, passwordHash, email, verificationToken }) {
-    const result = await db.query(
+export async function createUser({ username, passwordHash, email, verificationToken }, executor = db) {
+    const result = await executor.query(
         `
         INSERT INTO public.users (username, password_hash, email, verify_token)
         VALUES ($1, $2, $3, $4)
-        RETURNING id, username
+        RETURNING id, username, email
         `,
         [username, passwordHash, email, verificationToken]
     );
@@ -13,8 +13,8 @@ export async function createUser({ username, passwordHash, email, verificationTo
     return result.rows[0];
 }
 
-export async function findUserByUsername(username) {
-    const result = await db.query(
+export async function findUserByUsername(username, executor = db) {
+    const result = await executor.query(
         "SELECT * FROM public.users WHERE username = $1",
         [username]
     );
@@ -22,8 +22,23 @@ export async function findUserByUsername(username) {
     return result.rows[0] || null;
 }
 
-export async function verifyUserEmailByToken(token) {
-    const result = await db.query(
+export async function findUserByUsernameOrEmail({ username, email }, executor = db) {
+    const result = await executor.query(
+        `
+        SELECT username, email
+        FROM public.users
+        WHERE LOWER(username) = LOWER($1)
+           OR LOWER(email) = LOWER($2)
+        LIMIT 1
+        `,
+        [username, email]
+    );
+
+    return result.rows[0] || null;
+}
+
+export async function verifyUserEmailByToken(token, executor = db) {
+    const result = await executor.query(
         `
         UPDATE public.users
         SET email_verified = true, verify_token = NULL
