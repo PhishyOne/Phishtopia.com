@@ -1,21 +1,44 @@
 import bcrypt from "bcrypt";
 import crypto from "crypto";
-import { createUser, findUserByUsername, verifyUserEmailByToken } from "../db/user.queries.js";
+import db from "../../app-brewery-server/db.js";
+import {
+    createUser,
+    findUserByUsername,
+    findUserByUsernameOrEmail,
+    verifyUserEmailByToken
+} from "../db/user.queries.js";
 import { sendVerificationEmail } from "./email.service.js";
 
 const SALT_ROUNDS = 10;
+
+function normalizeRegisterInput({ username, password, confirmPassword, email }) {
+    return {
+        username: username?.trim() || "",
+        email: email?.trim().toLowerCase() || "",
+        password: password || "",
+        confirmPassword: confirmPassword || ""
+    };
+}
 
 function buildRegisterValidationError({ username, password, confirmPassword, email }) {
     if (!username || !password || !confirmPassword || !email) {
         return "All fields are required";
     }
 
-    if (password !== confirmPassword) {
-        return "Passwords do not match";
+    if (username.length < 3) {
+        return "Username must be at least 3 characters";
+    }
+
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+        return "Enter a valid email address";
     }
 
     if (password.length < 8) {
         return "Password must be at least 8 characters";
+    }
+
+    if (password !== confirmPassword) {
+        return "Passwords do not match";
     }
 
     return null;
@@ -35,26 +58,62 @@ function duplicateUserMessage(err) {
     return "Already exists";
 }
 
-export async function registerUser({ username, password, confirmPassword, email }) {
-    const validationError = buildRegisterValidationError({ username, password, confirmPassword, email });
+export async function registerUser(input) {
+    const values = normalizeRegisterInput(input);
+    const validationError = buildRegisterValidationError(values);
+
     if (validationError) {
-        return { ok: false, status: 400, error: validationError };
+        return { ok: false, status: 400, error: validationError, values };
+    }
+
+    const existingUser = await findUserByUsernameOrEmail(values);
+    if (existingUser) {
+        const sameUsername = existingUser.username?.toLowerCase() === values.username.toLowerCase();
+        return {
+            ok: false,
+            status: 409,
+            error: sameUsername ? "Username already exists" : "Email already exists",
+            values
+        };
     }
 
     const verificationToken = crypto.randomBytes(32).toString("hex");
-    const passwordHash = await bcrypt.hash(password, SALT_ROUNDS);
+    const passwordHash = await bcrypt.hash(values.password, SALT_ROUNDS);
+    const client = await db.connect();
 
     try {
-        await createUser({ username, passwordHash, email, verificationToken });
-        await sendVerificationEmail({ email, verificationToken });
-        return { ok: true };
+        await client.query("BEGIN");
+
+        await createUser({
+            username: values.username,
+            passwordHash,
+            email: values.email,
+            verificationToken
+        }, client);
+
+        const emailResult = await sendVerificationEmail({
+            email: values.email,
+            verificationToken
+        });
+
+        await client.query("COMMIT");
+
+        return {
+            ok: true,
+            email: values.email,
+            verifyUrl: emailResult.verifyUrl
+        };
     } catch (err) {
+        await client.query("ROLLBACK").catch(() => null);
+
         const duplicateMessage = duplicateUserMessage(err);
         if (duplicateMessage) {
-            return { ok: false, status: 409, error: duplicateMessage };
+            return { ok: false, status: 409, error: duplicateMessage, values };
         }
 
         throw err;
+    } finally {
+        client.release();
     }
 }
 
