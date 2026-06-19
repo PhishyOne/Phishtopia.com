@@ -58,12 +58,15 @@ export async function register(req, res) {
         if (!result.ok) {
             return renderRegister(res, {
                 error: result.error,
-                username,
-                email
+                username: result.values?.username || username,
+                email: result.values?.email || email
             });
         }
 
-        return res.render("check-email", { email });
+        return res.render("check-email", {
+            email: result.email,
+            verifyUrl: result.verifyUrl
+        });
     } catch (err) {
         console.error(err);
         return res.status(500).send("Server error");
