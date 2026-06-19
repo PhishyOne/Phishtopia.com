@@ -1,0 +1,23 @@
+<%- include("partials/header", { title: "Check your email", bodyClass: "auth", extraStyles: [] }) %>
+
+<main class="container auth-page">
+    <h2>Check your email</h2>
+
+    <p>We created your account for <strong><%= email %></strong>.</p>
+
+    <% const showDevVerifyLink = typeof emailSent !== "undefined" && emailSent === false && typeof verifyUrl !== "undefined" && verifyUrl; %>
+
+    <% if (showDevVerifyLink) { %>
+        <div class="alert alert-info">
+            <p><strong>Development mode:</strong> email sending is disabled.</p>
+            <p><a href="<%= verifyUrl %>">Click here to verify this test account</a></p>
+            <p style="word-break: break-all;"><code><%= verifyUrl %></code></p>
+        </div>
+    <% } else { %>
+        <p>Please check your inbox for the verification link before logging in.</p>
+    <% } %>
+
+    <p><a href="/auth/login">Back to login</a></p>
+</main>
+
+<%- include("partials/footer", { extraScripts: [] }) %>
