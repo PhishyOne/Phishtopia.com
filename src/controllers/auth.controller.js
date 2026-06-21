@@ -50,7 +50,8 @@ export async function verifyEmail(req, res) {
 }
 
 export async function register(req, res) {
-    const { username, password, confirm_password: confirmPassword, email } = req.body;
+    const { username, password, email } = req.body;
+    const confirmPassword = req.body.confirm_password ?? req.body.confirmPassword;
 
     try {
         const result = await registerUser({ username, password, confirmPassword, email });
@@ -65,7 +66,8 @@ export async function register(req, res) {
 
         return res.render("check-email", {
             email: result.email,
-            verifyUrl: result.verifyUrl
+            verifyUrl: result.verifyUrl,
+            emailSent: result.emailSent
         });
     } catch (err) {
         console.error(err);

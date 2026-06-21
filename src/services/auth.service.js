@@ -101,7 +101,8 @@ export async function registerUser(input) {
         return {
             ok: true,
             email: values.email,
-            verifyUrl: emailResult.verifyUrl
+            verifyUrl: emailResult.verifyUrl,
+            emailSent: emailResult.sent
         };
     } catch (err) {
         await client.query("ROLLBACK").catch(() => null);
