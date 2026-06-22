@@ -808,3 +808,130 @@ body {
   }
 }
 
+/* ---------- Home page polish ---------- */
+.home-page .main-grid {
+  width: min(1120px, 100%);
+  margin: 0 auto;
+  padding: clamp(14px, 3vw, 30px);
+  gap: clamp(12px, 2vw, 22px);
+  box-sizing: border-box;
+  flex-grow: 0;
+  align-content: start;
+  grid-auto-rows: auto;
+}
+
+.home-page .hero-section {
+  grid-column: span 2;
+  min-height: 210px;
+  height: auto;
+  padding: clamp(24px, 5vw, 48px);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.home-page .hero-section h1 {
+  margin: 0 0 0.6rem;
+  font-size: clamp(3.2rem, 9vw, 5.5rem);
+  line-height: 1;
+}
+
+.home-page .hero-section p {
+  margin: 0;
+  max-width: 850px;
+  font-size: clamp(1.2rem, 3vw, 1.7rem);
+}
+
+.home-page .projects-section,
+.home-page .new-section {
+  min-height: 260px;
+  height: auto;
+  align-self: start;
+  justify-content: space-between;
+  opacity: 0.88;
+}
+
+.home-page .projects-section h2,
+.home-page .new-section h2 {
+  font-size: clamp(2rem, 5vw, 3rem);
+  line-height: 1.05;
+}
+
+.home-page .projects-section p,
+.home-page .new-section p {
+  font-size: clamp(1.1rem, 2.6vw, 1.45rem);
+  line-height: 1.25;
+}
+
+@media (max-width: 900px) {
+  .home-page .main-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .home-page .hero-section {
+    grid-column: span 1;
+    min-height: 170px;
+    padding: 22px 18px;
+  }
+
+  .home-page .projects-section,
+  .home-page .new-section {
+    min-height: 230px;
+  }
+}
+
+@media (max-width: 700px) {
+  .home-page .main-grid {
+    padding: 12px;
+    gap: 12px;
+  }
+
+  .home-page .hero-section {
+    min-height: 150px;
+    padding: 20px 16px;
+  }
+
+  .home-page .hero-section h1 {
+    font-size: clamp(2.8rem, 12vw, 4rem);
+  }
+
+  .home-page .hero-section p {
+    font-size: 1.15rem;
+  }
+
+  .home-page .projects-section,
+  .home-page .new-section {
+    min-height: 0;
+    padding: 16px;
+    border-radius: 12px;
+  }
+
+  .home-page .projects-section p,
+  .home-page .new-section p {
+    font-size: 1.1rem;
+  }
+
+  .home-page .btn {
+    margin-top: 1rem;
+  }
+}
+
+
+/* ---------- Home page equal feature cards ---------- */
+.home-page .main-grid {
+  align-items: stretch;
+}
+
+.home-page .projects-section,
+.home-page .new-section {
+  align-self: stretch;
+  height: 100%;
+  box-sizing: border-box;
+}
+
+@media (min-width: 701px) {
+  .home-page .projects-section,
+  .home-page .new-section {
+    min-height: 280px;
+  }
+}
