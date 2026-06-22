@@ -16,21 +16,22 @@
 
 ## Overview
 
-Phishtopia.com is my personal web development project hub and growing full-stack web application. It began as a place to showcase course projects and experiments, but it has grown into a larger Node.js/Express platform with authentication, PostgreSQL-backed features, third-party API integrations, original tools, and production-style deployment.
+Phishtopia.com is a personal web development project hub and growing full-stack web application. It began as a place to showcase course projects and experiments, but it has grown into a larger Node.js/Express platform with authentication, PostgreSQL-backed features, third-party API integrations, original tools, and production-style deployment.
 
 The project is actively evolving as I continue learning full-stack development, improving the architecture, and turning individual experiments into more polished applications.
 
 ---
 
-## Production Status
+## Current Status
 
-Phishtopia is currently running on a small **Google Cloud Compute Engine VM** instead of a managed Cloud Run + Cloud SQL setup. The goal is to keep the project consolidated in GCP while staying realistic for a low-traffic personal project.
+**Phishtopia v2.0.0** is live on the production site.
+
+This release merged the major site-structure refactor into `main`, keeping the live site stable while separating the application into cleaner routes, controllers, services, middleware, and database query modules.
 
 Current production setup:
 
 - Production URL: `https://phishtopia.com`
 - VM name: `phishtopia-vm`
-- Region / zone: `us-east1` / `us-east1-b`
 - Static IP: `34.73.92.179`
 - Web server: Nginx
 - App runtime: Node.js 22
@@ -50,7 +51,26 @@ Namecheap DNS
   -> Local PostgreSQL on localhost:5432
 ```
 
-The previous Cloud Run deployment and old external database should be kept temporarily as rollback options until the VM setup has been stable for a while.
+The database is not exposed directly to the public internet. Users interact with the site through the web app, and the app talks to PostgreSQL locally on the VM.
+
+---
+
+## Latest Release
+
+### v2.0.0 — Phishtopia v2 Foundation
+
+Released after the major refactor and production deployment to `main`.
+
+Highlights:
+
+- Refactored the app from a large root server file into a cleaner `src/` architecture.
+- Split authentication, YouList, page routes, services, middleware, and database logic into separate modules.
+- Added email verification support and a development-friendly verification flow.
+- Switched password hashing from native `bcrypt` to `bcryptjs` for better Android/Termux/Codespaces compatibility.
+- Polished the homepage, projects page, auth screens, and YouList card layout.
+- Confirmed production deploy, PM2 restart, and live `/health` check.
+
+Release notes are tracked in [`docs/releases/v2.0.0.md`](docs/releases/v2.0.0.md).
 
 ---
 
@@ -96,17 +116,28 @@ View recent app logs:
 sudo -u codespace env PM2_HOME=/home/codespace/.pm2 pm2 logs phishtopia --lines 50
 ```
 
-Deploy the latest code from `main` to the VM:
+View recent deploy output:
+
+```bash
+tail -80 /home/codespace/phishtopia-deploy.log
+```
+
+Production currently auto-deploys updates from `main` through the VM deploy timer. After pushing to `main`, confirm deployment with:
+
+```bash
+tail -80 /home/codespace/phishtopia-deploy.log
+curl -I https://phishtopia.com/health
+```
+
+Manual deploy steps, if needed:
 
 ```bash
 cd /home/codespace/phishtopia
 git pull origin main
 npm ci --omit=dev
-pm2 restart phishtopia --update-env
-pm2 save
+sudo -u codespace env PM2_HOME=/home/codespace/.pm2 pm2 restart phishtopia --update-env
+sudo -u codespace env PM2_HOME=/home/codespace/.pm2 pm2 save
 ```
-
-GitHub remains the source of truth for the codebase, but production is currently updated manually on the VM. A simple deploy script is planned.
 
 ---
 
@@ -125,11 +156,13 @@ Current features include:
 - TMDB search integration
 - Movie and TV detail views
 - User authentication
+- Email verification support
 - User comments
 - PostgreSQL-backed storage
 - Pagination
 - API response caching
-- Optional TMDB cache prewarming controlled by environment variable
+- Mobile-friendly layout
+- Desktop two-column card layout
 
 ### EchoTrace
 
@@ -154,7 +187,7 @@ Current features include:
 - Express 5
 - EJS
 - PostgreSQL
-- bcrypt
+- bcryptjs
 - express-session
 - connect-pg-simple
 - express-rate-limit
@@ -173,13 +206,35 @@ Current features include:
 - Local PostgreSQL
 - Certbot / Let's Encrypt HTTPS
 - Namecheap DNS
+- GitHub-based deploy flow
 
 ### Development / Utility Tooling
 
-- Docker
 - GitHub Codespaces
+- Termux / Android development testing
 - Google Cloud SDK
-- GitHub
+- SSH tunnels for safe remote database access
+- Docker for local testing and one-off utility work
+
+---
+
+## Project Structure
+
+The v2 refactor separates the app into clearer layers:
+
+```text
+src/
+  app.js
+  cache/
+  config/
+  controllers/
+  db/
+  middleware/
+  routes/
+  services/
+```
+
+Compatibility shims remain for some older App Brewery route paths while mature features continue moving into the newer structure.
 
 ---
 
@@ -204,15 +259,13 @@ Phishtopia is both a portfolio and a learning platform. My goals are to keep imp
 
 ## Planned Improvements
 
-- Add automatic local PostgreSQL backups
-- Add a simple production deploy/update script
-- Keep the VM stable for a while before retiring the old Cloud Run deployment and old external database
-- Move production runtime ownership from the temporary `codespace` user to a dedicated app user later
-- Add better analytics and usage tracking
-- Improve authentication flows, including email verification, password reset, and account management
-- Improve project organization by separating routes, services, and database logic
-- Move remaining mature projects out of the old App Brewery structure
-- Continue improving EchoTrace and YouList with more polished features
+- Add automatic local PostgreSQL backups.
+- Add password reset and account management.
+- Continue moving mature projects out of the old App Brewery structure.
+- Add better analytics and usage tracking.
+- Continue improving EchoTrace and YouList with more polished features.
+- Add new practical tools after the v2 foundation remains stable.
+- Review dependency audit warnings separately from feature work.
 
 ---
 
@@ -231,11 +284,7 @@ Install dependencies:
 npm install
 ```
 
-Create a `.env` file in the project root. Use `.env.example` as the starting point:
-
-```bash
-cp .env.example .env
-```
+Create a local `.env` file in the project root. Do not commit it.
 
 Important environment variables include:
 
@@ -245,11 +294,12 @@ NODE_ENV=development
 SESSION_SECRET=
 
 DATABASE_URL=
-# or DB_USER / DB_PASSWORD / DB_HOST / DB_NAME / DB_PORT
+DB_SSL=false
 
 TMDB_API_KEY=
 EMAIL_USER=
 EMAIL_PASS=
+SEND_EMAIL=false
 
 PREWARM_TMDB_CACHE=false
 LOG_SESSIONS=false
@@ -274,6 +324,34 @@ Health check:
 ```text
 http://localhost:3002/health
 ```
+
+---
+
+## Codespaces / Termux Database Access
+
+The production database is local-only on the VM. For development tools outside the VM, use an SSH tunnel instead of exposing PostgreSQL to the internet.
+
+Tunnel pattern:
+
+```text
+Codespace or Termux
+  -> 127.0.0.1:5433
+  -> SSH tunnel
+  -> GCP VM 127.0.0.1:5432
+  -> PostgreSQL
+```
+
+Extension or local app connection settings:
+
+```text
+Host: 127.0.0.1
+Port: 5433
+Database: phishtopia
+Username: phishtopia
+SSL: false / disabled
+```
+
+The production app itself does not need this tunnel because it runs on the same VM as PostgreSQL.
 
 ---
 
@@ -306,9 +384,7 @@ http://localhost:8080/health
 
 ## Database Notes
 
-The application supports either a full `DATABASE_URL` connection string or split database variables such as `DB_USER`, `DB_HOST`, and `DB_NAME`.
-
-Production currently uses local PostgreSQL on the VM. The application connects through `DATABASE_URL` stored in the VM's local `.env` file. Sessions are stored in PostgreSQL through `connect-pg-simple`, using the shared configured database pool.
+The application supports a full `DATABASE_URL` connection string. Production currently uses local PostgreSQL on the VM. Sessions are stored in PostgreSQL through `connect-pg-simple`, using the shared configured database pool.
 
 Current production database basics:
 
@@ -328,7 +404,7 @@ set -a
 source /home/codespace/phishtopia-secrets/db.env
 set +a
 
-PGPASSWORD="$DB_PASSWORD" psql -h 127.0.0.1 -U "$DB_USER" -d "$DB_NAME"
+psql "$DATABASE_URL"
 '
 ```
 
