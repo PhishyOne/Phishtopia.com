@@ -376,3 +376,37 @@
         background-position: 100% 50%;
     }
 }
+/* ---------- YouList equal card sizing polish ---------- */
+.movie-list-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    align-items: stretch;
+    width: min(1200px, 100%);
+    margin: 0 auto;
+    padding: 0 1rem;
+    box-sizing: border-box;
+}
+
+.movie-list-grid .movielist-section {
+    width: 100%;
+    min-width: 0;
+    box-sizing: border-box;
+}
+
+.movie-list-grid .Details {
+    min-width: 0;
+}
+
+.movie-list-grid .Details h2,
+.movie-list-grid .Details h3,
+.movie-list-grid .comment,
+.movie-list-grid .all-comments p {
+    overflow-wrap: anywhere;
+}
+
+@media (max-width: 768px) {
+    .movie-list-grid {
+        grid-template-columns: 1fr;
+        padding: 0;
+    }
+}
