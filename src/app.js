@@ -11,7 +11,7 @@ import { staticAssetLogger } from "./middleware/staticAssetLogger.js";
 import { templateLocals } from "./middleware/templateLocals.js";
 import { buildAppRouter } from "./routes/app.routes.js";
 
-export function createApp() {
+export async function createApp() {
     mkdirSync(logsDir, { recursive: true });
 
     const app = express();
@@ -30,7 +30,7 @@ export function createApp() {
         });
     });
 
-    app.use(buildSessionMiddleware());
+    app.use(await buildSessionMiddleware());
     app.use(templateLocals);
 
     registerStaticAssets(app);
