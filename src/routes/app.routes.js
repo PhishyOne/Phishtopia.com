@@ -10,6 +10,7 @@ import project331Routes from "../../app-brewery-server/routes/project33-1.js";
 import project332Routes from "../../app-brewery-server/routes/project33-2.js";
 import project333Routes from "../../app-brewery-server/routes/project33-3.js";
 import youListRoutes from "./youlist.routes.js";
+import storecalcRoutes from "./storecalc.routes.js";
 
 import { buildPagesRouter } from "./pages.routes.js";
 
@@ -23,7 +24,8 @@ const FEATURE_ROUTES = new Map([
     ["/project33-1", project331Routes],
     ["/project33-2", project332Routes],
     ["/project33-3", project333Routes],
-    ["/youlist", youListRoutes]
+    ["/youlist", youListRoutes],
+    ["/storecalc", storecalcRoutes]
 ]);
 
 export function buildAppRouter() {
