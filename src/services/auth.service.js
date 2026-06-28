@@ -1,6 +1,6 @@
 import bcrypt from "bcryptjs";
 import crypto from "crypto";
-import db from "../../app-brewery-server/db.js";
+import db from "../db/pool.js";
 import {
     createUser,
     findUserByUsername,

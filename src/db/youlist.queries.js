@@ -1,4 +1,4 @@
-import db from "../../app-brewery-server/db.js";
+import db from "./pool.js";
 
 export async function countYouListItems() {
     const result = await db.query("SELECT COUNT(*) AS total FROM fullstack.youlist_movies");

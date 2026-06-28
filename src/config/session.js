@@ -32,7 +32,7 @@ export async function buildSessionMiddleware() {
     }
 
     const connectPgSimple = (await import("connect-pg-simple")).default;
-    const pool = (await import("../../app-brewery-server/db.js")).default;
+    const pool = (await import("../db/pool.js")).default;
     const PgSession = connectPgSimple(session);
 
     return session({

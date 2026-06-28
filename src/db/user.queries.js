@@ -1,4 +1,4 @@
-import db from "../../app-brewery-server/db.js";
+import db from "./pool.js";
 
 export async function createUser({ username, passwordHash, email, verificationToken }, executor = db) {
     const result = await executor.query(
