@@ -11,13 +11,22 @@
 
                 <form action="/auth/login" method="POST">
                     <div>
-                        <label for="username" class="form-label">Username</label>
-                        <input type="text" autocomplete="username"  id="username-tb" name="username" class="textbox" required>
+                        <label for="username-tb" class="form-label">Username</label>
+                        <input type="text" autocomplete="username" id="username-tb" name="username" class="textbox" required>
                     </div>
 
                     <div>
                         <label for="password" class="form-label">Password</label>
-                        <input type="password" autocomplete="current-password" id="password" name="password" class="textbox" required>
+                        <div class="password-field">
+                            <input type="password" autocomplete="current-password" id="password" name="password" class="textbox" required>
+                            <button
+                                type="button"
+                                class="password-toggle"
+                                data-password-toggle="password"
+                                aria-label="Show password"
+                                aria-pressed="false"
+                            >👁</button>
+                        </div>
                     </div>
 
                     <button class="btn" id="login-btn">Login</button>
@@ -26,4 +35,4 @@
                 <p>Don't have an account? <a href="/auth/register">Register</a></p>
     </div>
 
-    <%- include('partials/footer') %>
+    <%- include('partials/footer', { extraScripts: ["/js/auth.js"] }) %>

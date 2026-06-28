@@ -935,3 +935,87 @@ body {
     min-height: 280px;
   }
 }
+
+/* =========================
+   Auth password visibility
+   ========================= */
+
+.password-field {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.password-field .textbox {
+    width: 100%;
+    padding-right: 3rem;
+}
+
+.password-toggle {
+    position: absolute;
+    right: 0.5rem;
+    border: none;
+    background: transparent;
+    cursor: pointer;
+    font-size: 1.1rem;
+    min-width: 2.25rem;
+    min-height: 2.25rem;
+    line-height: 1;
+}
+
+.password-toggle:focus {
+    outline: 2px solid currentColor;
+    outline-offset: 2px;
+}
+
+/* Draw password eye icon without relying on emoji fonts */
+.password-toggle {
+    font-size: 0;
+    color: currentColor;
+}
+
+.password-toggle::before {
+    content: "";
+    display: inline-block;
+    width: 1.25rem;
+    height: 0.75rem;
+    border: 2px solid currentColor;
+    border-radius: 50% / 70%;
+    vertical-align: middle;
+}
+
+.password-toggle::after {
+    content: "";
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 0.32rem;
+    height: 0.32rem;
+    border-radius: 50%;
+    background: currentColor;
+    transform: translate(-50%, -50%);
+}
+
+.password-toggle[aria-pressed="true"]::after {
+    width: 1.35rem;
+    height: 2px;
+    border-radius: 0;
+    transform: translate(-50%, -50%) rotate(-35deg);
+}
+
+/* Password hidden = closed/slashed eye, password visible = open eye */
+.password-toggle::after {
+    width: 1.35rem;
+    height: 2px;
+    border-radius: 0;
+    background: currentColor;
+    transform: translate(-50%, -50%) rotate(-35deg);
+}
+
+.password-toggle[aria-pressed="true"]::after {
+    width: 0.32rem;
+    height: 0.32rem;
+    border-radius: 50%;
+    background: currentColor;
+    transform: translate(-50%, -50%);
+}
