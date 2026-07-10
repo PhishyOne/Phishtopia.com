@@ -60,7 +60,7 @@ function buildCloudflareReportText(report) {
         "",
         `Total requests: ${formatNumber(totals.requests)}`,
         `Page views: ${formatNumber(totals.pageViews)}`,
-        `Peak daily unique visitors: ${formatNumber(totals.peakDailyUniqueVisitors)}`,
+        `Peak daily unique visitors: ${formatNumber(totals.uniqueVisitorsEstimate)}`,
         `Bandwidth: ${formatBytes(totals.bytes)}`,
         `Cached requests: ${formatNumber(totals.cachedRequests)} (${formatPercent(totals.cacheRequestRatio)})`,
         `Cached bandwidth: ${formatBytes(totals.cachedBytes)} (${formatPercent(totals.cacheByteRatio)})`,
