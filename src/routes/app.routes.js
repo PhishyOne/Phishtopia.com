@@ -1,5 +1,6 @@
 import express from "express";
 
+import analyticsRoutes from "./analytics.routes.js";
 import authRoutes from "./auth.routes.js";
 import youListRoutes from "./youlist.routes.js";
 import storecalcRoutes from "./storecalc.routes.js";
@@ -16,6 +17,7 @@ export function buildAppRouter() {
     const router = express.Router();
 
     router.use("/auth", authRoutes);
+    router.use("/internal/analytics", analyticsRoutes);
     router.use(buildLegacyRouter());
 
     for (const [routePath, featureRouter] of FEATURE_ROUTES.entries()) {
