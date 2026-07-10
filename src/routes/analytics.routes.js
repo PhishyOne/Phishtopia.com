@@ -1,7 +1,7 @@
 import crypto from "crypto";
 import express from "express";
 
-import { getCloudflareAnalyticsReport } from "../services/cloudflareReport.service.js";
+import { getCloudflareAnalyticsReport } from "../services/cloudflareAnalytics.service.js";
 import { sendCloudflareAnalyticsEmail } from "../services/email.service.js";
 
 const router = express.Router();
