@@ -55,12 +55,12 @@ function buildCloudflareReportText(report) {
     const { period, totals } = report;
 
     return [
-        `Phishtopia Cloudflare analytics`,
+        "Phishtopia Cloudflare analytics",
         `Period: ${period.startDate} through ${period.endDate}`,
         "",
         `Total requests: ${formatNumber(totals.requests)}`,
         `Page views: ${formatNumber(totals.pageViews)}`,
-        `Estimated unique visitors: ${formatNumber(totals.uniqueVisitorsEstimate)}`,
+        `Peak daily unique visitors: ${formatNumber(totals.peakDailyUniqueVisitors)}`,
         `Bandwidth: ${formatBytes(totals.bytes)}`,
         `Cached requests: ${formatNumber(totals.cachedRequests)} (${formatPercent(totals.cacheRequestRatio)})`,
         `Cached bandwidth: ${formatBytes(totals.cachedBytes)} (${formatPercent(totals.cacheByteRatio)})`,
