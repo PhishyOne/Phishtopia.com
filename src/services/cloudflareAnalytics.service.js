@@ -37,19 +37,12 @@ function maxUniqueUsers(rows) {
 }
 
 function aggregateDimension(rows, dimensionName, limit = 10) {
-    const totals = new Map();
-
-    for (const row of rows) {
-        const key = row?.dimensions?.[dimensionName];
-        if (key === undefined || key === null || key === "") {
-            continue;
-        }
-
-        totals.set(String(key), (totals.get(String(key)) || 0) + Number(row?.sum?.requests || 0));
-    }
-
-    return [...totals.entries()]
-        .map(([name, requests]) => ({ name, requests }))
+    return rows
+        .map((row) => ({
+            name: String(row?.dimensions?.[dimensionName] ?? "unknown"),
+            requests: Number(row?.count ?? row?.sum?.requests ?? 0)
+        }))
+        .filter((row) => row.requests > 0)
         .sort((a, b) => b.requests - a.requests)
         .slice(0, limit);
 }
@@ -78,33 +71,37 @@ async function runCloudflareQuery({ token, zoneId, startDate, endDate }) {
                         }
                         uniq { uniques }
                     }
-                    countries: httpRequests1dGroups(
-                        limit: 1000
+                    countries: httpRequestsAdaptiveGroups(
+                        limit: 10
+                        orderBy: [count_DESC]
                         filter: { date_geq: $startDate, date_leq: $endDate }
                     ) {
+                        count
                         dimensions { clientCountryName }
-                        sum { requests }
                     }
-                    paths: httpRequests1dGroups(
-                        limit: 1000
+                    paths: httpRequestsAdaptiveGroups(
+                        limit: 10
+                        orderBy: [count_DESC]
                         filter: { date_geq: $startDate, date_leq: $endDate }
                     ) {
+                        count
                         dimensions { clientRequestPath }
-                        sum { requests }
                     }
-                    statuses: httpRequests1dGroups(
-                        limit: 1000
+                    statuses: httpRequestsAdaptiveGroups(
+                        limit: 20
+                        orderBy: [count_DESC]
                         filter: { date_geq: $startDate, date_leq: $endDate }
                     ) {
+                        count
                         dimensions { edgeResponseStatus }
-                        sum { requests }
                     }
-                    cacheStatuses: httpRequests1dGroups(
-                        limit: 1000
+                    cacheStatuses: httpRequestsAdaptiveGroups(
+                        limit: 20
+                        orderBy: [count_DESC]
                         filter: { date_geq: $startDate, date_leq: $endDate }
                     ) {
+                        count
                         dimensions { cacheStatus }
-                        sum { requests }
                     }
                 }
             }
@@ -175,7 +172,7 @@ export async function getCloudflareAnalyticsReport({ days = 7 } = {}) {
         totals: {
             requests,
             pageViews: sumRows(daily, "pageViews"),
-            uniqueVisitorsEstimate: maxUniqueUsers(daily),
+            peakDailyUniqueVisitors: maxUniqueUsers(daily),
             bytes,
             cachedRequests,
             cachedBytes,
@@ -185,8 +182,8 @@ export async function getCloudflareAnalyticsReport({ days = 7 } = {}) {
         },
         topCountries: aggregateDimension(zone.countries || [], "clientCountryName"),
         topPaths: aggregateDimension(zone.paths || [], "clientRequestPath"),
-        statusCodes: aggregateDimension(zone.statuses || [], "edgeResponseStatus"),
-        cacheStatuses: aggregateDimension(zone.cacheStatuses || [], "cacheStatus"),
+        statusCodes: aggregateDimension(zone.statuses || [], "edgeResponseStatus", 20),
+        cacheStatuses: aggregateDimension(zone.cacheStatuses || [], "cacheStatus", 20),
         daily: daily
             .map((row) => ({
                 date: row?.dimensions?.date,
@@ -195,7 +192,7 @@ export async function getCloudflareAnalyticsReport({ days = 7 } = {}) {
                 bytes: Number(row?.sum?.bytes || 0),
                 cachedRequests: Number(row?.sum?.cachedRequests || 0),
                 threats: Number(row?.sum?.threats || 0),
-                uniqueVisitorsEstimate: Number(row?.uniq?.uniques || 0)
+                uniqueVisitors: Number(row?.uniq?.uniques || 0)
             }))
             .sort((a, b) => String(a.date).localeCompare(String(b.date)))
     };
