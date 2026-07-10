@@ -18,15 +18,31 @@ function makeRange(days) {
     const start = new Date(end);
     start.setUTCDate(start.getUTCDate() - (days - 1));
 
-    const afterEnd = new Date(end);
-    afterEnd.setUTCDate(afterEnd.getUTCDate() + 1);
-
     return {
         startDate: dateOnly(start),
-        endDate: dateOnly(end),
-        startTime: `${dateOnly(start)}T00:00:00Z`,
-        endTime: `${dateOnly(afterEnd)}T00:00:00Z`
+        endDate: dateOnly(end)
     };
+}
+
+function makeDailyWindows(startDate, endDate) {
+    const windows = [];
+    const cursor = new Date(`${startDate}T00:00:00Z`);
+    const finalDate = new Date(`${endDate}T00:00:00Z`);
+
+    while (cursor <= finalDate) {
+        const next = new Date(cursor);
+        next.setUTCDate(next.getUTCDate() + 1);
+
+        windows.push({
+            date: dateOnly(cursor),
+            startTime: `${dateOnly(cursor)}T00:00:00Z`,
+            endTime: `${dateOnly(next)}T00:00:00Z`
+        });
+
+        cursor.setUTCDate(cursor.getUTCDate() + 1);
+    }
+
+    return windows;
 }
 
 async function graph(token, query, variables) {
@@ -51,6 +67,21 @@ async function graph(token, query, variables) {
 
 function total(rows, field) {
     return rows.reduce((sum, row) => sum + Number(row?.sum?.[field] || 0), 0);
+}
+
+function mergeBreakdownRows(allRows, limit = 10) {
+    const totals = new Map();
+
+    for (const rows of allRows) {
+        for (const row of rows) {
+            totals.set(row.name, (totals.get(row.name) || 0) + Number(row.requests || 0));
+        }
+    }
+
+    return [...totals.entries()]
+        .map(([name, requests]) => ({ name, requests }))
+        .sort((a, b) => b.requests - a.requests)
+        .slice(0, limit);
 }
 
 async function getDaily(token, zoneId, range) {
@@ -80,13 +111,13 @@ async function getDaily(token, zoneId, range) {
     return data?.viewer?.zones?.[0]?.rows || [];
 }
 
-async function getBreakdown(token, zoneId, range, dimension) {
+async function getBreakdownForWindow(token, zoneId, window, dimension) {
     const query = `
         query Breakdown($zone: string!, $from: Time!, $to: Time!) {
             viewer {
                 zones(filter: { zoneTag: $zone }) {
                     rows: httpRequestsAdaptiveGroups(
-                        limit: 10
+                        limit: 1000
                         orderBy: [count_DESC]
                         filter: {
                             datetime_geq: $from
@@ -104,14 +135,47 @@ async function getBreakdown(token, zoneId, range, dimension) {
 
     const data = await graph(token, query, {
         zone: zoneId,
-        from: range.startTime,
-        to: range.endTime
+        from: window.startTime,
+        to: window.endTime
     });
 
     return (data?.viewer?.zones?.[0]?.rows || []).map((row) => ({
         name: String(row?.dimensions?.[dimension] ?? "unknown"),
         requests: Number(row?.count || 0)
     }));
+}
+
+async function getBreakdowns(token, zoneId, range, warnings) {
+    const windows = makeDailyWindows(range.startDate, range.endDate);
+    const dimensions = [
+        ["topCountries", "clientCountryName", 10],
+        ["topPaths", "clientRequestPath", 10],
+        ["statusCodes", "edgeResponseStatus", 20],
+        ["cacheStatuses", "cacheStatus", 20]
+    ];
+
+    const collected = Object.fromEntries(dimensions.map(([key]) => [key, []]));
+
+    for (const window of windows) {
+        const dayResults = await Promise.all(dimensions.map(async ([key, dimension]) => {
+            try {
+                const rows = await getBreakdownForWindow(token, zoneId, window, dimension);
+                return { key, rows };
+            } catch (error) {
+                warnings.push(`${dimension} (${window.date}): ${error.message}`);
+                return { key, rows: [] };
+            }
+        }));
+
+        for (const result of dayResults) {
+            collected[result.key].push(result.rows);
+        }
+    }
+
+    return Object.fromEntries(dimensions.map(([key, , limit]) => [
+        key,
+        mergeBreakdownRows(collected[key], limit)
+    ]));
 }
 
 export async function getCloudflareAnalyticsReport({ days = 7 } = {}) {
@@ -121,22 +185,7 @@ export async function getCloudflareAnalyticsReport({ days = 7 } = {}) {
     const range = makeRange(count);
     const daily = await getDaily(token, zoneId, range);
     const warnings = [];
-
-    async function optionalBreakdown(dimension) {
-        try {
-            return await getBreakdown(token, zoneId, range, dimension);
-        } catch (error) {
-            warnings.push(`${dimension}: ${error.message}`);
-            return [];
-        }
-    }
-
-    const [topCountries, topPaths, statusCodes, cacheStatuses] = await Promise.all([
-        optionalBreakdown("clientCountryName"),
-        optionalBreakdown("clientRequestPath"),
-        optionalBreakdown("edgeResponseStatus"),
-        optionalBreakdown("cacheStatus")
-    ]);
+    const breakdowns = await getBreakdowns(token, zoneId, range, warnings);
 
     const requests = total(daily, "requests");
     const bytes = total(daily, "bytes");
@@ -157,10 +206,7 @@ export async function getCloudflareAnalyticsReport({ days = 7 } = {}) {
             cacheRequestRatio: requests ? cachedRequests / requests : 0,
             cacheByteRatio: bytes ? cachedBytes / bytes : 0
         },
-        topCountries,
-        topPaths,
-        statusCodes,
-        cacheStatuses,
+        ...breakdowns,
         warnings,
         daily: daily.map((row) => ({
             date: row?.dimensions?.date,
