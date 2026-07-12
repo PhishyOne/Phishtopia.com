@@ -34,7 +34,17 @@ This document defines the initial scope for the course-project archive, legacy-r
 | `/project33-1` | `app-brewery-server/routes/project33-1.js` | Archive screenshots/notes/source state, then remove route and active assets. |
 | `/project33-2` | `app-brewery-server/routes/project33-2.js` | Archive screenshots/notes/source state, then remove route and active assets. |
 | `/project33-3` | `app-brewery-server/routes/project33-3.js` | Archive screenshots/notes/source state, then remove route and active assets. |
+| `/simon` | `views/simon.ejs` plus `/styles/simon.css` and `/js/simon.js` | Archive the working game visually and remove it from production routing/assets. |
+| `/intm-logo` | `views/intm-logo.ejs` plus `/styles/logo.css` and `/js/logo.js` | Archive the animation visually and remove it from production routing/assets. |
+| `/static` | Course-progress/course-project content linked from the site | Locate the exact source/assets, capture them, then remove the production link and route/content. |
 | `/projects` page | `views/projects.ejs` plus navigation/styles | Preserve a screenshot if useful, then remove. The future site does not need a projects page. |
+
+## REVIEW BEFORE FINAL PUBLIC-SITE DECISION
+
+| Route / area | Question |
+|---|---|
+| `/contact` | Keep only if a standalone contact page still adds value after the homepage/header redesign; otherwise fold contact information into the homepage/footer. |
+| Current footer course-progress link | Remove with `/static`; replace only with links that serve the smaller production site. |
 
 ## DELETE OR REPLACE DURING CLEANUP
 
@@ -46,6 +56,9 @@ This document defines the initial scope for the course-project archive, legacy-r
 | `app-brewery-server/db.js` compatibility shim | Delete after all legacy imports are gone | It merely re-exports `src/db/pool.js` and should not remain part of the production dependency graph. |
 | Old course-project navigation links | Delete | The redesigned header/footer will link only to active tools and account functions. |
 | Course-project-specific production assets | Remove after preservation | They should not enlarge the deployed image or attack surface after archival. |
+| Homepage links to `/projects` and `/player-int` | Replace | The current homepage still centers the retired project collection and old EchoTrace alias. |
+| Header “Projects Showcase” dropdown | Replace | Current navigation points to `/player-int`, `/projects`, and the old project-oriented site structure. |
+| Footer `/static` course-progress link | Delete | Course progress will no longer be a live production feature. |
 
 ## MIGRATE BEFORE DELETE
 
