@@ -1,0 +1,1 @@
+This temporary note marks the branch point for stacked authentication hardening work.
