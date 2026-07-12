@@ -1,21 +1,17 @@
-<!-- Footer -->
-<div class="footer gradient-background">
+<footer class="footer gradient-background">
     <div class="footer-links">
         <p><a href="/">Home</a></p>
-        <p><a href="/static">My Course Progress</a></p>
-        <p><a href="/contact">Contact Me</a></p>
+        <p><a href="/youlist">YouList</a></p>
+        <p><a href="/echotrace">EchoTrace</a></p>
+        <p><a href="/storecalc">StoreCalc</a></p>
+        <p><a href="/contact">Contact</a></p>
     </div>
-</div>
+</footer>
 
-<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
-<script src="/js/navbar.js"></script>
-
-<!-- Extra Scripts -->
 <% if (extraScripts) { %>
-    <% extraScripts.forEach(src=> { %>
+    <% extraScripts.forEach(src => { %>
         <script src="<%= src %>"></script>
-        <% }) %>
-            <% } %>
-                </body>
-
-                </html>
+    <% }); %>
+<% } %>
+</body>
+</html>

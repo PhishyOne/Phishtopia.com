@@ -1,21 +1,9 @@
 import express from "express";
-import { readdirSync } from "fs";
-import { join } from "path";
-import { viewsDir } from "../config/paths.js";
 
-const CANVAS_PAGES = new Set(["index", "projects", "contact", "youlist", "register", "login"]);
-
-function buildPageOptions(req, name) {
-    const isProject = name.startsWith("project") && name !== "projects";
-    const extraStyles = isProject ? [`/${name}/styles/main.css`] : ["/styles/main.css"];
-    const extraScripts = [];
-
-    if (name === "project33-2") extraStyles.push(`/${name}/styles/new.css`);
-    if (CANVAS_PAGES.has(name)) extraScripts.push("/js/canvas.js");
-
+function pageOptions(req, bodyClass, extraScripts = []) {
     return {
-        bodyClass: name,
-        extraStyles,
+        bodyClass,
+        extraStyles: [],
         extraScripts,
         user: req.session?.user || null,
         currentUrl: req.originalUrl
@@ -25,27 +13,12 @@ function buildPageOptions(req, name) {
 export function buildPagesRouter() {
     const router = express.Router();
 
-    router.get("/projects", (req, res) => {
-        res.render("projects", {
-            bodyClass: "projects",
-            user: req.session?.user || null,
-            currentUrl: req.originalUrl,
-            extraStyles: ["/styles/main.css"],
-            extraScripts: []
-        });
+    router.get("/", (req, res) => {
+        res.render("index", pageOptions(req, "home-page", ["/js/canvas.js"]));
     });
 
-    const viewFiles = readdirSync(viewsDir)
-        .filter(file => file.endsWith(".ejs") && file !== "player-int.ejs");
-
-    viewFiles.forEach(file => {
-        const name = file.replace(".ejs", "");
-        const routePath = name === "index" ? "/" : `/${name}`;
-
-        router.get(routePath, (req, res, next) => {
-            if (name === "youlist") return next();
-            res.render(name, buildPageOptions(req, name));
-        });
+    router.get("/contact", (req, res) => {
+        res.render("contact", pageOptions(req, "contact"));
     });
 
     return router;

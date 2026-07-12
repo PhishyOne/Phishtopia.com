@@ -6,6 +6,4 @@ export const rootDir = dirname(dirname(srcDir));
 export const viewsDir = join(rootDir, "views");
 export const publicDir = join(rootDir, "public");
 export const logsDir = join(rootDir, "logs");
-export const appBreweryPublicDir = join(rootDir, "app-brewery-server", "public");
-export const appBreweryStaticViewsDir = join(rootDir, "views", "app-brewery-static");
 export const projectAssetsDir = join(rootDir, "public", "projects");
