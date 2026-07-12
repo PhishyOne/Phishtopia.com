@@ -3,7 +3,7 @@ import express from "express";
 function pageOptions(req, bodyClass, extraScripts = []) {
     return {
         bodyClass,
-        extraStyles: ["/styles/main.css"],
+        extraStyles: [],
         extraScripts,
         user: req.session?.user || null,
         currentUrl: req.originalUrl
