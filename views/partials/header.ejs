@@ -12,23 +12,19 @@
 
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>
-        <%= title || "Phishtopia" %>
-    </title>
+    <title><%= title || "Phishtopia" %></title>
     <meta name="description" content="Home of the Improbable.">
     <meta name="author" content="PhishyOne">
     <meta name="theme-color" content="#05899E">
     <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#000000">
 
-    <!-- Open Graph -->
     <meta property="og:title" content="Phishtopia">
     <meta property="og:description" content="Home of the Improbable.">
     <meta property="og:image" content="https://phishtopia.com/images/phishLogo.png">
-    <meta property="og:url" content="https://phishtopia.com">
+    <meta property="og:url" content="<%= canonicalUrl %>">
     <meta property="og:type" content="website">
     <meta property="og:site_name" content="Phishtopia">
 
-    <!-- Twitter -->
     <meta name="twitter:card" content="summary_large_image">
     <meta name="twitter:title" content="Phishtopia">
     <meta name="twitter:description" content="Home of the Improbable.">
@@ -36,23 +32,19 @@
     <meta name="twitter:site" content="@PhishyOne">
     <meta name="twitter:creator" content="@PhishyOne">
 
-    <!-- Canonical -->
     <link rel="canonical" href="<%= canonicalUrl %>">
     <meta name="robots" content="index, follow">
     <link rel="alternate" hreflang="en" href="<%= canonicalUrl %>">
 
-    <!-- Icons -->
     <link rel="apple-touch-icon" sizes="180x180" href="https://phishtopia.com/images/phishLogo.png">
     <link rel="icon" href="https://phishtopia.com/images/phishLogo.png" type="image/png">
 
-    <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link
         href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@300;400;500;600;700&family=Londrina+Shadow&family=Modak&family=Pompiere&display=swap"
         rel="stylesheet">
 
-    <!-- Local Fonts -->
     <style>
         @font-face {
             font-family: 'Shentox';
@@ -66,71 +58,54 @@
             font-family: 'Eve Alpha';
             src: url('/styles/evealpha_bold.ttf') format('truetype');
             font-weight: 700;
-            font-style: bold;
+            font-style: normal;
             font-display: swap;
         }
     </style>
 
-    <!-- Main Styles -->
     <link rel="stylesheet" href="/styles/main.css">
 
-    <!-- Extra Styles -->
     <% if (extraStyles) { %>
-        <% if (Array.isArray(extraStyles)) { %>
-            <% extraStyles.forEach(src=> { %>
-                <link rel="stylesheet" href="<%= src %>">
-                <% }) %>
-                    <% } else { %>
-                        <link rel="stylesheet" href="<%= extraStyles %>">
-                        <% } %>
-                            <% } %>
+        <% const styles = Array.isArray(extraStyles) ? extraStyles : [extraStyles]; %>
+        <% styles.forEach(src => { %>
+            <link rel="stylesheet" href="<%= src %>">
+        <% }); %>
+    <% } %>
 </head>
 
 <body class="<%= bodyClass || '' %>">
-    <!-- Google Tag Manager (noscript) -->
     <noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-MWQ8XZV3"
-    height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
-    <!-- End Google Tag Manager (noscript) -->
+        height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
+
     <canvas id="bubble-canvas"></canvas>
 
-    <nav class="main-nav">
+    <nav class="main-nav" aria-label="Primary navigation">
         <div class="nav-left">
-            <a href="https://phishtopia.com">
+            <a href="/" aria-label="Phishtopia home">
                 <img src="/images/phishLogo.png" alt="Phishtopia" class="logo">
             </a>
 
             <ul class="nav-links">
-                <li class="nav-item dropdown">
-                    <div class="dropdown-toggle">
-                        <span class="nav-link">Projects Showcase</span>
-                        <span class="dropdown-arrow">▾</span>
-                    </div>
-                    <ul class="dropdown-menu">
-                        
-                        <li><a href="/youlist" class="dropdown-item">YouList Movies/TV</a></li>
-                        <li><a href="/player-int" class="dropdown-item">Echoes PlayInt</a></li>
-                        <li><a href="/projects" id="projects" class="dropdown-item">Recent Projects</a></li>
-                        <li><a href="/contact" id="contact" class="dropdown-item">Got a Question?</a></li>
-                    </ul>
-                </li>
+                <li class="nav-item"><a class="nav-link" href="/youlist">YouList</a></li>
+                <li class="nav-item"><a class="nav-link" href="/echotrace">EchoTrace</a></li>
+                <li class="nav-item"><a class="nav-link" href="/storecalc">StoreCalc</a></li>
+                <li class="nav-item"><a class="nav-link" href="/contact">Contact</a></li>
             </ul>
         </div>
 
-        <!-- Right-side nav -->
-        <div class="nav-right">
-                <% if (user) { %>
-                    <li class="nav-item"><span id="username">Hi, <%= user.username %></span></li>
-                    <li class="nav-item">
-                        <form action="/auth/logout" method="POST">
-                            <button type="submit" class="btn logout-btn">Logout</button>
-                        </form>
-                    </li>
-                    <% } else { %>
-                        <li class="nav-item">
-                            <a class="login-register"
-                                href="/auth/login?returnTo=<%= encodeURIComponent(currentUrl || '/') %>">Login</a>
-                        </li>
-                        <li class="nav-item"><a class="login-register" href="/auth/register">Register</a></li>
-                        <% } %>
-        </div>
+        <ul class="nav-right">
+            <% if (user) { %>
+                <li class="nav-item"><span id="username">Hi, <%= user.username %></span></li>
+                <li class="nav-item">
+                    <form action="/auth/logout" method="POST">
+                        <button type="submit" class="btn logout-btn">Logout</button>
+                    </form>
+                </li>
+            <% } else { %>
+                <li class="nav-item">
+                    <a class="login-register" href="/auth/login?returnTo=<%= encodeURIComponent(currentUrl || '/') %>">Login</a>
+                </li>
+                <li class="nav-item"><a class="login-register" href="/auth/register">Register</a></li>
+            <% } %>
+        </ul>
     </nav>
