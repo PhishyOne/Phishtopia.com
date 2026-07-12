@@ -1,8 +1,5 @@
 const LEGACY_REDIRECTS = new Map([
-    ["/home", "/"],
-    ["/playerint", "/player-int"],
-    ["/static/8-agency", "/projects"],
-    ["/static/8-agency/", "/projects"]
+    ["/home", "/"]
 ]);
 
 function absoluteCanonicalUrl(path) {
