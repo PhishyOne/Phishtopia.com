@@ -43,17 +43,21 @@ function buildDatabaseUrlConfig(databaseUrl) {
     };
 }
 
-function createMissingDbPool() {
+function createMissingDbError() {
     const error = new Error(
         "Database configuration missing: set DATABASE_URL or DB_HOST."
     );
+    error.code = "DB_CONFIG_MISSING";
+    return error;
+}
 
+function createMissingDbPool() {
     return {
         query() {
-            throw error;
+            throw createMissingDbError();
         },
         connect() {
-            throw error;
+            throw createMissingDbError();
         },
         on() {
             return this;
@@ -68,7 +72,7 @@ let pool;
 
 if (!hasDbConfig) {
     if (isProd) {
-        throw new Error("Database configuration missing: set DATABASE_URL or DB_HOST.");
+        throw createMissingDbError();
     }
 
     console.warn(
