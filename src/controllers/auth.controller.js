@@ -1,9 +1,27 @@
 import { authenticateUser, registerUser, verifyEmailToken } from "../services/auth.service.js";
+import {
+    destroySession,
+    establishAuthenticatedSession
+} from "../services/session.service.js";
+import {
+    safeInternalRedirect,
+    safeSameSiteReferer
+} from "../utils/redirects.js";
 
 const LOG_AUTH_EVENTS = process.env.LOG_AUTH_EVENTS === "true";
+const LOCAL_DB_MESSAGE = "This action is unavailable in the local preview because no database is configured.";
 
-function renderRegister(res, { error = null, username = "", email = "" } = {}) {
-    return res.render("register", {
+function isLocalDatabaseUnavailable(error) {
+    return process.env.NODE_ENV !== "production" && error?.code === "DB_CONFIG_MISSING";
+}
+
+function renderRegister(res, {
+    error = null,
+    username = "",
+    email = "",
+    status = 200
+} = {}) {
+    return res.status(status).render("register", {
         title: "Register",
         bodyClass: "register",
         extraStyles: [],
@@ -15,8 +33,12 @@ function renderRegister(res, { error = null, username = "", email = "" } = {}) {
     });
 }
 
-function renderLogin(res, { error = null, username = "" } = {}) {
-    return res.render("login", {
+function renderLogin(res, {
+    error = null,
+    username = "",
+    status = 200
+} = {}) {
+    return res.status(status).render("login", {
         title: "Login",
         bodyClass: "auth",
         extraStyles: [],
@@ -33,7 +55,9 @@ export function showRegister(req, res) {
 
 export function showLogin(req, res) {
     if (req.query.returnTo) {
-        req.session.returnTo = req.query.returnTo;
+        const returnTo = safeInternalRedirect(req.query.returnTo, null);
+        if (returnTo) req.session.returnTo = returnTo;
+        else delete req.session.returnTo;
     }
 
     return renderLogin(res);
@@ -45,6 +69,9 @@ export async function verifyEmail(req, res) {
         return res.send(result.message);
     } catch (err) {
         console.error(err);
+        if (isLocalDatabaseUnavailable(err)) {
+            return res.status(503).send(LOCAL_DB_MESSAGE);
+        }
         return res.status(500).send("Server error");
     }
 }
@@ -71,6 +98,14 @@ export async function register(req, res) {
         });
     } catch (err) {
         console.error(err);
+        if (isLocalDatabaseUnavailable(err)) {
+            return renderRegister(res, {
+                status: 503,
+                error: LOCAL_DB_MESSAGE,
+                username,
+                email
+            });
+        }
         return res.status(500).send("Server error");
     }
 }
@@ -89,24 +124,32 @@ export async function login(req, res) {
             });
         }
 
-        req.session.user = result.user;
-
-        const redirectTo = req.session.returnTo || "/";
-        delete req.session.returnTo;
+        const redirectTo = safeInternalRedirect(req.session.returnTo, "/");
+        await establishAuthenticatedSession(req, result.user);
 
         return res.redirect(redirectTo);
     } catch (err) {
         console.error(err);
+        if (isLocalDatabaseUnavailable(err)) {
+            return renderLogin(res, {
+                status: 503,
+                error: LOCAL_DB_MESSAGE,
+                username
+            });
+        }
         return res.status(500).send("Server error");
     }
 }
 
-export function logout(req, res) {
-    const referer = req.get("Referer");
+export async function logout(req, res) {
+    const redirectTo = safeSameSiteReferer(req.get("Referer"), "/");
 
-    req.session.destroy(err => {
-        if (err) return res.status(500).send("Logout failed");
-        res.clearCookie("sid");
-        res.redirect(referer || "/");
-    });
+    try {
+        await destroySession(req);
+        res.clearCookie("sid", { path: "/" });
+        return res.redirect(redirectTo);
+    } catch (err) {
+        console.error(err);
+        return res.status(500).send("Logout failed");
+    }
 }
