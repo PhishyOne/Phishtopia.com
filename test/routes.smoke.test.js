@@ -65,6 +65,23 @@ test("surviving public pages render successfully", async () => {
     }
 });
 
+test("database-less login previews return a clear service-unavailable message", async () => {
+    const response = await request("/auth/login", {
+        method: "POST",
+        headers: {
+            "content-type": "application/x-www-form-urlencoded"
+        },
+        body: new URLSearchParams({
+            username: "preview-user",
+            password: "not-a-real-password"
+        })
+    });
+
+    assert.equal(response.status, 503);
+    const body = await response.text();
+    assert.match(body, /unavailable in the local preview because no database is configured/i);
+});
+
 test("YouList still requires authentication", async () => {
     const response = await request("/youlist");
     assert.equal(response.status, 302);
