@@ -159,6 +159,7 @@ chmod 0644 "$state/npm.hosts"
 set -- /usr/bin/systemd-run --wait --collect --quiet --pipe --uid=phishtopia-build \
   --unit=phishtopia-ops-bootstrap-npm \
   "--working-directory=$staging" --setenv=HOME=/var/lib/phishtopia-build --setenv=NO_COLOR=1 \
+  --setenv=PYTHONDONTWRITEBYTECODE=1 \
   --property=PrivateTmp=yes --property=PrivateDevices=yes --property=NoNewPrivileges=yes \
   --property=ProtectSystem=strict --property=ProtectHome=yes --property=ProtectKernelTunables=yes \
   --property=ProtectKernelModules=yes --property=ProtectKernelLogs=yes --property=ProtectControlGroups=yes \
@@ -178,6 +179,7 @@ sandbox() {
   /usr/bin/systemd-run --wait --collect --quiet --pipe --uid=phishtopia-build \
     "--unit=phishtopia-ops-bootstrap-test-$sandbox_index" \
     "--working-directory=$staging" --setenv=HOME=/var/lib/phishtopia-build --setenv=NO_COLOR=1 \
+    --setenv=PYTHONDONTWRITEBYTECODE=1 \
     --property=PrivateNetwork=yes --property=PrivateTmp=yes --property=PrivateDevices=yes \
     --property=NoNewPrivileges=yes --property=ProtectSystem=strict --property=ProtectHome=yes \
     --property=ProtectKernelTunables=yes --property=ProtectKernelModules=yes --property=ProtectKernelLogs=yes \
@@ -191,7 +193,7 @@ sandbox_index=0
 sandbox "$runtime/node/bin/node" "$staging/node_modules/prettier/bin/prettier.cjs" --check .
 sandbox "$runtime/node/bin/node" "$staging/node_modules/typescript/bin/tsc" --noEmit -p tsconfig.json
 sandbox "$runtime/node/bin/node" "$staging/node_modules/typescript/bin/tsc" -p tsconfig.json
-sandbox /usr/bin/python3 -m unittest discover -s worker/test -p 'test_*.py' -v
+sandbox /usr/bin/python3 -B -m unittest discover -s worker/test -p 'test_*.py' -v
 sandbox /bin/sh -c 'exec "$1" --test dist/test/*.test.js' bootstrap-test "$runtime/node/bin/node"
 sandbox "$runtime/node/bin/node" "$staging/dist/smoke/protocol-smoke.js"
 

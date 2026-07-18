@@ -1,9 +1,12 @@
 from __future__ import annotations
 
 import json
+import os
 import tempfile
+import threading
 import unittest
 from pathlib import Path
+from unittest import mock
 
 from worker.store import JobStore, StoreError
 
@@ -73,6 +76,60 @@ class StoreTests(unittest.TestCase):
         self.assertNotIn("idempotency_key", entries[0])
         self.assertEqual(entries[0]["resource"], "production_mutation")
         self.assertNotIn("phishtopia_app", json.dumps(entries[0]))
+
+    def test_concurrent_flush_holds_lock_through_file_acknowledgement(self) -> None:
+        with self.store._lock, self.store._connect() as connection:
+            connection.execute("BEGIN IMMEDIATE")
+            connection.executemany(
+                "INSERT INTO audit_events(entry_json,flushed) VALUES(?,0)",
+                ((json.dumps({"sequence": value}),) for value in (1, 2)),
+            )
+            connection.execute("COMMIT")
+
+        entered_first_write = threading.Event()
+        release_first_write = threading.Event()
+        concurrent_write = threading.Event()
+        write_guard = threading.Lock()
+        first_write = True
+        errors: list[BaseException] = []
+        real_write = os.write
+
+        def delayed_write(descriptor: int, data: bytes) -> int:
+            nonlocal first_write
+            with write_guard:
+                is_first = first_write
+                first_write = False
+            if is_first:
+                entered_first_write.set()
+                if not release_first_write.wait(timeout=2):
+                    raise AssertionError("audit write release timed out")
+            else:
+                concurrent_write.set()
+            return real_write(descriptor, data)
+
+        def flush() -> None:
+            try:
+                self.store._flush_audit()
+            except BaseException as error:
+                errors.append(error)
+
+        with mock.patch("worker.store.os.write", side_effect=delayed_write):
+            first = threading.Thread(target=flush)
+            second = threading.Thread(target=flush)
+            first.start()
+            self.assertTrue(entered_first_write.wait(timeout=1))
+            second.start()
+            self.assertFalse(concurrent_write.wait(timeout=0.2))
+            release_first_write.set()
+            first.join(timeout=2)
+            second.join(timeout=2)
+        self.assertFalse(first.is_alive())
+        self.assertFalse(second.is_alive())
+        self.assertEqual(errors, [])
+        self.assertEqual(
+            [json.loads(line)["sequence"] for line in self.store.audit.read_text().splitlines()],
+            [1, 2],
+        )
 
     def test_interrupted_job_is_recovered_for_baseline_rollback(self) -> None:
         job = self.store.start("request-0001", ACTION)

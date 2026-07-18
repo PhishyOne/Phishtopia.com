@@ -14,6 +14,7 @@ RECOVER = PACKAGE_ROOT / "scripts" / "recover-bootstrap.sh"
 ROLLBACK_LAST_GOOD = PACKAGE_ROOT / "scripts" / "rollback-bootstrap-last-good.sh"
 INSTALL = PACKAGE_ROOT / "scripts" / "install-bootstrap.sh"
 FINALIZE = PACKAGE_ROOT / "scripts" / "finalize-bootstrap.sh"
+WORKER_UNIT = PACKAGE_ROOT / "systemd" / "phishtopia-ops-worker.service"
 COMMIT = "a" * 40
 
 
@@ -271,6 +272,8 @@ class BootstrapRecoveryFakeTests(unittest.TestCase):
         self.assertNotIn("bootstrap-build-watchdog", install)
         self.assertNotIn("bootstrap-switch-watchdog", install)
         self.assertIn("RuntimeMaxSec=", install)
+        self.assertIn("--setenv=PYTHONDONTWRITEBYTECODE=1", install)
+        self.assertIn("sandbox /usr/bin/python3 -B -m unittest", install)
         self.assertIn("memory_available_kib", install)
         self.assertIn("disk_available", install)
         self.assertIn("phishtopia-cloudflare-dns-token", install)
@@ -290,6 +293,11 @@ class BootstrapRecoveryFakeTests(unittest.TestCase):
         retained = ROLLBACK_LAST_GOOD.read_text(encoding="utf8")
         self.assertIn("SELECT COUNT(*) FROM jobs", retained)
         self.assertIn("/opt/phishtopia-app-releases -mindepth 1", retained)
+
+    def test_worker_runtime_cannot_write_bytecode_into_immutable_release(self) -> None:
+        unit = WORKER_UNIT.read_text(encoding="utf8")
+        self.assertIn("WorkingDirectory=/opt/phishtopia-ops-mcp", unit)
+        self.assertIn("Environment=PYTHONDONTWRITEBYTECODE=1", unit)
 
     def test_term_and_hup_traps_recover_and_cannot_resume_install(self) -> None:
         install = INSTALL.read_text(encoding="utf8")

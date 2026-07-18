@@ -13,6 +13,7 @@ User=root
 Group=root
 WorkingDirectory=/opt/phishtopia-ops-mcp
 Environment=PYTHONPATH=/opt/phishtopia-ops-mcp
+Environment=PYTHONDONTWRITEBYTECODE=1
 Environment=PATH=/opt/phishtopia-ops-runtime/node/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
 ExecStart=/usr/bin/python3 -m worker.daemon
 Restart=on-failure

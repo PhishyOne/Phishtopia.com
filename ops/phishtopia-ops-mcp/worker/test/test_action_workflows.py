@@ -38,8 +38,12 @@ class ScriptedPlatform(RealPlatform):
     def _public_health(self, _url: str) -> None:
         self.events.append("public_health")
 
-    def _verify_session_cookie(self) -> None:
-        self.events.append("session")
+    def _verify_session_cookie(
+        self, *, expected_session_secret: str | None = None
+    ) -> None:
+        self.events.append(
+            "session_secret_consumer" if expected_session_secret else "session"
+        )
 
     def _verify_tls(self) -> None:
         self.events.append("tls")
@@ -48,9 +52,7 @@ class ScriptedPlatform(RealPlatform):
         self.events.append("pm2:" + ":".join(arguments))
         return b""
 
-    def _pm2_status(
-        self, *, expected_session_secret: str | None = None
-    ) -> dict[str, Any]:
+    def _pm2_status(self) -> dict[str, Any]:
         self.events.append("pm2_status")
         return {"name": "phishtopia", "status": "online", "pid": 1}
 
@@ -433,6 +435,7 @@ class ActionWorkflowFakeTests(unittest.TestCase):
             }
             fake._rotate_secret(action, JOB_ID, baseline, check, progress)
             self.assertEqual(fake.enabled, {"2"})
+            self.assertIn("session_secret_consumer", fake.events)
             fake.rollback(action, baseline)
             self.assertEqual(fake.env, initial)
             self.assertEqual(fake.enabled, {"1"})

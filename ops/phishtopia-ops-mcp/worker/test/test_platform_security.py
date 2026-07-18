@@ -1,16 +1,25 @@
 from __future__ import annotations
 
+import base64
+import hashlib
+import hmac
 import unittest
 import os
 import socket
 import struct
 import sys
 import tempfile
+import urllib.parse
 from pathlib import Path
 from unittest import mock
 
 import worker.platform as platform_module
-from worker.platform import CommandRunner, PlatformError, RealPlatform
+from worker.platform import (
+    OPS_PYTHON_TEST_COMMAND,
+    CommandRunner,
+    PlatformError,
+    RealPlatform,
+)
 
 
 class PlatformSecurityTests(unittest.TestCase):
@@ -137,6 +146,78 @@ class PlatformSecurityTests(unittest.TestCase):
                 "--property=RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6",
                 captured,
             )
+
+    def test_candidate_python_tests_cannot_write_bytecode(self) -> None:
+        self.assertEqual(OPS_PYTHON_TEST_COMMAND[:2], ("/usr/bin/python3", "-B"))
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            candidate = root / ("extract-" + "a" * 40)
+            candidate.mkdir()
+            captured: list[str] = []
+            platform = RealPlatform.__new__(RealPlatform)
+            platform._guard = None
+            platform._run = (  # type: ignore[method-assign]
+                lambda command, **_kwargs: captured.extend(command) or b""
+            )
+            with (
+                mock.patch.object(platform_module, "STAGING_ROOT", root),
+                mock.patch("worker.platform.pwd.getpwnam", return_value=mock.Mock()),
+            ):
+                platform._sandbox_run(
+                    candidate,
+                    list(OPS_PYTHON_TEST_COMMAND),
+                    timeout=30,
+                )
+        self.assertIn("--setenv=PYTHONDONTWRITEBYTECODE=1", captured)
+        separator = captured.index("--")
+        self.assertEqual(captured[separator + 1 :], list(OPS_PYTHON_TEST_COMMAND))
+
+    def test_session_secret_is_proved_by_application_cookie_signature(self) -> None:
+        secret = "s" * 64
+        session_id = "consumer-issued-session-id"
+        signature = base64.b64encode(
+            hmac.new(secret.encode(), session_id.encode(), hashlib.sha256).digest()
+        ).decode().rstrip("=")
+        cookie = "sid=" + urllib.parse.quote(
+            f"s:{session_id}.{signature}", safe=""
+        )
+        self.assertTrue(RealPlatform._session_cookie_uses_secret(cookie, secret))
+        self.assertFalse(
+            RealPlatform._session_cookie_uses_secret(cookie, "w" * 64)
+        )
+        self.assertFalse(
+            RealPlatform._session_cookie_uses_secret(cookie + "tampered", secret)
+        )
+
+    def test_general_production_invariants_use_schema_not_live_database_data(self) -> None:
+        platform = RealPlatform.__new__(RealPlatform)
+        platform._run = lambda *_args, **_kwargs: b""  # type: ignore[method-assign]
+        platform._safe_env_read = lambda: b"fixed-config"  # type: ignore[method-assign]
+        platform._database_schema_hash = lambda: "stable-schema"  # type: ignore[method-assign]
+        platform._database_fingerprint = (  # type: ignore[method-assign]
+            lambda *_args, **_kwargs: self.fail("live database data was read")
+        )
+        platform._cloud_run_service = lambda: {  # type: ignore[method-assign]
+            "status": {"traffic": [{"revisionName": "fixed", "percent": 100}]}
+        }
+        platform._error_signal = lambda: {  # type: ignore[method-assign]
+            "exists": True,
+            "device": 1,
+            "inode": 2,
+            "size": 3,
+            "markers": 0,
+        }
+        with (
+            mock.patch("worker.platform.Path.rglob", return_value=[]),
+            mock.patch(
+                "worker.platform.socket.getaddrinfo",
+                return_value=[(socket.AF_INET, socket.SOCK_STREAM, 6, "", ("34.73.92.179", 443))],
+            ),
+        ):
+            invariants = platform._production_invariants()
+        self.assertEqual(invariants["database_schema"], "stable-schema")
+        self.assertNotIn("database", invariants)
+        self.assertNotIn("data", invariants)
 
     def test_error_gate_uses_counts_only_and_rejects_new_errors_or_rotation(self) -> None:
         with tempfile.TemporaryDirectory() as directory:

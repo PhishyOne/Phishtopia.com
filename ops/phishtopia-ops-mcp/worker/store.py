@@ -391,34 +391,40 @@ class JobStore:
         )
 
     def _flush_audit(self) -> None:
-        with self._lock, self._connect() as connection:
-            pending = connection.execute(
-                "SELECT event_id,entry_json FROM audit_events WHERE flushed=0 "
-                "ORDER BY event_id LIMIT 1000"
-            ).fetchall()
-            if not pending:
-                return
-        flags = os.O_APPEND | os.O_CREAT | os.O_WRONLY | getattr(os, "O_NOFOLLOW", 0)
-        descriptor = os.open(self.audit, flags, 0o600)
-        try:
-            details = os.fstat(descriptor)
-            if (
-                not stat.S_ISREG(details.st_mode)
-                or details.st_nlink != 1
-                or details.st_uid != os.geteuid()
-                or details.st_mode & 0o077
-                or details.st_size >= self.MAX_STORAGE_BYTES
-            ):
-                raise StoreError("unsafe_audit_target")
-            for item in pending:
-                os.write(descriptor, item["entry_json"].encode() + b"\n")
-            os.fsync(descriptor)
-        finally:
-            os.close(descriptor)
-        with self._connect() as connection:
-            connection.execute("BEGIN IMMEDIATE")
-            connection.executemany(
-                "UPDATE audit_events SET flushed=1 WHERE event_id=?",
-                ((item["event_id"],) for item in pending),
+        with self._lock:
+            with self._connect() as connection:
+                pending = connection.execute(
+                    "SELECT event_id,entry_json FROM audit_events WHERE flushed=0 "
+                    "ORDER BY event_id LIMIT 1000"
+                ).fetchall()
+                if not pending:
+                    return
+            flags = (
+                os.O_APPEND
+                | os.O_CREAT
+                | os.O_WRONLY
+                | getattr(os, "O_NOFOLLOW", 0)
             )
-            connection.execute("COMMIT")
+            descriptor = os.open(self.audit, flags, 0o600)
+            try:
+                details = os.fstat(descriptor)
+                if (
+                    not stat.S_ISREG(details.st_mode)
+                    or details.st_nlink != 1
+                    or details.st_uid != os.geteuid()
+                    or details.st_mode & 0o077
+                    or details.st_size >= self.MAX_STORAGE_BYTES
+                ):
+                    raise StoreError("unsafe_audit_target")
+                for item in pending:
+                    os.write(descriptor, item["entry_json"].encode() + b"\n")
+                os.fsync(descriptor)
+            finally:
+                os.close(descriptor)
+            with self._connect() as connection:
+                connection.execute("BEGIN IMMEDIATE")
+                connection.executemany(
+                    "UPDATE audit_events SET flushed=1 WHERE event_id=?",
+                    ((item["event_id"],) for item in pending),
+                )
+                connection.execute("COMMIT")

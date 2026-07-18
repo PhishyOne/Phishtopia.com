@@ -20,7 +20,7 @@ queued -> running -> succeeded
 
 `rollback_failed` is reported distinctly and leaves an audit event requiring operator attention. It is never mislabeled as a successful rollback.
 
-At startup, an interrupted `running` or `cancelling` job is moved to `queued`; when selected, the executor sees its persisted baseline and performs recovery rollback before setting a terminal state. The sole exception is the explicit `worker_handoff_pending` checkpoint: the new root worker must prove its own contract, tunnel readiness, unit contract, and production invariants before success is committed; failure restores the old ops symlink and reexecs the old worker. This chooses safety over repeating a partially completed mutation.
+At startup, an interrupted `running` or `cancelling` job is moved to `queued`; when selected, the executor sees its persisted baseline and performs recovery rollback before setting a terminal state. The sole exception is the explicit `worker_handoff_pending` checkpoint: the daemon changes into the selected release before reexec so the prior working directory cannot shadow it, and the newly loaded root worker must prove its own contract, tunnel readiness, unit contract, and production invariants before success is committed. Failure restores the old ops symlink and reexecs the old worker. This chooses safety over repeating a partially completed mutation.
 
 ## Release verification
 
@@ -37,11 +37,14 @@ The model cannot supply a URL, branch, repository, directory, npm command, or te
 
 ## Action rollback summaries
 
-- Ops/app release: capture the exact current target, atomically switch a fixed symlink, health gate, then restore the original target on any failure. Ops changes also perform a durable reexec handoff; the systemd sandbox contract is immutable within the v1 action schema and differing candidate units are rejected.
+- Ops/app release: capture the exact current target, atomically switch a fixed symlink, health gate, then restore the original target on any failure. Ops changes also perform a durable reexec handoff; Python bytecode writes are disabled during candidate tests and worker runtime so immutable tree digests remain stable. The systemd sandbox contract is immutable within the v1 action schema and differing candidate units are rejected.
 - Restart: configuration is unchanged; a failed restart is retried from the captured service baseline and gated on health.
 - Canary: capture the exact Cloud Run traffic array and reconstruct it exactly on failure/cancellation.
 - Migration: require a fresh off-VM verified dump and disposable local restore rehearsal; accept only non-destructive transactional manifest SQL. Production execution is one transaction.
-- Secret: retain the prior Secret Manager versions, use a root-only exact env backup, fail closed if Cloud Run declares `SESSION_SECRET` as a consumer, validate the PM2 consumer, and disable newly introduced versions during rollback. Payloads are never logged or returned.
+- Secret: retain the prior Secret Manager versions, use a root-only exact env backup, fail closed if Cloud Run declares `SESSION_SECRET` as a consumer, verify the newly issued application session cookie against the rotated secret, and disable newly introduced versions during rollback. PM2 metadata is used only for process health, never as proof of the application-loaded value. Cookies and secret payloads are never logged or returned.
+
+General production rollback invariants hash PostgreSQL schema only; mutable row data and counts are deliberately excluded so legitimate sessions, users, and comments cannot invalidate an unrelated operation. The tested migration workflow separately uses exact schema/data fingerprints on its disposable rehearsal and action-specific live checks.
+
 - DNS: retain exact record fields in root-only state, force `proxied=false`, require recursive convergence plus TLS/app health on the hostname actually changed (with only the fixed `www` to apex redirect), and PUT the exact snapshot back on failure.
 
 Every action captures a count-only fixed application error signal and rejects any new error marker after mutation. No raw log bytes or messages cross the worker boundary.

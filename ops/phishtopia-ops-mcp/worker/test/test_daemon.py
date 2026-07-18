@@ -32,6 +32,34 @@ class RuntimePreflightExecutor(NoopExecutor):
 
 
 class DaemonProtocolTests(unittest.TestCase):
+    def test_reexec_changes_to_selected_release_before_exec(self) -> None:
+        events: list[tuple[str, object]] = []
+
+        def changed(directory: object) -> None:
+            events.append(("chdir", directory))
+
+        def executed(executable: str, arguments: list[str]) -> None:
+            events.append(("execv", (executable, arguments)))
+
+        with (
+            mock.patch("worker.daemon.os.chdir", side_effect=changed),
+            mock.patch("worker.daemon.os.execv", side_effect=executed),
+        ):
+            daemon_module.reexec_selected_worker()
+        self.assertEqual(
+            events,
+            [
+                ("chdir", daemon_module.OPS_CURRENT),
+                (
+                    "execv",
+                    (
+                        "/usr/bin/python3",
+                        ["/usr/bin/python3", "-m", "worker.daemon"],
+                    ),
+                ),
+            ],
+        )
+
     def test_internal_runtime_preflight_is_fixed_and_sanitized(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)

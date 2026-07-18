@@ -1,6 +1,8 @@
 from __future__ import annotations
 
+import base64
 import hashlib
+import hmac
 import http.client
 import ipaddress
 import json
@@ -62,6 +64,17 @@ OPS_UNIT = "phishtopia-ops-mcp-tunnel.service"
 PM2_NAME = "phishtopia"
 VM_SERVICE_ACCOUNT = "107649778409-compute@developer.gserviceaccount.com"
 MIGRATION_TARGETS = frozenset({("public", "session", "expire")})
+OPS_PYTHON_TEST_COMMAND = (
+    "/usr/bin/python3",
+    "-B",
+    "-m",
+    "unittest",
+    "discover",
+    "-s",
+    "worker/test",
+    "-p",
+    "test_*.py",
+)
 
 
 class PlatformError(RuntimeError):
@@ -162,6 +175,7 @@ class CommandRunner:
                     "PATH": "/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
                     "HOME": "/root",
                     "NO_COLOR": "1",
+                    "PYTHONDONTWRITEBYTECODE": "1",
                     "CLOUDSDK_CONFIG": str(GCLOUD_CONFIG_ROOT),
                     "CLOUDSDK_CORE_DISABLE_PROMPTS": "1",
                 },
@@ -979,7 +993,7 @@ class RealPlatform:
                 raise PlatformError("migration_changed_data")
             self._public_health(PUBLIC_HEALTH)
             self._verify_production_invariants(
-                baseline, ignored=frozenset({"database"})
+                baseline, ignored=frozenset({"database_schema"})
             )
             check()
             progress(95, "migration_verified")
@@ -1019,8 +1033,8 @@ class RealPlatform:
         check()
         self._pm2("reload", PM2_NAME, "--update-env", timeout=45)
         self._public_health(PUBLIC_HEALTH)
-        self._pm2_status(expected_session_secret=generated)
-        self._verify_session_cookie()
+        self._pm2_status()
+        self._verify_session_cookie(expected_session_secret=generated)
         self._verify_production_invariants(
             baseline, ignored=frozenset({"app_env"})
         )
@@ -1573,7 +1587,7 @@ class RealPlatform:
             raise PlatformError("cloud_run_traffic_unavailable")
         env_hash = hashlib.sha256(self._safe_env_read()).hexdigest()
         return {
-            "database": self._database_fingerprint(),
+            "database_schema": self._database_schema_hash(),
             "nginx": nginx.hexdigest(),
             "dns": dns,
             "cloud_run_traffic": traffic,
@@ -1592,7 +1606,7 @@ class RealPlatform:
             raise PlatformError("production_baseline_missing")
         actual = self._production_invariants()
         keys = {
-            "database",
+            "database_schema",
             "nginx",
             "dns",
             "cloud_run_traffic",
@@ -1969,7 +1983,31 @@ class RealPlatform:
         ):
             pass
 
-    def _verify_session_cookie(self) -> None:
+    @staticmethod
+    def _session_cookie_uses_secret(cookie: str, secret: str) -> bool:
+        if re.fullmatch(r"[A-Za-z0-9_-]{48,128}", secret) is None:
+            raise PlatformError("session_secret_consumer_mismatch")
+        if not cookie.startswith("sid=") or len(cookie) > 512:
+            return False
+        decoded = urllib.parse.unquote(cookie.removeprefix("sid="))
+        if not decoded.startswith("s:") or "." not in decoded:
+            return False
+        session_id, observed = decoded.removeprefix("s:").rsplit(".", 1)
+        if (
+            not session_id
+            or len(session_id) > 256
+            or re.fullmatch(r"[A-Za-z0-9_-]+", session_id) is None
+            or re.fullmatch(r"[A-Za-z0-9+/]{43}", observed) is None
+        ):
+            return False
+        expected = base64.b64encode(
+            hmac.new(secret.encode(), session_id.encode(), hashlib.sha256).digest()
+        ).decode().rstrip("=")
+        return hmac.compare_digest(observed, expected)
+
+    def _verify_session_cookie(
+        self, *, expected_session_secret: str | None = None
+    ) -> None:
         connection = http.client.HTTPSConnection(
             "phishtopia.com",
             443,
@@ -1996,6 +2034,10 @@ class RealPlatform:
                 or not {"httponly", "secure", "samesite=lax"} <= attributes
             ):
                 raise PlatformError("session_cookie_validation_failed")
+            if expected_session_secret is not None and not self._session_cookie_uses_secret(
+                cookie, expected_session_secret
+            ):
+                raise PlatformError("session_secret_consumer_mismatch")
         finally:
             connection.close()
             if cookie:
@@ -2089,7 +2131,7 @@ class RealPlatform:
             timeout=timeout,
         )
 
-    def _pm2_status(self, *, expected_session_secret: str | None = None) -> dict[str, Any]:
+    def _pm2_status(self) -> dict[str, Any]:
         output = self._run(
             self._as_account(
                 "codespace",
@@ -2107,15 +2149,6 @@ class RealPlatform:
         matches = [item for item in value if isinstance(item, dict) and item.get("name") == PM2_NAME]
         if len(matches) != 1 or matches[0].get("pm2_env", {}).get("status") != "online":
             raise PlatformError("pm2_app_not_healthy")
-        if expected_session_secret is not None:
-            environment = matches[0].get("pm2_env", {})
-            observed = environment.get("SESSION_SECRET")
-            if observed is None and isinstance(environment.get("env"), dict):
-                observed = environment["env"].get("SESSION_SECRET")
-            if not isinstance(observed, str) or not secrets.compare_digest(
-                observed, expected_session_secret
-            ):
-                raise PlatformError("session_secret_consumer_mismatch")
         return {"name": PM2_NAME, "status": "online", "pid": matches[0].get("pid")}
 
     def _postgres(self, executable: str, *arguments: str, timeout: int) -> bytes:
@@ -2388,6 +2421,7 @@ class RealPlatform:
                 f"--working-directory={candidate}",
                 "--setenv=HOME=/var/lib/phishtopia-build",
                 "--setenv=NO_COLOR=1",
+                "--setenv=PYTHONDONTWRITEBYTECODE=1",
                 "--property=PrivateTmp=yes",
                 "--property=PrivateDevices=yes",
                 "--property=NoNewPrivileges=yes",
@@ -2548,16 +2582,7 @@ class RealPlatform:
                 [str(OPS_NODE), str(formatter), "--check", "."],
                 [str(OPS_NODE), str(compiler), "--noEmit", "-p", "tsconfig.json"],
                 [str(OPS_NODE), str(compiler), "-p", "tsconfig.json"],
-                [
-                    "/usr/bin/python3",
-                    "-m",
-                    "unittest",
-                    "discover",
-                    "-s",
-                    "worker/test",
-                    "-p",
-                    "test_*.py",
-                ],
+                list(OPS_PYTHON_TEST_COMMAND),
             ):
                 self._sandbox_run(candidate, command, timeout=240)
             tests = sorted((candidate / "dist" / "test").glob("*.test.js"))

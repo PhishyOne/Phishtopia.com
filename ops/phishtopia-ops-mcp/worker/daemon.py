@@ -22,8 +22,7 @@ from .allowlist import (
     validate_job_id,
 )
 from .executor import JobExecutor
-from .platform import RealPlatform
-from .platform import WORKER_REEXEC_FLAG
+from .platform import OPS_CURRENT, RealPlatform, WORKER_REEXEC_FLAG
 from .store import JobStore, StoreError
 
 STATE_ROOT = Path("/var/lib/phishtopia-ops-worker")
@@ -154,6 +153,11 @@ class Server(socketserver.ThreadingUnixStreamServer):
             self._slots.release()
 
 
+def reexec_selected_worker() -> None:
+    os.chdir(OPS_CURRENT)
+    os.execv("/usr/bin/python3", ["/usr/bin/python3", "-m", "worker.daemon"])
+
+
 def main() -> None:
     os.umask(0o077)
     if os.geteuid() != 0:
@@ -204,7 +208,7 @@ def main() -> None:
         raise RuntimeError("job worker failed; requesting systemd restart")
     if WORKER_REEXEC_FLAG.exists():
         WORKER_REEXEC_FLAG.unlink()
-        os.execv("/usr/bin/python3", ["/usr/bin/python3", "-m", "worker.daemon"])
+        reexec_selected_worker()
 
 
 if __name__ == "__main__":
