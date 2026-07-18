@@ -1,0 +1,27 @@
+#!/bin/sh
+set -eu
+
+umask 077
+: "${CREDENTIALS_DIRECTORY:?systemd credentials directory is required}"
+credential_path="${CREDENTIALS_DIRECTORY}/control-plane-api-key"
+test -r "${credential_path}"
+
+CONTROL_PLANE_API_KEY="$(/bin/cat "${credential_path}")"
+test -n "${CONTROL_PLANE_API_KEY}"
+export CONTROL_PLANE_API_KEY
+
+case "${1:-run}" in
+  run)
+    exec /usr/local/bin/tunnel-client run \
+      --profile-file /etc/phishtopia-ops-mcp/tunnel.yaml
+    ;;
+  doctor)
+    exec /usr/local/bin/tunnel-client doctor \
+      --profile-file /etc/phishtopia-ops-mcp/tunnel.yaml \
+      --explain \
+      --json
+    ;;
+  *)
+    exit 64
+    ;;
+esac

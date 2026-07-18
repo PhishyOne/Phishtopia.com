@@ -1,0 +1,13 @@
+[Unit]
+Description=Recover an interrupted Phishtopia Ops bootstrap
+Wants=network-online.target
+After=local-fs.target network-online.target
+Before=phishtopia-ops-worker.service phishtopia-ops-mcp-tunnel.service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/libexec/phishtopia-ops-bootstrap-recover
+TimeoutStartSec=180
+
+[Install]
+WantedBy=multi-user.target

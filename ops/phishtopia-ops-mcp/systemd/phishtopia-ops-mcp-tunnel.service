@@ -1,0 +1,58 @@
+[Unit]
+Description=Phishtopia private Secure MCP Tunnel
+Documentation=https://developers.openai.com/api/docs/guides/secure-mcp-tunnels
+Wants=network-online.target phishtopia-ops-worker.service
+After=network-online.target phishtopia-ops-worker.service
+StartLimitIntervalSec=300
+StartLimitBurst=5
+
+[Service]
+Type=simple
+User=phishtopia-mcp
+Group=phishtopia-mcp
+WorkingDirectory=/opt/phishtopia-ops-mcp
+Environment=HOME=/var/lib/phishtopia-ops-mcp
+Environment=PATH=/opt/phishtopia-ops-runtime/node/bin:/usr/sbin:/usr/bin:/sbin:/bin
+Environment=CLOUDSDK_CONFIG=/var/lib/phishtopia-ops-mcp/.config/gcloud
+LoadCredential=control-plane-api-key:/etc/credstore/phishtopia-ops-mcp/control-plane-api-key
+ExecStart=/usr/local/libexec/phishtopia-ops-mcp-tunnel-launch run
+Restart=always
+RestartSec=5s
+TimeoutStopSec=30s
+KillMode=mixed
+UMask=0077
+
+RuntimeDirectory=phishtopia-ops-mcp-tunnel
+RuntimeDirectoryMode=0700
+StateDirectory=phishtopia-ops-mcp
+StateDirectoryMode=0700
+
+NoNewPrivileges=true
+PrivateTmp=true
+PrivateDevices=true
+ProtectSystem=strict
+ProtectHome=true
+ProtectClock=true
+ProtectHostname=true
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectKernelLogs=true
+ProtectControlGroups=true
+ProtectProc=invisible
+ProcSubset=pid
+RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6
+RestrictNamespaces=true
+RestrictRealtime=true
+RestrictSUIDSGID=true
+LockPersonality=true
+CapabilityBoundingSet=
+AmbientCapabilities=
+RemoveIPC=true
+TasksMax=64
+LimitNOFILE=1024
+MemoryHigh=128M
+MemoryMax=192M
+OOMScoreAdjust=500
+
+[Install]
+WantedBy=multi-user.target
