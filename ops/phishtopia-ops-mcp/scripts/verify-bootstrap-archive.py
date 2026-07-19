@@ -12,8 +12,24 @@ from pathlib import Path, PurePosixPath
 from typing import BinaryIO, Iterable
 
 
+SECRET_PATTERNS = (
+    re.compile(rb"-----BEGIN (?:RSA |EC |OPENSSH )?PRIVATE KEY-----"),
+    re.compile(rb'"type"\s*:\s*"service_account"'),
+    re.compile(rb'"private_key"\s*:'),
+    re.compile(
+        rb"(?i)(?<![A-Za-z0-9_])"
+        rb"(?:password|api[_-]?key|credential|secret[_-]?key)"
+        rb"\s*[=:]\s*['\"]?[A-Za-z0-9+/=_-]{24,}"
+    ),
+)
+
+
 def fail(message: str) -> None:
     raise SystemExit(message)
+
+
+def contains_secret_like_value(data: bytes) -> bool:
+    return any(pattern.search(data) for pattern in SECRET_PATTERNS)
 
 
 def _member_parts(member: tarfile.TarInfo) -> tuple[str, ...]:
@@ -170,15 +186,6 @@ def verify_archive(
             "tunnel.yaml",
             "control-plane-api-key",
         }
-        secret_patterns = (
-            re.compile(rb"-----BEGIN (?:RSA |EC |OPENSSH )?PRIVATE KEY-----"),
-            re.compile(rb'"type"\s*:\s*"service_account"'),
-            re.compile(rb'"private_key"\s*:'),
-            re.compile(
-                rb"(?i)(?:password|api[_-]?key|credential|secret[_-]?key)"
-                rb"\s*[=:]\s*['\"]?[A-Za-z0-9+/=_-]{24,}"
-            ),
-        )
         for path in source.rglob("*"):
             relative = path.relative_to(source)
             if any(
@@ -192,7 +199,7 @@ def verify_archive(
                 fail("bootstrap credential or runtime filename rejected")
             if path.is_file() and path.stat().st_size <= 2_000_000:
                 data = path.read_bytes()
-                if any(pattern.search(data) for pattern in secret_patterns):
+                if contains_secret_like_value(data):
                     fail("bootstrap secret-like value rejected")
 
         lock = json.loads(
