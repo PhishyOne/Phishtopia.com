@@ -11,6 +11,7 @@ export const BUILD_ID = "3c80fe8e-9ec0-4276-b086-c0feb1998345" as const;
 export const CLOUDFLARE_DNS_SECRET = "phishtopia-cloudflare-dns-token" as const;
 export const CLOUDFLARE_ZONE = "phishtopia.com" as const;
 export const CLOUDFLARE_ROOT_A = "34.73.92.179" as const;
+export const CLOUDFLARE_CURRENT_WWW_CNAME = "phishtopia.com" as const;
 export const CLOUDFLARE_WWW_CNAME =
   "phishtopia-ht3gdpkzmq-ue.a.run.app" as const;
 

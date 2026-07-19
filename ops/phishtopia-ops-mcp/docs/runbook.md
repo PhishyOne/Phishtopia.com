@@ -11,7 +11,7 @@
 
 ## Staged bootstrap
 
-Use a private mode-0700 staging directory. Verify the archive digest before extraction. Run the bundled installer as root with only the immutable merged commit and expected digest:
+Use a private mode-0700 staging directory. Verify the archive digest before extraction. Run the bundled installer from the independently verified archive source as root with only the immutable merged commit and expected digest; do not assume the legacy installed observer already contains bootstrap scripts:
 
 ```sh
 sudo ./scripts/install-bootstrap.sh COMMIT_SHA ARTIFACT_SHA256
@@ -23,7 +23,7 @@ The installer tests the candidate before switching, copies a real non-symlink No
 
 - `systemctl is-enabled/is-active` for both ops units.
 - Exact 13-tool list and annotations; call only the ten read-only tools.
-- `get_cloudflare_dns_status` reports an active token, visible `phishtopia.com` zone, readable root A and `www` CNAME, the fixed expected targets, and DNS-only proxy state.
+- `get_cloudflare_dns_status` reports an active token, visible `phishtopia.com` zone, readable root A and `www` CNAME, root target `34.73.92.179`, current production `www` target `phishtopia.com`, and DNS-only proxy state. The separately allowlisted Cloud Run CNAME remains a possible typed DNS-job target and is not the current production baseline.
 - Restart worker, then tunnel; repeat protocol/read-only smoke.
 - Tunnel private listener remains `127.0.0.1:18081`; no new public listener.
 - Worker socket is `root:phishtopia-mcp` `0660`; database/audit are root-only.
