@@ -8,7 +8,7 @@ import {
 } from "../constants.js";
 import { TOOL_DEFINITIONS } from "../server.js";
 
-test("the exported tool surface is exact, read-only, and excludes generic control tools", () => {
+test("the exported tool surface is exact, annotated, and excludes generic control tools", () => {
   assert.deepEqual(
     Object.keys(TOOL_DEFINITIONS).sort(),
     [...TOOL_NAMES].sort(),
@@ -24,9 +24,13 @@ test("the exported tool surface is exact, read-only, and excludes generic contro
     idempotentHint: true,
     openWorldHint: false,
   });
-  assert.equal(TOOL_NAMES.length, 12);
+  assert.equal(TOOL_NAMES.length, 13);
+  assert.equal(
+    TOOL_NAMES.filter((name) => name === "get_cloudflare_dns_status").length,
+    1,
+  );
   const prohibited =
-    /shell|gcloud.command|sql|http.proxy|file.read|secret.access|deploy|traffic|dns|iam|restart|database.write/i;
+    /shell|gcloud.command|sql|http.proxy|file.read|secret.access|deploy|traffic|iam|restart|database.write/i;
   for (const toolName of TOOL_NAMES)
     assert.equal(prohibited.test(toolName), false);
 });
