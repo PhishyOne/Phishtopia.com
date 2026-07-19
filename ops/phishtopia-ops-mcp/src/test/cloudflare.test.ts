@@ -10,7 +10,8 @@ import {
 import type { CommandRunner } from "../command.js";
 import { ToolOutputSchema } from "../schema.js";
 
-const TOKEN = "abcdefghijklmnopqrstuvwxyz_ABCDEFGHIJKLMNOPQRSTUVWXYZ-1234567890";
+const TOKEN =
+  "abcdefghijklmnopqrstuvwxyz_ABCDEFGHIJKLMNOPQRSTUVWXYZ-1234567890";
 const ZONE_ID = "0123456789abcdef0123456789abcdef";
 
 function successfulRequester(): CloudflareJsonRequester {
@@ -121,7 +122,9 @@ test("the observer returns fixed DNS status without exposing the token", async (
   assert.equal(result.status, "ok");
   assert.equal(result.resource, "cloudflare_dns");
   assert.deepEqual(
-    Object.fromEntries(result.observations.map((item) => [item.name, item.value])),
+    Object.fromEntries(
+      result.observations.map((item) => [item.name, item.value]),
+    ),
     {
       token_status: "active",
       zone_visibility: "passed",
@@ -142,29 +145,33 @@ test("the observer returns fixed DNS status without exposing the token", async (
 
 test("unexpected record targets are visible but marked degraded", async () => {
   const requester = successfulRequester();
-  const client = new FixedCloudflareDnsStatusClient(tokenRunner(), async (path, token) => {
-    const value = await requester(path, token);
-    if (path.includes("name=phishtopia.com&type=A")) {
-      return {
-        success: true,
-        result: [
-          {
-            id: "11111111111111111111111111111111",
-            name: "phishtopia.com",
-            type: "A",
-            content: "203.0.113.10",
-            proxied: false,
-          },
-        ],
-      };
-    }
-    return value;
-  });
+  const client = new FixedCloudflareDnsStatusClient(
+    tokenRunner(),
+    async (path, token) => {
+      const value = await requester(path, token);
+      if (path.includes("name=phishtopia.com&type=A")) {
+        return {
+          success: true,
+          result: [
+            {
+              id: "11111111111111111111111111111111",
+              name: "phishtopia.com",
+              type: "A",
+              content: "203.0.113.10",
+              proxied: false,
+            },
+          ],
+        };
+      }
+      return value;
+    },
+  );
 
   const result = await client.getStatus();
   assert.equal(result.status, "degraded");
   assert.equal(
-    result.observations.find((item) => item.name === "root_record_target")?.value,
+    result.observations.find((item) => item.name === "root_record_target")
+      ?.value,
     "203.0.113.10",
   );
   assert.equal(
@@ -175,28 +182,34 @@ test("unexpected record targets are visible but marked degraded", async () => {
 });
 
 test("inactive tokens and ambiguous zones fail closed", async () => {
-  const inactive = new FixedCloudflareDnsStatusClient(tokenRunner(), async (path) => {
-    if (path === "user/tokens/verify") {
-      return { success: true, result: { status: "disabled" } };
-    }
-    throw new Error("unexpected_request");
-  });
+  const inactive = new FixedCloudflareDnsStatusClient(
+    tokenRunner(),
+    async (path) => {
+      if (path === "user/tokens/verify") {
+        return { success: true, result: { status: "disabled" } };
+      }
+      throw new Error("unexpected_request");
+    },
+  );
   await assert.rejects(inactive.getStatus());
 
-  const ambiguous = new FixedCloudflareDnsStatusClient(tokenRunner(), async (path) => {
-    if (path === "user/tokens/verify") {
-      return { success: true, result: { status: "active" } };
-    }
-    if (path === "zones?name=phishtopia.com&status=active&per_page=2") {
-      return {
-        success: true,
-        result: [
-          { id: ZONE_ID, name: "phishtopia.com", status: "active" },
-          { id: "f".repeat(32), name: "phishtopia.com", status: "active" },
-        ],
-      };
-    }
-    throw new Error("unexpected_request");
-  });
+  const ambiguous = new FixedCloudflareDnsStatusClient(
+    tokenRunner(),
+    async (path) => {
+      if (path === "user/tokens/verify") {
+        return { success: true, result: { status: "active" } };
+      }
+      if (path === "zones?name=phishtopia.com&status=active&per_page=2") {
+        return {
+          success: true,
+          result: [
+            { id: ZONE_ID, name: "phishtopia.com", status: "active" },
+            { id: "f".repeat(32), name: "phishtopia.com", status: "active" },
+          ],
+        };
+      }
+      throw new Error("unexpected_request");
+    },
+  );
   await assert.rejects(ambiguous.getStatus());
 });
