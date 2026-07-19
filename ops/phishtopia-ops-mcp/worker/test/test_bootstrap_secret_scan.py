@@ -24,9 +24,10 @@ class BootstrapSecretScanTests(unittest.TestCase):
     def test_actual_secret_assignments_remain_rejected(self) -> None:
         samples = (
             b'PASSWORD="abcdefghijklmnopqrstuvwxyz012345"\n',
+            b'DB_PASSWORD="abcdefghijklmnopqrstuvwxyz012345"\n',
             b'api_key: "abcdefghijklmnopqrstuvwxyz012345"\n',
             b'const apiKey = "abcdefghijklmnopqrstuvwxyz012345";\n',
-            b'"credential": "abcdefghijklmnopqrstuvwxyz012345"\n',
+            b'{"credential": "abcdefghijklmnopqrstuvwxyz012345"}\n',
             b'secret-key=abcdefghijklmnopqrstuvwxyz012345\n',
             b'-----BEGIN PRIVATE KEY-----\n',
             b'{"type":"service_account"}\n',
@@ -36,10 +37,10 @@ class BootstrapSecretScanTests(unittest.TestCase):
             with self.subTest(sample=sample):
                 self.assertTrue(VERIFIER_MODULE.contains_secret_like_value(sample))
 
-    def test_secret_keyword_inside_a_directive_name_does_not_match(self) -> None:
+    def test_secret_keyword_inside_a_directive_or_reference_does_not_match(self) -> None:
         samples = (
-            b"LoadCredential=control-plane-api-key:/fixed/path\n",
-            b"SetCredentialEncrypted=control-plane-api-key:opaque-reference\n",
+            b"LoadCredential=control-plane-api-key:/etc/credstore/phishtopia-ops-mcp/control-plane-api-key\n",
+            b"SetCredentialEncrypted=control-plane-api-key:opaque-reference-that-is-not-a-secret\n",
             b"CredentialStore=encrypted\n",
         )
         for sample in samples:
