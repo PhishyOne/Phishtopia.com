@@ -45,8 +45,10 @@ function cloudflareResult(value: unknown): unknown {
 
 function recordPath(zoneId: string, name: string, type: "A" | "CNAME"): string {
   if (!ZONE_ID_PATTERN.test(zoneId)) throw new Error("cloudflare_zone_invalid");
-  const expectedName = type === "A" ? CLOUDFLARE_ZONE : `www.${CLOUDFLARE_ZONE}`;
-  if (name !== expectedName) throw new Error("cloudflare_record_not_allowlisted");
+  const expectedName =
+    type === "A" ? CLOUDFLARE_ZONE : `www.${CLOUDFLARE_ZONE}`;
+  if (name !== expectedName)
+    throw new Error("cloudflare_record_not_allowlisted");
   return `zones/${zoneId}/dns_records?name=${encodeURIComponent(name)}&type=${type}&per_page=2`;
 }
 
@@ -132,7 +134,9 @@ export async function fixedCloudflareRequest(
       },
     );
     handle.once("timeout", () =>
-      handle.destroy(Object.assign(new Error("timeout"), { name: "AbortError" })),
+      handle.destroy(
+        Object.assign(new Error("timeout"), { name: "AbortError" }),
+      ),
     );
     handle.once("error", (error) => reject(error));
     handle.end();
@@ -169,9 +173,7 @@ function parseRecord(
     const octets = normalized.split(".");
     if (
       octets.length !== 4 ||
-      octets.some(
-        (part) => !/^\d{1,3}$/.test(part) || Number(part) > 255,
-      )
+      octets.some((part) => !/^\d{1,3}$/.test(part) || Number(part) > 255)
     ) {
       throw new Error("cloudflare_record_target_invalid");
     }
@@ -187,9 +189,7 @@ function parseRecord(
   };
 }
 
-export class FixedCloudflareDnsStatusClient
-  implements CloudflareDnsStatusClient
-{
+export class FixedCloudflareDnsStatusClient implements CloudflareDnsStatusClient {
   public constructor(
     private readonly runner: CommandRunner,
     private readonly requester: CloudflareJsonRequester = fixedCloudflareRequest,
@@ -242,11 +242,7 @@ export class FixedCloudflareDnsStatusClient
         ),
       ]);
       const rootRecord = parseRecord(root, CLOUDFLARE_ZONE, "A");
-      const wwwRecord = parseRecord(
-        www,
-        `www.${CLOUDFLARE_ZONE}`,
-        "CNAME",
-      );
+      const wwwRecord = parseRecord(www, `www.${CLOUDFLARE_ZONE}`, "CNAME");
       const expected =
         rootRecord.target === CLOUDFLARE_ROOT_A &&
         rootRecord.proxied === false &&
