@@ -14,6 +14,8 @@ if SPEC is None or SPEC.loader is None:
 VERIFIER_MODULE = importlib.util.module_from_spec(SPEC)
 SPEC.loader.exec_module(VERIFIER_MODULE)
 
+TOKEN_LIKE_VALUE = b"abcdefghijklmnop" + b"qrstuvwxyz012345"
+
 
 class BootstrapSecretScanTests(unittest.TestCase):
     def test_required_loadcredential_directive_is_not_treated_as_a_secret(self) -> None:
@@ -23,15 +25,15 @@ class BootstrapSecretScanTests(unittest.TestCase):
 
     def test_actual_secret_assignments_remain_rejected(self) -> None:
         samples = (
-            b'PASSWORD="abcdefghijklmnopqrstuvwxyz012345"\n',
-            b'DB_PASSWORD="abcdefghijklmnopqrstuvwxyz012345"\n',
-            b'api_key: "abcdefghijklmnopqrstuvwxyz012345"\n',
-            b'const apiKey = "abcdefghijklmnopqrstuvwxyz012345";\n',
-            b'{"credential": "abcdefghijklmnopqrstuvwxyz012345"}\n',
-            b'secret-key=abcdefghijklmnopqrstuvwxyz012345\n',
-            b'-----BEGIN PRIVATE KEY-----\n',
-            b'{"type":"service_account"}\n',
-            b'{"private_key":"not-returned"}\n',
+            b'PASSWORD="' + TOKEN_LIKE_VALUE + b'"\n',
+            b'DB_PASSWORD="' + TOKEN_LIKE_VALUE + b'"\n',
+            b'api_key: "' + TOKEN_LIKE_VALUE + b'"\n',
+            b'const apiKey = "' + TOKEN_LIKE_VALUE + b'";\n',
+            b'{"credential": "' + TOKEN_LIKE_VALUE + b'"}\n',
+            b'secret-key=' + TOKEN_LIKE_VALUE + b'\n',
+            b'-----BEGIN ' + b'PRIVATE KEY-----\n',
+            b'{"type":"' + b'service_account' + b'"}\n',
+            b'{"private_' + b'key":"not-returned"}\n',
         )
         for sample in samples:
             with self.subTest(sample=sample):
