@@ -28,6 +28,7 @@ const calls = [
   ["get_recent_sanitized_errors", {}],
   ["get_build_status", {}],
   ["get_secret_metadata", { secret: "phishtopia-database-url" }],
+  ["get_cloudflare_dns_status", {}],
 ] as const;
 
 try {
