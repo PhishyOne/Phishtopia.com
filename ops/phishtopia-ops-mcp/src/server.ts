@@ -1,5 +1,6 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 
+import type { CloudflareDnsStatusClient } from "./cloudflare.js";
 import {
   MUTATING_JOB_ANNOTATIONS,
   READ_ONLY_ANNOTATIONS,
@@ -37,6 +38,8 @@ export const TOOL_DEFINITIONS = {
     "Read-only status metadata for the fixed production Cloud Build.",
   get_secret_metadata:
     "Read-only metadata and version states for one allowlisted secret; payload access is impossible.",
+  get_cloudflare_dns_status:
+    "Read-only validation of the fixed Cloudflare DNS token, phishtopia.com zone, root A record, and www CNAME; the token is never returned.",
   start_job:
     "Start one durable, deadline-bounded allowlisted Phishtopia operation after a sanitized preview and independent root-worker validation.",
   get_job_status:
@@ -92,12 +95,16 @@ function jobResult(value: unknown) {
   };
 }
 
-export function createServer(ops: PhishtopiaOps, jobs?: JobClient): McpServer {
+export function createServer(
+  ops: PhishtopiaOps,
+  jobs?: JobClient,
+  cloudflare?: CloudflareDnsStatusClient,
+): McpServer {
   const server = new McpServer(
-    { name: "phishtopia-ops-mcp", version: "0.2.0" },
+    { name: "phishtopia-ops-mcp", version: "0.3.0" },
     {
       instructions:
-        "Nine observer tools query fixed Phishtopia resources. Three job tools submit only typed allowlisted actions to an independently validating root worker. Outputs are bounded and sanitized; secret payloads, credentials, raw logs, user data, arbitrary commands, paths, URLs, SQL, and HTTP proxying are never exposed.",
+        "Ten observer tools query fixed Phishtopia resources. Three job tools submit only typed allowlisted actions to an independently validating root worker. Outputs are bounded and sanitized; credentials, raw logs, user data, arbitrary commands, paths, URLs, SQL, and HTTP proxying are never exposed. The Cloudflare observer may read only the fixed DNS token and returns only strictly validated zone and record status.",
     },
   );
 
@@ -111,6 +118,10 @@ export function createServer(ops: PhishtopiaOps, jobs?: JobClient): McpServer {
     ops.getRecentSanitizedErrors(),
   );
   noArgTool(server, "get_build_status", () => ops.getBuildStatus());
+  noArgTool(server, "get_cloudflare_dns_status", async () => {
+    if (!cloudflare) throw new Error("cloudflare_observer_unavailable");
+    return await cloudflare.getStatus();
+  });
 
   server.registerTool(
     "get_secret_metadata",

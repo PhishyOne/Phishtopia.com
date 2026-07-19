@@ -1,10 +1,10 @@
 # Phishtopia Ops MCP
 
-Private Phishtopia operations control plane for Issue #15. The MCP server remains an unprivileged stdio process behind the existing Secure MCP Tunnel. It exposes nine compatible read-only observers and three job tools. A separate root service accepts only a small local JSON protocol, validates every action again, persists jobs, and executes fixed operations.
+Private Phishtopia operations control plane for Issue #15. The MCP server remains an unprivileged stdio process behind the existing Secure MCP Tunnel. It exposes ten compatible read-only observers and three job tools. A separate root service accepts only a small local JSON protocol, validates every action again, persists jobs, and executes fixed operations.
 
 ## Tool contract
 
-The final MCP contract contains 12 tools:
+The final MCP contract contains 13 tools:
 
 - `get_production_summary`
 - `get_public_health`
@@ -15,11 +15,12 @@ The final MCP contract contains 12 tools:
 - `get_recent_sanitized_errors`
 - `get_build_status`
 - `get_secret_metadata`
+- `get_cloudflare_dns_status`
 - `start_job`
 - `get_job_status`
 - `cancel_job`
 
-The first nine retain their installed schemas and read-only annotations. `start_job` accepts exactly one of eight discriminated action schemas and an idempotency key. `get_job_status` and `cancel_job` accept only a UUID. Mutating job tools are annotated `readOnlyHint: false`, `destructiveHint: true`, `idempotentHint: true`, and `openWorldHint: false`.
+The first ten have read-only annotations. The Cloudflare observer is the sole narrow exception to the general secret-payload ban: it may access only the latest version of `phishtopia-cloudflare-dns-token`, use it only for fixed Cloudflare GET requests, and return only token status, zone visibility, DNS-read confirmation, and strictly validated metadata for the root A and `www` CNAME records. It never returns the token. `start_job` accepts exactly one of eight discriminated action schemas and an idempotency key. `get_job_status` and `cancel_job` accept only a UUID. Mutating job tools are annotated `readOnlyHint: false`, `destructiveHint: true`, `idempotentHint: true`, and `openWorldHint: false`.
 
 ## Action allowlist
 
@@ -32,7 +33,7 @@ The first nine retain their installed schemas and read-only annotations. `start_
 - `rotate_session_secret`: `phishtopia-session-secret` only; no payload accepted or returned.
 - `update_dns_with_rollback`: `phishtopia.com` or `www.phishtopia.com`, targeting only the fixed VM A address or fixed Cloud Run CNAME, and one of three TTLs. Records must remain DNS-only.
 
-No schema includes a shell command, file path, URL, HTTP headers, SQL text, log query, credential, cookie, secret value, database row selector, project, service account, repository, bucket, database, zone, or arbitrary resource name.
+No input schema includes a shell command, file path, URL, HTTP headers, SQL text, log query, credential, cookie, secret value, database row selector, project, service account, repository, bucket, database, zone, or arbitrary resource name.
 
 ## Boundary
 
@@ -60,6 +61,7 @@ See [architecture.md](docs/architecture.md), [threat-model.md](docs/threat-model
 - Audit records contain only job ID, action, fixed resource, state, event, result code, and time. Accepted jobs expose a bounded sanitized preview that never echoes a DNS target or secret.
 - Errors are stable codes; subprocess output and exception messages are never returned.
 - DNS snapshots, env backups, and other rollback material remain root-only and never enter audit/MCP output.
+- The Cloudflare observer accepts no caller-selected secret, zone, hostname, record type, URL, method, or query. Its token is held only in process memory for the bounded check and is never placed in MCP output.
 
 ## Tests
 
@@ -74,7 +76,7 @@ python3 -m unittest discover -s worker/test -p 'test_*.py' -v
 ./scripts/secret-scan.sh
 ```
 
-`npm run smoke` uses an in-memory MCP transport and checks the exact names/annotations without starting a job. `smoke:live` invokes only the nine read-only observers.
+`npm run smoke` uses an in-memory MCP transport and checks the exact names/annotations without starting a job. `smoke:live` invokes only the ten read-only observers, including the fixed Cloudflare validation.
 
 ## Bootstrap prerequisite
 

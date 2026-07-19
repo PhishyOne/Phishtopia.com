@@ -22,7 +22,8 @@ The installer tests the candidate before switching, copies a real non-symlink No
 ## Verification
 
 - `systemctl is-enabled/is-active` for both ops units.
-- Exact 12-tool list and annotations; call only the nine read-only tools.
+- Exact 13-tool list and annotations; call only the ten read-only tools.
+- `get_cloudflare_dns_status` reports an active token, visible `phishtopia.com` zone, readable root A and `www` CNAME, the fixed expected targets, and DNS-only proxy state.
 - Restart worker, then tunnel; repeat protocol/read-only smoke.
 - Tunnel private listener remains `127.0.0.1:18081`; no new public listener.
 - Worker socket is `root:phishtopia-mcp` `0660`; database/audit are root-only.
@@ -48,6 +49,6 @@ If staged verification fails, allow the installer trap or verification watchdog 
 sudo /usr/local/sbin/phishtopia-ops-rollback-last-good
 ```
 
-This helper is safe only in the narrow window after finalization and before the first job is submitted or any application release is installed. It gates new jobs, quiesces the worker, and refuses to proceed if _any_ durable job history exists, the application current path has become a release symlink, or the post-bootstrap application release directory is nonempty. It then archives the post-bootstrap worker state and invokes fixed exact recovery. Once that safe-use window closes, use a typed `rollback_release` job or the action-specific rollback path; never invoke the retained bootstrap helper. Recheck the nine observer tools and public production invariants before any other change.
+This helper is safe only in the narrow window after finalization and before the first job is submitted or any application release is installed. It gates new jobs, quiesces the worker, and refuses to proceed if _any_ durable job history exists, the application current path has become a release symlink, or the post-bootstrap application release directory is nonempty. It then archives the post-bootstrap worker state and invokes fixed exact recovery. Once that safe-use window closes, use a typed `rollback_release` job or the action-specific rollback path; never invoke the retained bootstrap helper. Recheck the ten observer tools and public production invariants before any other change.
 
 Never delete rollback source, Secret Manager versions, database backups, or traffic/DNS snapshots until the corresponding job is terminal and verified.
