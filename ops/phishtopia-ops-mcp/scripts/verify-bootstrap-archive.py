@@ -17,9 +17,9 @@ SECRET_PATTERNS = (
     re.compile(rb'"type"\s*:\s*"service_account"'),
     re.compile(rb'"private_key"\s*:'),
     re.compile(
-        rb"(?i)(?<![A-Za-z0-9_])"
+        rb"(?i)(?<![A-Za-z0-9_])['\"]?"
         rb"(?:password|api[_-]?key|credential|secret[_-]?key)"
-        rb"\s*[=:]\s*['\"]?[A-Za-z0-9+/=_-]{24,}"
+        rb"['\"]?\s*[=:]\s*['\"]?[A-Za-z0-9+/=_-]{24,}"
     ),
 )
 
