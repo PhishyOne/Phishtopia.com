@@ -2,9 +2,9 @@ import { request } from "node:https";
 
 import type { CommandRunner } from "./command.js";
 import {
+  CLOUDFLARE_CURRENT_WWW_CNAME,
   CLOUDFLARE_DNS_SECRET,
   CLOUDFLARE_ROOT_A,
-  CLOUDFLARE_WWW_CNAME,
   CLOUDFLARE_ZONE,
   PROJECT_ID,
 } from "./constants.js";
@@ -246,7 +246,7 @@ export class FixedCloudflareDnsStatusClient implements CloudflareDnsStatusClient
       const expected =
         rootRecord.target === CLOUDFLARE_ROOT_A &&
         rootRecord.proxied === false &&
-        wwwRecord.target === CLOUDFLARE_WWW_CNAME &&
+        wwwRecord.target === CLOUDFLARE_CURRENT_WWW_CNAME &&
         wwwRecord.proxied === false;
 
       return {
