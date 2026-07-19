@@ -206,7 +206,8 @@ sandbox "$runtime/node/bin/node" "$staging/node_modules/typescript/bin/tsc" -p t
 
 chown -R root:root "$staging"
 find "$staging" -type d -exec chmod 0755 {} +
-find "$staging" -type f -exec chmod 0644 {} +
+find "$staging" -type f -perm /111 -exec chmod 0755 {} +
+find "$staging" -type f ! -perm /111 -exec chmod 0644 {} +
 mkdir -p "$staging/.tools"
 ln -s "$runtime/node" "$staging/.tools/node"
 mv "$staging" "$candidate"

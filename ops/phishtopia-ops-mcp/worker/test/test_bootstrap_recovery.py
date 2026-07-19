@@ -136,6 +136,34 @@ class BootstrapRecoveryFakeTests(unittest.TestCase):
             text=True,
         )
 
+    def _staged_mode_commands(self) -> tuple[str, str, str]:
+        install = INSTALL.read_text(encoding="utf8")
+        expressions = (
+            r'^(find "\$staging" -type d -exec chmod 0755 \{\} \+)$',
+            r'^(find "\$staging" -type f -perm /111 -exec chmod 0755 \{\} \+)$',
+            r'^(find "\$staging" -type f ! -perm /111 -exec chmod 0644 \{\} \+)$',
+        )
+        commands: list[str] = []
+        for expression in expressions:
+            match = re.search(expression, install, re.MULTILINE)
+            self.assertIsNotNone(match)
+            commands.append(match.group(1))
+        return commands[0], commands[1], commands[2]
+
+    def _normalize_staged_modes(self, staging: Path) -> None:
+        environment = dict(os.environ)
+        environment["staging"] = str(staging)
+        for command in self._staged_mode_commands():
+            result = subprocess.run(
+                ["/bin/sh", "-c", command],
+                env=environment,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                check=False,
+                text=True,
+            )
+            self.assertEqual(result.returncode, 0, result.stderr)
+
     def test_bootstrap_normalizes_real_runtime_paths_and_preserves_executables(self) -> None:
         normalization, rejection = self._runtime_permission_commands()
         with tempfile.TemporaryDirectory() as directory:
@@ -199,6 +227,42 @@ class BootstrapRecoveryFakeTests(unittest.TestCase):
                 self._run_runtime_permission_command(rejection, runtime).returncode,
                 0,
             )
+
+    def test_staged_release_normalization_uses_only_verified_execute_bits(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            staging = Path(directory) / "staging"
+            executable = staging / "bin/opaque"
+            non_executable = staging / "scripts/not-executable.sh"
+            nested_directory = staging / "lib/runtime"
+            self._write(executable, "ordinary content")
+            self._write(non_executable, "#!/bin/sh\nexit 0\n")
+            nested_directory.mkdir(parents=True)
+            staging.chmod(0o777)
+            executable.chmod(0o700)
+            non_executable.chmod(0o600)
+            nested_directory.chmod(0o777)
+
+            self._normalize_staged_modes(staging)
+
+            self.assertEqual(staging.stat().st_mode & 0o777, 0o755)
+            self.assertEqual(nested_directory.stat().st_mode & 0o777, 0o755)
+            self.assertEqual(executable.stat().st_mode & 0o777, 0o755)
+            self.assertEqual(non_executable.stat().st_mode & 0o777, 0o644)
+            for path in staging.rglob("*"):
+                if path.is_dir() or path.is_file():
+                    self.assertEqual(path.stat().st_mode & 0o022, 0)
+
+    def test_finalize_script_remains_executable_after_staged_normalization(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            staging = Path(directory) / "staging"
+            finalize = staging / "scripts/finalize-bootstrap.sh"
+            self._write(finalize, "#!/bin/sh\nexit 0\n")
+            finalize.chmod(0o700)
+
+            self._normalize_staged_modes(staging)
+
+            self.assertEqual(finalize.stat().st_mode & 0o777, 0o755)
+            self.assertTrue(os.access(finalize, os.X_OK))
 
     def test_recovery_restores_exact_disposable_baseline(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
@@ -396,6 +460,29 @@ class BootstrapRecoveryFakeTests(unittest.TestCase):
             'find "$runtime/node" -xdev -perm /022 '
             '\\( -type d -o -type f \\) -print -quit',
             install,
+        )
+        staged_directory_normalization = (
+            'find "$staging" -type d -exec chmod 0755 {} +'
+        )
+        staged_executable_normalization = (
+            'find "$staging" -type f -perm /111 -exec chmod 0755 {} +'
+        )
+        staged_non_executable_normalization = (
+            'find "$staging" -type f ! -perm /111 -exec chmod 0644 {} +'
+        )
+        self.assertIn(staged_directory_normalization, install)
+        self.assertIn(staged_executable_normalization, install)
+        self.assertIn(staged_non_executable_normalization, install)
+        self.assertNotIn(
+            'find "$staging" -type f -exec chmod 0644 {} +', install
+        )
+        self.assertLess(
+            install.index(staged_directory_normalization),
+            install.index(staged_executable_normalization),
+        )
+        self.assertLess(
+            install.index(staged_executable_normalization),
+            install.index(staged_non_executable_normalization),
         )
         retained = ROLLBACK_LAST_GOOD.read_text(encoding="utf8")
         self.assertIn("SELECT COUNT(*) FROM jobs", retained)
