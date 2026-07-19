@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import hashlib
 import os
+import re
 import sqlite3
 import subprocess
 import tempfile
@@ -104,6 +105,100 @@ class BootstrapRecoveryFakeTests(unittest.TestCase):
             hashlib.sha256(launcher.read_bytes()).hexdigest() + "\n",
         )
         return state
+
+    def _runtime_permission_commands(self) -> tuple[str, str]:
+        install = INSTALL.read_text(encoding="utf8")
+        normalization = re.search(
+            r'^  (find "\$runtime/node" -xdev .* -exec chmod go-w \{\} \+)$',
+            install,
+            re.MULTILINE,
+        )
+        rejection = re.search(
+            r'^if (find "\$runtime/node" -xdev .* -print -quit \| grep -q \.)[;] then$',
+            install,
+            re.MULTILINE,
+        )
+        self.assertIsNotNone(normalization)
+        self.assertIsNotNone(rejection)
+        return normalization.group(1), rejection.group(1)
+
+    def _run_runtime_permission_command(
+        self, command: str, runtime: Path
+    ) -> subprocess.CompletedProcess[str]:
+        environment = dict(os.environ)
+        environment["runtime"] = str(runtime)
+        return subprocess.run(
+            ["/bin/sh", "-c", command],
+            env=environment,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            check=False,
+            text=True,
+        )
+
+    def test_bootstrap_normalizes_real_runtime_paths_and_preserves_executables(self) -> None:
+        normalization, rejection = self._runtime_permission_commands()
+        with tempfile.TemporaryDirectory() as directory:
+            runtime = Path(directory) / "runtime"
+            node = runtime / "node"
+            executable = node / "bin/node"
+            writable_file = node / "lib/node_modules/npm/bin/npm-cli.js"
+            writable_directory = node / "lib/node_modules"
+            self._write(executable, "#!/bin/sh\nexit 0\n")
+            self._write(writable_file, "npm")
+            executable.chmod(0o777)
+            writable_file.chmod(0o666)
+            writable_directory.chmod(0o777)
+
+            result = self._run_runtime_permission_command(normalization, runtime)
+
+            self.assertEqual(result.returncode, 0, result.stderr)
+            self.assertEqual(executable.stat().st_mode & 0o777, 0o755)
+            self.assertEqual(writable_file.stat().st_mode & 0o777, 0o644)
+            self.assertEqual(writable_directory.stat().st_mode & 0o777, 0o755)
+            self.assertEqual(
+                self._run_runtime_permission_command(rejection, runtime).returncode,
+                1,
+            )
+
+    def test_bootstrap_runtime_rejection_ignores_symlinks_but_catches_real_paths(self) -> None:
+        normalization, rejection = self._runtime_permission_commands()
+        with tempfile.TemporaryDirectory() as directory:
+            runtime = Path(directory) / "runtime"
+            node = runtime / "node"
+            target = node / "lib/node_modules/npm/bin/npm-cli.js"
+            link = node / "bin/npm"
+            self._write(target, "npm")
+            link.parent.mkdir(parents=True)
+            link.symlink_to("../lib/node_modules/npm/bin/npm-cli.js")
+            target.chmod(0o644)
+            self.assertEqual(link.lstat().st_mode & 0o777, 0o777)
+
+            self.assertEqual(
+                self._run_runtime_permission_command(normalization, runtime).returncode,
+                0,
+            )
+            self.assertTrue(link.is_symlink())
+            self.assertEqual(
+                os.readlink(link), "../lib/node_modules/npm/bin/npm-cli.js"
+            )
+            self.assertEqual(link.lstat().st_mode & 0o777, 0o777)
+            self.assertEqual(
+                self._run_runtime_permission_command(rejection, runtime).returncode,
+                1,
+            )
+
+            target.chmod(0o664)
+            self.assertEqual(
+                self._run_runtime_permission_command(rejection, runtime).returncode,
+                0,
+            )
+            target.chmod(0o644)
+            target.parent.chmod(0o775)
+            self.assertEqual(
+                self._run_runtime_permission_command(rejection, runtime).returncode,
+                0,
+            )
 
     def test_recovery_restores_exact_disposable_baseline(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
@@ -289,7 +384,19 @@ class BootstrapRecoveryFakeTests(unittest.TestCase):
         self.assertIn("phishtopia-ops-bootstrap-last-good", finalize)
         self.assertIn("[ ! -L \"$current/.tools/node\" ]", install)
         self.assertIn("--no-preserve=ownership", install)
-        self.assertIn("find \"$runtime/node\" -xdev -perm /022", install)
+        ownership = 'chown -R root:root "$runtime/node"'
+        normalization = (
+            'find "$runtime/node" -xdev \\( -type d -o -type f \\) '
+            "-exec chmod go-w {} +"
+        )
+        self.assertIn(ownership, install)
+        self.assertIn(normalization, install)
+        self.assertLess(install.index(ownership), install.index(normalization))
+        self.assertIn(
+            'find "$runtime/node" -xdev -perm /022 '
+            '\\( -type d -o -type f \\) -print -quit',
+            install,
+        )
         retained = ROLLBACK_LAST_GOOD.read_text(encoding="utf8")
         self.assertIn("SELECT COUNT(*) FROM jobs", retained)
         self.assertIn("/opt/phishtopia-app-releases -mindepth 1", retained)

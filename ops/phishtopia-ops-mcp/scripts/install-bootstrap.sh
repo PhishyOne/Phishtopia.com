@@ -142,11 +142,12 @@ if [ ! -x "$runtime/node/bin/node" ]; then
   }
   cp -a --no-preserve=ownership "$current/.tools/node" "$runtime/node"
   chown -R root:root "$runtime/node"
+  find "$runtime/node" -xdev \( -type d -o -type f \) -exec chmod go-w {} +
 fi
 "$runtime/node/bin/node" --version
 [ -f "$runtime/node/lib/node_modules/npm/bin/npm-cli.js" ]
 [ ! -L "$runtime/node/bin/node" ]
-if find "$runtime/node" -xdev -perm /022 -print -quit | grep -q .; then
+if find "$runtime/node" -xdev -perm /022 \( -type d -o -type f \) -print -quit | grep -q .; then
   echo "installed Node runtime is group/world writable" >&2
   exit 1
 fi
