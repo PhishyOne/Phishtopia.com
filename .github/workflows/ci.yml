@@ -73,12 +73,17 @@ jobs:
       - name: Install locked dependencies
         run: npm ci
 
-      - name: Typecheck, test, and protocol smoke
-        run: |
-          npm run format:check
-          npm run typecheck
-          npm test
-          npm run smoke
+      - name: Check formatting
+        run: npm run format:check
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Run TypeScript tests
+        run: npm test
+
+      - name: Run protocol smoke
+        run: npm run smoke
 
       - name: Python worker tests
         run: python3 -m unittest discover -s worker/test -p 'test_*.py' -v
