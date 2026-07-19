@@ -17,8 +17,7 @@ before(async () => {
     const app = await createApp();
 
     await new Promise((resolve, reject) => {
-        server = app.listen(0, "127.0.0.1", resolve);
-        server.once("error", reject);
+        server = app.listen(0, "127.0.0.1", error => error ? reject(error) : resolve());
     });
 
     const address = server.address();
@@ -26,7 +25,7 @@ before(async () => {
 });
 
 after(async () => {
-    if (!server) return;
+    if (!server?.listening) return;
     await new Promise((resolve, reject) => {
         server.close(error => error ? reject(error) : resolve());
     });

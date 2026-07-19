@@ -1,0 +1,59 @@
+[Unit]
+Description=Phishtopia allowlisted operations worker
+Documentation=https://github.com/PhishyOne/Phishtopia.com/tree/main/ops/phishtopia-ops-mcp
+Wants=network-online.target
+After=network-online.target
+Before=phishtopia-ops-mcp-tunnel.service
+StartLimitIntervalSec=300
+StartLimitBurst=5
+
+[Service]
+Type=simple
+User=root
+Group=root
+WorkingDirectory=/opt/phishtopia-ops-mcp
+Environment=PYTHONPATH=/opt/phishtopia-ops-mcp
+Environment=PYTHONDONTWRITEBYTECODE=1
+Environment=PATH=/opt/phishtopia-ops-runtime/node/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+ExecStart=/usr/bin/python3 -m worker.daemon
+Restart=on-failure
+RestartSec=5s
+TimeoutStopSec=45s
+KillMode=mixed
+UMask=0077
+
+RuntimeDirectory=phishtopia-ops-worker
+RuntimeDirectoryMode=0755
+StateDirectory=phishtopia-ops-worker
+StateDirectoryMode=0700
+
+NoNewPrivileges=true
+PrivateTmp=true
+PrivateDevices=true
+ProtectSystem=strict
+ProtectHome=read-only
+ReadWritePaths=/var/lib/phishtopia-ops-worker /run/phishtopia-ops-worker /var/log/phishtopia /opt /home/codespace
+ProtectClock=true
+ProtectHostname=true
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectKernelLogs=true
+ProtectControlGroups=true
+ProtectProc=invisible
+RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6 AF_NETLINK
+RestrictNamespaces=true
+RestrictRealtime=true
+LockPersonality=true
+CapabilityBoundingSet=CAP_CHOWN CAP_DAC_OVERRIDE CAP_FOWNER CAP_SETGID CAP_SETUID
+AmbientCapabilities=
+RemoveIPC=true
+SystemCallArchitectures=native
+SystemCallFilter=@system-service @resources
+TasksMax=160
+LimitNOFILE=2048
+MemoryHigh=500M
+MemoryMax=720M
+OOMScoreAdjust=250
+
+[Install]
+WantedBy=multi-user.target
