@@ -2,7 +2,13 @@ from __future__ import annotations
 
 import unittest
 
-from worker.allowlist import ACTION_NAMES, ValidationError, resource_for, validate_action
+from worker.allowlist import (
+    ACTION_NAMES,
+    DNS_CNAME_TARGETS,
+    ValidationError,
+    resource_for,
+    validate_action,
+)
 
 
 COMMIT = "a" * 40
@@ -80,6 +86,43 @@ class AllowlistTests(unittest.TestCase):
                     }
                 )
 
+    def test_www_cname_accepts_exact_current_and_future_targets(self) -> None:
+        expected = frozenset(
+            ("phishtopia.com", "phishtopia-ht3gdpkzmq-ue.a.run.app")
+        )
+        self.assertEqual(DNS_CNAME_TARGETS, expected)
+        for value in expected:
+            with self.subTest(value=value):
+                action = validate_action(
+                    {
+                        "type": "update_dns_with_rollback",
+                        "hostname": "www.phishtopia.com",
+                        "recordType": "CNAME",
+                        "value": value,
+                        "ttl": 300,
+                    }
+                )
+                self.assertEqual(action["value"], value)
+
+    def test_www_cname_rejects_every_other_target_with_specific_code(self) -> None:
+        for value in (
+            "attacker.example",
+            "www.phishtopia.com",
+            "phishtopia.run.app",
+        ):
+            with self.subTest(value=value), self.assertRaisesRegex(
+                ValidationError, "^dns_target_not_allowlisted$"
+            ):
+                validate_action(
+                    {
+                        "type": "update_dns_with_rollback",
+                        "hostname": "www.phishtopia.com",
+                        "recordType": "CNAME",
+                        "value": value,
+                        "ttl": 300,
+                    }
+                )
+
     def test_canary_requires_a_real_gradual_stage(self) -> None:
         for percentages in ([100], [25, 100]):
             with self.subTest(percentages=percentages), self.assertRaises(ValidationError):
@@ -101,7 +144,6 @@ class AllowlistTests(unittest.TestCase):
             ("AAAA", "::1"),
             ("AAAA", "fe80::1"),
             ("AAAA", "fc00::1"),
-            ("CNAME", "phishtopia.com"),
             ("CNAME", "attacker.example"),
         ):
             with self.subTest(value=value), self.assertRaises(ValidationError):

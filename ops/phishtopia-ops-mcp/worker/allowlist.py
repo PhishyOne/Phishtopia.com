@@ -15,7 +15,9 @@ SESSION_SECRET = "phishtopia-session-secret"
 DNS_TOKEN_SECRET = "phishtopia-cloudflare-dns-token"
 DNS_HOSTS = frozenset(("phishtopia.com", "www.phishtopia.com"))
 DNS_A_TARGETS = frozenset(("34.73.92.179",))
-DNS_CNAME_TARGETS = frozenset(("phishtopia-ht3gdpkzmq-ue.a.run.app",))
+DNS_CNAME_TARGETS = frozenset(
+    ("phishtopia.com", "phishtopia-ht3gdpkzmq-ue.a.run.app")
+)
 SERVICE_NAMES = frozenset(("phishtopia_app", "phishtopia_ops_tunnel"))
 TARGET_NAMES = frozenset(("phishtopia_app", "phishtopia_ops"))
 

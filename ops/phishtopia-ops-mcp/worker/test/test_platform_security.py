@@ -14,6 +14,7 @@ from pathlib import Path
 from unittest import mock
 
 import worker.platform as platform_module
+from worker.allowlist import validate_action
 from worker.platform import (
     OPS_PYTHON_TEST_COMMAND,
     CommandRunner,
@@ -23,6 +24,68 @@ from worker.platform import (
 
 
 class PlatformSecurityTests(unittest.TestCase):
+    def _cloudflare_read_platform(
+        self,
+        *,
+        www_target: str = "phishtopia.com",
+        www_proxied: bool = False,
+    ) -> tuple[RealPlatform, list[tuple[str, str]]]:
+        platform = RealPlatform.__new__(RealPlatform)
+        platform._guard = None
+        platform._dns_token = lambda: "t" * 40  # type: ignore[method-assign]
+        platform._production_invariants = lambda: {}  # type: ignore[method-assign]
+        requests: list[tuple[str, str]] = []
+
+        def request(
+            path: str,
+            token: str,
+            *,
+            method: str = "GET",
+            payload: dict[str, object] | None = None,
+        ) -> dict[str, object]:
+            self.assertEqual(token, "t" * 40)
+            self.assertEqual(method, "GET")
+            self.assertIsNone(payload)
+            if path == "zones?name=phishtopia.com&status=active":
+                return {
+                    "result": [
+                        {
+                            "id": "a" * 32,
+                            "name_servers": [
+                                "ada.ns.cloudflare.com",
+                                "bob.ns.cloudflare.com",
+                            ],
+                        }
+                    ]
+                }
+            query = urllib.parse.parse_qs(urllib.parse.urlsplit(path).query)
+            hostname = query.get("name", [""])[0]
+            record_type = query.get("type", [""])[0]
+            requests.append((hostname, record_type))
+            records: dict[tuple[str, str], dict[str, object]] = {
+                ("phishtopia.com", "A"): {
+                    "id": "b" * 32,
+                    "name": "phishtopia.com",
+                    "type": "A",
+                    "content": "34.73.92.179",
+                    "ttl": 300,
+                    "proxied": False,
+                },
+                ("www.phishtopia.com", "CNAME"): {
+                    "id": "c" * 32,
+                    "name": "www.phishtopia.com",
+                    "type": "CNAME",
+                    "content": www_target,
+                    "ttl": 300,
+                    "proxied": www_proxied,
+                },
+            }
+            record = records.get((hostname, record_type))
+            return {"result": [] if record is None else [record]}
+
+        platform._cloudflare_request = request  # type: ignore[method-assign]
+        return platform, requests
+
     def test_no_new_privileges_uses_fixed_setpriv_drop_not_sudo(self) -> None:
         command = RealPlatform._as_account(
             "postgres", ["/usr/bin/env", "HOME=/var/lib/postgresql", "/usr/bin/psql"]
@@ -339,6 +402,60 @@ class PlatformSecurityTests(unittest.TestCase):
                 1,
                 require_authoritative=True,
             )
+
+    def test_dns_scope_preflight_accepts_current_dns_only_records(self) -> None:
+        platform, requests = self._cloudflare_read_platform()
+        platform._dns_scope_preflight()
+        self.assertEqual(
+            requests,
+            [
+                ("phishtopia.com", "A"),
+                ("www.phishtopia.com", "CNAME"),
+            ],
+        )
+
+    def test_dns_scope_preflight_rejects_proxied_or_arbitrary_current_cname(
+        self,
+    ) -> None:
+        for options in (
+            {"www_proxied": True},
+            {"www_target": "attacker.example"},
+        ):
+            with self.subTest(options=options):
+                platform, _requests = self._cloudflare_read_platform(**options)
+                with self.assertRaisesRegex(
+                    PlatformError, "^dns_record_not_dns_only$"
+                ):
+                    platform._dns_scope_preflight()
+
+    def test_future_cname_update_captures_current_cname_rollback_baseline(
+        self,
+    ) -> None:
+        platform, _requests = self._cloudflare_read_platform()
+        action = validate_action(
+            {
+                "type": "update_dns_with_rollback",
+                "hostname": "www.phishtopia.com",
+                "recordType": "CNAME",
+                "value": "phishtopia-ht3gdpkzmq-ue.a.run.app",
+                "ttl": 300,
+            }
+        )
+        baseline = platform.capture(action, "11111111-1111-4111-8111-111111111111")
+        self.assertEqual(
+            baseline["record"],
+            {
+                "zone": "a" * 32,
+                "record": {
+                    "id": "c" * 32,
+                    "name": "www.phishtopia.com",
+                    "type": "CNAME",
+                    "content": "phishtopia.com",
+                    "ttl": 300,
+                    "proxied": False,
+                },
+            },
+        )
 
 
 if __name__ == "__main__":
