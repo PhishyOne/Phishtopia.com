@@ -114,30 +114,32 @@ class DaemonProtocolTests(unittest.TestCase):
     def test_root_protocol_revalidates_start_status_and_cancel(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
+            inactive = root / "bootstrap-active"
             store = JobStore(root / "jobs.sqlite3", root / "audit.jsonl")
             application = WorkerApplication(store, NoopExecutor())  # type: ignore[arg-type]
-            started = application.handle(
-                {
-                    "operation": "start_job",
-                    "payload": {
-                        "idempotencyKey": "restart-0001",
-                        "action": {
-                            "type": "restart_phishtopia_service",
-                            "service": "phishtopia_app",
+            with mock.patch.object(daemon_module, "BOOTSTRAP_ACTIVE", inactive):
+                started = application.handle(
+                    {
+                        "operation": "start_job",
+                        "payload": {
+                            "idempotencyKey": "restart-0001",
+                            "action": {
+                                "type": "restart_phishtopia_service",
+                                "service": "phishtopia_app",
+                            },
                         },
-                    },
-                }
-            )
-            self.assertTrue(started["ok"])
-            job_id = started["job"]["jobId"]
-            status = application.handle(
-                {"operation": "get_job_status", "payload": {"jobId": job_id}}
-            )
-            self.assertEqual(status["job"]["state"], "queued")
-            cancelled = application.handle(
-                {"operation": "cancel_job", "payload": {"jobId": job_id}}
-            )
-            self.assertEqual(cancelled["job"]["state"], "cancelled")
+                    }
+                )
+                self.assertTrue(started["ok"])
+                job_id = started["job"]["jobId"]
+                status = application.handle(
+                    {"operation": "get_job_status", "payload": {"jobId": job_id}}
+                )
+                self.assertEqual(status["job"]["state"], "queued")
+                cancelled = application.handle(
+                    {"operation": "cancel_job", "payload": {"jobId": job_id}}
+                )
+                self.assertEqual(cancelled["job"]["state"], "cancelled")
 
 
 if __name__ == "__main__":
