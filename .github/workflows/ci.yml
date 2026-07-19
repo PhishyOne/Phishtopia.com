@@ -73,41 +73,12 @@ jobs:
       - name: Install locked dependencies
         run: npm ci
 
-      - name: Format cloudflare source
-        run: npx prettier --check src/cloudflare.ts
-
-      - name: Format constants
-        run: npx prettier --check src/constants.ts
-
-      - name: Format index
-        run: npx prettier --check src/index.ts
-
-      - name: Format server
-        run: npx prettier --check src/server.ts
-
-      - name: Format live smoke
-        run: npx prettier --check src/smoke/live-smoke.ts
-
-      - name: Format Cloudflare tests
-        run: npx prettier --check src/test/cloudflare.test.ts
-
-      - name: Format server tests
-        run: npx prettier --check src/test/server.test.ts
-
-      - name: Format README
-        run: npx prettier --check README.md
-
-      - name: Format runbook
-        run: npx prettier --check docs/runbook.md
-
-      - name: Typecheck
-        run: npm run typecheck
-
-      - name: Run TypeScript tests
-        run: npm test
-
-      - name: Run protocol smoke
-        run: npm run smoke
+      - name: Typecheck, test, and protocol smoke
+        run: |
+          npm run format:check
+          npm run typecheck
+          npm test
+          npm run smoke
 
       - name: Python worker tests
         run: python3 -m unittest discover -s worker/test -p 'test_*.py' -v
