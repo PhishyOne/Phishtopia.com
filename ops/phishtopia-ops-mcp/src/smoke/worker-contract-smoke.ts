@@ -2,15 +2,20 @@ import assert from "node:assert/strict";
 import { createConnection } from "node:net";
 
 import { ACTION_NAMES, JOB_SOCKET } from "../constants.js";
+import {
+  WORKER_REQUEST_TIMEOUT_MS,
+  type WorkerContractOperation,
+} from "./worker-contract-policy.js";
 
-const request = async (operation: string): Promise<string> =>
+const request = async (operation: WorkerContractOperation): Promise<string> =>
   new Promise<string>((resolve, reject) => {
     const socket = createConnection({ path: JOB_SOCKET });
     let value = "";
     const timeout = setTimeout(
-      () => socket.destroy(new Error("worker_contract_timeout")),
-      15_000,
+      () => socket.destroy(new Error(`worker_contract_timeout:${operation}`)),
+      WORKER_REQUEST_TIMEOUT_MS[operation],
     );
+    const clearRequestTimeout = (): void => clearTimeout(timeout);
     socket.setEncoding("utf8");
     socket.once("connect", () =>
       socket.end(`${JSON.stringify({ operation, payload: {} })}\n`),
@@ -20,9 +25,12 @@ const request = async (operation: string): Promise<string> =>
       if (value.length > 65_536)
         socket.destroy(new Error("worker_contract_too_large"));
     });
-    socket.once("error", reject);
+    socket.once("error", (error) => {
+      clearRequestTimeout();
+      reject(error);
+    });
     socket.once("end", () => {
-      clearTimeout(timeout);
+      clearRequestTimeout();
       resolve(value);
     });
   });
