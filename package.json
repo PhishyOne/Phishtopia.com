@@ -23,7 +23,8 @@
     "start": "node index.js"
   },
   "dependencies": {
-    "axios": "^1.12.2",
+    "axios": "^1.18.1",
+    "bcryptjs": "^3.0.3",
     "connect-pg-simple": "^10.0.0",
     "crypto": "^1.0.1",
     "csv-parse": "^6.1.0",
@@ -35,8 +36,7 @@
     "node-fetch": "^3.3.2",
     "nodemailer": "^9.0.3",
     "nodemon": "^3.1.14",
-    "pg": "^8.17.1",
-    "bcryptjs": "^3.0.3"
+    "pg": "^8.17.1"
   },
   "engines": {
     "node": ">=22.x"
