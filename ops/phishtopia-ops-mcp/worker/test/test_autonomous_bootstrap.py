@@ -57,25 +57,28 @@ CREATE TABLE public.users (id integer);
         with self.assertRaisesRegex(ValueError, "invalid_postgres_identifier"):
             module.quote_identifier("bad\x00name")
 
-    def test_sanitizer_preserves_errors_and_digests_but_redacts_credentials(self) -> None:
+    def test_sanitizer_preserves_errors_and_release_but_redacts_credentials(self) -> None:
         module = load_module(SANITIZER, "bootstrap_sanitizer_test")
-        digest = "a" * 40
+        release = "a" * 40
+        unrelated_hex = "b" * 40
         bearer = "super-" + "secret-" + "control-plane-" + "value-123456"
         credential_value = "abcdefghijklm" + "nopqrstuvwxyz" + "0123456789ABCD"
         source = (
             "status=1/FAILURE\n"
             f"Authorization: Bearer {bearer}\n"
             f"credential={credential_value}\n"
-            f"release={digest}\n"
+            f"release={release}\n"
+            f"invocation={unrelated_hex}\n"
             "tunnel client: permission denied\n"
         )
         result = module.sanitize(source)
         self.assertIn("status=1/FAILURE", result)
         self.assertIn("permission denied", result)
-        self.assertIn(f"release={digest}", result)
+        self.assertIn(f"release={release}", result)
         self.assertNotIn(bearer, result)
         self.assertNotIn(credential_value, result)
-        self.assertGreaterEqual(result.count("[REDACTED]"), 2)
+        self.assertNotIn(unrelated_hex, result)
+        self.assertGreaterEqual(result.count("[REDACTED]"), 3)
 
     def test_tunnel_preflight_matches_hardened_service_boundary(self) -> None:
         value = TUNNEL_PREFLIGHT.read_text(encoding="utf8")
@@ -129,7 +132,11 @@ CREATE TABLE public.users (id integer);
         )
         self.assertIn("FROM ONLY", value)
         self.assertIn('COLLATE "C"', value)
+        self.assertIn("c.relkind = 'S'", value)
+        self.assertIn("'is_called', is_called", value)
+        self.assertIn("protected_sequence_count", value)
         self.assertIn("protected_data_sha256", value)
+        self.assertNotIn("--restrict-key", value)
         self.assertNotIn("print(row", value)
         self.assertNotIn("stdout.write", value)
 
