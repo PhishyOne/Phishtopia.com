@@ -28,16 +28,16 @@ class AutonomousBootstrapTests(unittest.TestCase):
         module = load_module(POSTGRES_FINGERPRINT, "postgres_fingerprint_test")
         first = b"""-- PostgreSQL database dump
 -- Dumped by pg_dump version 17
-\restrict abc
+\\restrict abc
 
 CREATE TABLE public.users (id integer);
-\unrestrict abc
+\\unrestrict abc
 """
         second = b"""-- PostgreSQL database dump
 -- Dumped by pg_dump version 18
-\restrict different
+\\restrict different
 CREATE TABLE public.users (id integer);
-\unrestrict different
+\\unrestrict different
 -- Completed on tomorrow
 """
         changed = second.replace(b"id integer", b"id bigint")
