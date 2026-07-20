@@ -15,6 +15,8 @@ current=/opt/phishtopia-ops-mcp
 runtime=/opt/phishtopia-ops-runtime
 diagnostics=/var/lib/phishtopia-ops-bootstrap-diagnostics
 recovery_helper=/usr/local/libexec/phishtopia-ops-bootstrap-recover
+last_good=/var/lib/phishtopia-ops-bootstrap-last-good
+rollback_helper=/usr/local/sbin/phishtopia-ops-rollback-last-good
 started_at=$(date -u '+%Y-%m-%d %H:%M:%S UTC')
 stage=initializing
 baseline=$(mktemp /run/phishtopia-postgres-baseline.XXXXXX)
@@ -56,6 +58,8 @@ finish() {
     capture_failure "$status"
     if [ -d "$state" ] && [ -x "$recovery_helper" ]; then
       PHISHTOPIA_BOOTSTRAP_SELF_RECOVERY=1 "$recovery_helper" || true
+    elif [ -d "$last_good" ] && [ -x "$rollback_helper" ]; then
+      "$rollback_helper" || true
     fi
   fi
   rm -f "$baseline" "$current_fingerprint"
@@ -110,7 +114,7 @@ stage=installer
 /bin/sh "$script_dir/install-bootstrap.sh" "$release" "$artifact_digest"
 
 stage=staged_verification
-verify_runtime
+verify_runtime 
 
 stage=restart_verification
 systemctl restart phishtopia-ops-worker.service
@@ -120,7 +124,7 @@ systemctl is-active --quiet phishtopia-ops-mcp-tunnel.service
 verify_runtime
 
 stage=finalization
-"$current/scripts/finalize-bootstrap.sh"
+$current/scripts/finalize-bootstrap.sh
 
 stage=post_finalization
 verify_runtime
