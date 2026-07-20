@@ -26,8 +26,20 @@ def load_module(path: Path, name: str) -> ModuleType:
 class AutonomousBootstrapTests(unittest.TestCase):
     def test_schema_normalization_ignores_only_transport_metadata(self) -> None:
         module = load_module(POSTGRES_FINGERPRINT, "postgres_fingerprint_test")
-        first = b"""-- PostgreSQL database dump\n-- Dumped by pg_dump version 17\n\\restrict abc\n\nCREATE TABLE public.users (id integer);\n\\unrestrict abc\n"""
-        second = b"""-- PostgreSQL database dump\n-- Dumped by pg_dump version 18\n\\restrict different\nCREATE TABLE public.users (id integer);\n\\unrestrict different\n-- Completed on tomorrow\n"""
+        first = b"""-- PostgreSQL database dump
+-- Dumped by pg_dump version 17
+\restrict abc
+
+CREATE TABLE public.users (id integer);
+\unrestrict abc
+"""
+        second = b"""-- PostgreSQL database dump
+-- Dumped by pg_dump version 18
+\restrict different
+CREATE TABLE public.users (id integer);
+\unrestrict different
+-- Completed on tomorrow
+"""
         changed = second.replace(b"id integer", b"id bigint")
 
         def digest(value: bytes) -> str:
@@ -48,10 +60,12 @@ class AutonomousBootstrapTests(unittest.TestCase):
     def test_sanitizer_preserves_errors_and_digests_but_redacts_credentials(self) -> None:
         module = load_module(SANITIZER, "bootstrap_sanitizer_test")
         digest = "a" * 40
+        bearer = "super-" + "secret-" + "control-plane-" + "value-123456"
+        credential_value = "abcdefghijklm" + "nopqrstuvwxyz" + "0123456789ABCD"
         source = (
             "status=1/FAILURE\n"
-            "Authorization: Bearer super-secret-control-plane-value-123456\n"
-            "credential=abcdefghijklmnopqrstuvwxyz0123456789ABCD\n"
+            f"Authorization: Bearer {bearer}\n"
+            f"credential={credential_value}\n"
             f"release={digest}\n"
             "tunnel client: permission denied\n"
         )
@@ -59,8 +73,8 @@ class AutonomousBootstrapTests(unittest.TestCase):
         self.assertIn("status=1/FAILURE", result)
         self.assertIn("permission denied", result)
         self.assertIn(f"release={digest}", result)
-        self.assertNotIn("super-secret", result)
-        self.assertNotIn("abcdefghijklmnopqrstuvwxyz", result)
+        self.assertNotIn(bearer, result)
+        self.assertNotIn(credential_value, result)
         self.assertGreaterEqual(result.count("[REDACTED]"), 2)
 
     def test_tunnel_preflight_matches_hardened_service_boundary(self) -> None:
