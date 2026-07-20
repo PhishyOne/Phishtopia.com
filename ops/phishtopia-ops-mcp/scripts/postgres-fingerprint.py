@@ -67,7 +67,6 @@ def _schema_digest() -> str:
             "--schema-only",
             "--no-owner",
             "--no-privileges",
-            "--restrict-key=PhishtopiaOpsFingerprint1",
             "-d",
             DATABASE,
         ),
@@ -94,12 +93,18 @@ def quote_identifier(value: str) -> str:
     return '"' + value.replace('"', '""') + '"'
 
 
-def _table_list() -> list[tuple[str, str]]:
-    sql = """
-SELECT json_build_object('schema', n.nspname, 'table', c.relname)::text
+def _relation_list(*, sequences: bool) -> list[tuple[str, str]]:
+    if sequences:
+        kind_filter = "c.relkind = 'S'"
+        label = "sequence"
+    else:
+        kind_filter = "c.relkind IN ('r', 'p', 'm')"
+        label = "table"
+    sql = f"""
+SELECT json_build_object('schema', n.nspname, '{label}', c.relname)::text
 FROM pg_class AS c
 JOIN pg_namespace AS n ON n.oid = c.relnamespace
-WHERE c.relkind IN ('r', 'p')
+WHERE {kind_filter}
   AND n.nspname NOT IN ('pg_catalog', 'information_schema')
   AND n.nspname !~ '^pg_toast'
 ORDER BY n.nspname COLLATE "C", c.relname COLLATE "C";
@@ -122,11 +127,11 @@ ORDER BY n.nspname COLLATE "C", c.relname COLLATE "C";
     result: list[tuple[str, str]] = []
     for raw in output.splitlines():
         value = json.loads(raw)
-        schema, table = value.get("schema"), value.get("table")
-        if not isinstance(schema, str) or not isinstance(table, str):
-            raise RuntimeError("postgres_table_metadata_invalid")
-        if (schema, table) not in EXCLUDED_RUNTIME_TABLES:
-            result.append((schema, table))
+        schema, name = value.get("schema"), value.get(label)
+        if not isinstance(schema, str) or not isinstance(name, str):
+            raise RuntimeError("postgres_relation_metadata_invalid")
+        if sequences or (schema, name) not in EXCLUDED_RUNTIME_TABLES:
+            result.append((schema, name))
     return result
 
 
@@ -135,9 +140,36 @@ def _hash_stream(digest: "hashlib._Hash", stream: BinaryIO) -> None:
         digest.update(chunk)
 
 
-def _protected_data_digest() -> tuple[str, int]:
+def _query_stream(digest: "hashlib._Hash", sql: str) -> None:
+    process = subprocess.Popen(
+        _postgres_command(
+            "/usr/bin/psql",
+            "-X",
+            "--no-psqlrc",
+            "-v",
+            "ON_ERROR_STOP=1",
+            "-d",
+            DATABASE,
+            "-c",
+            sql,
+        ),
+        stdin=subprocess.DEVNULL,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.DEVNULL,
+        env=BASE_ENV,
+    )
+    assert process.stdout is not None
+    try:
+        _hash_stream(digest, process.stdout)
+    finally:
+        process.stdout.close()
+    if process.wait(timeout=300) != 0:
+        raise RuntimeError("postgres_data_fingerprint_failed")
+
+
+def _protected_data_digest() -> tuple[str, int, int]:
     digest = hashlib.sha256()
-    tables = _table_list()
+    tables = _relation_list(sequences=False)
     for schema, table in tables:
         marker = json.dumps(
             {"schema": schema, "table": table},
@@ -151,41 +183,37 @@ def _protected_data_digest() -> tuple[str, int]:
             + qualified
             + ' AS t ORDER BY row_to_json(t)::text COLLATE "C") TO STDOUT;'
         )
-        process = subprocess.Popen(
-            _postgres_command(
-                "/usr/bin/psql",
-                "-X",
-                "--no-psqlrc",
-                "-v",
-                "ON_ERROR_STOP=1",
-                "-d",
-                DATABASE,
-                "-c",
-                sql,
-            ),
-            stdin=subprocess.DEVNULL,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.DEVNULL,
-            env=BASE_ENV,
-        )
-        assert process.stdout is not None
-        try:
-            _hash_stream(digest, process.stdout)
-        finally:
-            process.stdout.close()
-        if process.wait(timeout=300) != 0:
-            raise RuntimeError("postgres_data_fingerprint_failed")
+        _query_stream(digest, sql)
         digest.update(b"\0end-table\0")
-    return digest.hexdigest(), len(tables)
+
+    sequences = _relation_list(sequences=True)
+    for schema, sequence in sequences:
+        marker = json.dumps(
+            {"schema": schema, "sequence": sequence},
+            sort_keys=True,
+            separators=(",", ":"),
+        ).encode("utf8")
+        digest.update(b"sequence\0" + marker + b"\0")
+        qualified = f"{quote_identifier(schema)}.{quote_identifier(sequence)}"
+        sql = (
+            "COPY (SELECT json_build_object('last_value', last_value, "
+            + "'is_called', is_called)::text FROM "
+            + qualified
+            + ") TO STDOUT;"
+        )
+        _query_stream(digest, sql)
+        digest.update(b"\0end-sequence\0")
+    return digest.hexdigest(), len(tables), len(sequences)
 
 
 def fingerprint() -> dict[str, object]:
-    data_digest, table_count = _protected_data_digest()
+    data_digest, table_count, sequence_count = _protected_data_digest()
     return {
         "format": "phishtopia-postgres-fingerprint-v1",
         "schema_sha256": _schema_digest(),
         "protected_data_sha256": data_digest,
         "protected_table_count": table_count,
+        "protected_sequence_count": sequence_count,
         "excluded_runtime_tables": ["public.session"],
     }
 
