@@ -112,6 +112,8 @@ CREATE TABLE public.users (id integer);
         self.assertIn("capture_failure", value)
         self.assertIn("sanitize-bootstrap-diagnostics.py", value)
         self.assertIn("PHISHTOPIA_BOOTSTRAP_SELF_RECOVERY=1", value)
+        self.assertIn("phishtopia-ops-rollback-last-good", value)
+        self.assertIn('elif [ -d "$last_good" ]', value)
         self.assertIn("postgres-fingerprint.py", value)
         self.assertIn("cmp -s", value)
         self.assertIn("live-smoke.js", value)
