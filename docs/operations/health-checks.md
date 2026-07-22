@@ -16,7 +16,7 @@ A healthy process returns HTTP `200` with `status: "ok"`.
 
 ## `GET /ready`
 
-`/ready` is a dependency-aware traffic-readiness check. It runs exactly `SELECT 1` against PostgreSQL and applies a fixed 1.5-second deadline.
+`/ready` is a dependency-aware traffic-readiness check. It runs exactly `SELECT 1` against PostgreSQL and applies a fixed 1.5-second deadline. It intentionally does not probe TMDB, Cloudflare, email delivery, or other external services that are not required to serve core database-backed requests.
 
 It returns:
 
