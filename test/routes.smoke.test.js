@@ -75,6 +75,35 @@ test("surviving public pages render successfully", async () => {
     }
 });
 
+test("homepage advertises complete social preview metadata", async () => {
+    const response = await request("/");
+    assert.equal(response.status, 200);
+
+    const body = await response.text();
+    assert.match(body, /property="og:image" content="https:\/\/phishtopia\.com\/images\/share-card\.png"/);
+    assert.match(body, /property="og:image:type" content="image\/png"/);
+    assert.match(body, /property="og:image:width" content="1200"/);
+    assert.match(body, /property="og:image:height" content="630"/);
+    assert.match(body, /property="og:image:alt" content="[^"]+"/);
+    assert.match(body, /name="twitter:image" content="https:\/\/phishtopia\.com\/images\/share-card\.png"/);
+    assert.match(body, /name="twitter:image:alt" content="[^"]+"/);
+});
+
+test("social share image is a cacheable 1200x630 PNG", async () => {
+    const response = await request("/images/share-card.png");
+    assert.equal(response.status, 200);
+    assert.match(response.headers.get("content-type") || "", /^image\/png/);
+    assert.match(response.headers.get("cache-control") || "", /public/);
+
+    const image = Buffer.from(await response.arrayBuffer());
+    assert.deepEqual(
+        [...image.subarray(0, 8)],
+        [0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]
+    );
+    assert.equal(image.readUInt32BE(16), 1200);
+    assert.equal(image.readUInt32BE(20), 630);
+});
+
 test("database-less login previews return a clear service-unavailable message", async () => {
     const response = await request("/auth/login", {
         method: "POST",
