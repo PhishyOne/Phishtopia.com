@@ -47,6 +47,17 @@ test("health endpoint reports the service as available", async () => {
     assert.equal(body.service, "phishtopia");
 });
 
+test("readiness endpoint fails closed when PostgreSQL is not configured", async () => {
+    const response = await request("/ready");
+    assert.equal(response.status, 503);
+    assert.equal(response.headers.get("cache-control"), "no-store");
+
+    const body = await response.json();
+    assert.equal(body.status, "not_ready");
+    assert.equal(body.service, "phishtopia");
+    assert.deepEqual(body.dependencies, { postgres: "unavailable" });
+});
+
 test("surviving public pages render successfully", async () => {
     const routes = [
         "/",
