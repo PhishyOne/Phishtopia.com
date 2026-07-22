@@ -1,0 +1,66 @@
+name: Verify live readiness
+
+on:
+  push:
+    branches:
+      - ops/verify-live-readiness-20260722
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - name: Probe production endpoints
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          health_code="$(curl --silent --show-error --location --max-time 15 \
+            --dump-header /tmp/health.headers \
+            --output /tmp/health.body \
+            --write-out '%{http_code}' \
+            https://phishtopia.com/health)"
+
+          ready_code="$(curl --silent --show-error --location --max-time 15 \
+            --dump-header /tmp/ready.headers \
+            --output /tmp/ready.body \
+            --write-out '%{http_code}' \
+            https://phishtopia.com/ready)"
+
+          echo '--- /health headers ---'
+          cat /tmp/health.headers
+          echo '--- /health body ---'
+          cat /tmp/health.body
+          echo
+          echo '--- /ready headers ---'
+          cat /tmp/ready.headers
+          echo '--- /ready body ---'
+          cat /tmp/ready.body
+          echo
+
+          HEALTH_CODE="$health_code" READY_CODE="$ready_code" python3 - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+
+          health_code = int(os.environ["HEALTH_CODE"])
+          ready_code = int(os.environ["READY_CODE"])
+          health = json.loads(Path("/tmp/health.body").read_text())
+          ready = json.loads(Path("/tmp/ready.body").read_text())
+          ready_headers = Path("/tmp/ready.headers").read_text().lower()
+
+          assert health_code == 200, f"/health returned {health_code}"
+          assert health.get("status") == "ok", health
+          assert health.get("service") == "phishtopia", health
+
+          assert ready_code == 200, f"/ready returned {ready_code}"
+          assert ready.get("status") == "ready", ready
+          assert ready.get("service") == "phishtopia", ready
+          assert ready.get("dependencies", {}).get("postgres") == "ready", ready
+          assert "cache-control: no-store" in ready_headers, ready_headers
+
+          print("LIVE_VERIFICATION=passed")
+          PY
