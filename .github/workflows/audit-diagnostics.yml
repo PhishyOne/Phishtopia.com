@@ -1,0 +1,29 @@
+name: Audit diagnostics
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - .github/workflows/audit-diagnostics.yml
+
+permissions:
+  contents: read
+
+jobs:
+  audit:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Capture production audit
+        run: npm audit --omit=dev --json > audit.json || true
+      - uses: actions/upload-artifact@v4
+        with:
+          name: root-npm-audit
+          path: audit.json
+          if-no-files-found: error
+          retention-days: 1
