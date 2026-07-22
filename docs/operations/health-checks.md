@@ -23,7 +23,7 @@ It returns:
 - HTTP `200` with `status: "ready"` when PostgreSQL responds
 - HTTP `503` with `status: "not_ready"` when PostgreSQL rejects, is not configured, or does not respond before the deadline
 
-The response is marked `Cache-Control: no-store`. Database errors, connection details, credentials, and stack traces are never included.
+The response is marked `Cache-Control: no-store`. Database errors, connection details, credentials, and stack traces are never included. Automated clients should treat every non-`200` response, connection failure, or malformed response as not ready.
 
 Use `/ready` for:
 
