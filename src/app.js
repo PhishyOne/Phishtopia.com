@@ -10,6 +10,7 @@ import { registerStaticAssets } from "./middleware/staticAssets.js";
 import { staticAssetLogger } from "./middleware/staticAssetLogger.js";
 import { templateLocals } from "./middleware/templateLocals.js";
 import { buildAppRouter } from "./routes/app.routes.js";
+import { createReadinessHandler } from "./services/readiness.service.js";
 
 export async function createApp() {
     mkdirSync(logsDir, { recursive: true });
@@ -29,6 +30,7 @@ export async function createApp() {
             timestamp: new Date().toISOString()
         });
     });
+    app.get("/ready", createReadinessHandler());
 
     app.use(await buildSessionMiddleware());
     app.use(templateLocals);
