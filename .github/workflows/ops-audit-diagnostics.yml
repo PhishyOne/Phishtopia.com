@@ -1,4 +1,4 @@
-name: Commit Ops dependency refresh
+name: Ops dependency compatibility report
 
 on:
   pull_request:
@@ -7,41 +7,50 @@ on:
       - .github/workflows/ops-audit-diagnostics.yml
 
 permissions:
-  contents: write
+  contents: read
 
 jobs:
-  refresh:
+  report:
     runs-on: ubuntu-24.04
     defaults:
       run:
         working-directory: ops/phishtopia-ops-mcp
     steps:
       - uses: actions/checkout@v4
-        with:
-          ref: ${{ github.head_ref }}
       - uses: actions/setup-node@v4
         with:
           node-version: 24
           cache: npm
           cache-dependency-path: ops/phishtopia-ops-mcp/package-lock.json
       - run: npm ci
-      - name: Refresh and verify Ops dependencies
+      - name: Generate complete compatibility report
         run: |
-          npm install --package-lock-only --ignore-scripts @modelcontextprotocol/sdk@1.24.3
-          npm update --package-lock-only --ignore-scripts fast-uri
-          npm ci
-          npm run format:check
-          npm run typecheck
-          npm test
-          npm run smoke
-          npm audit --omit=dev --audit-level=moderate
-      - name: Commit generated Ops dependency files
-        working-directory: .
-        run: |
-          rm .github/workflows/ops-audit-diagnostics.yml
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add ops/phishtopia-ops-mcp/package.json ops/phishtopia-ops-mcp/package-lock.json .github/workflows/ops-audit-diagnostics.yml
-          git diff --cached --quiet && exit 1
-          git commit -m "Refresh vulnerable Ops dependencies"
-          git push origin "HEAD:${{ github.head_ref }}"
+          set +e
+          : > refresh.log
+          npm install --package-lock-only --ignore-scripts @modelcontextprotocol/sdk@1.24.3 >>refresh.log 2>&1
+          echo "sdk_install_exit=$?" >>refresh.log
+          npm update --package-lock-only --ignore-scripts fast-uri >>refresh.log 2>&1
+          echo "fast_uri_update_exit=$?" >>refresh.log
+          npm ci >>refresh.log 2>&1
+          echo "npm_ci_exit=$?" >>refresh.log
+          npm run format:check >>refresh.log 2>&1
+          echo "format_exit=$?" >>refresh.log
+          npm run typecheck >>refresh.log 2>&1
+          echo "typecheck_exit=$?" >>refresh.log
+          npm test >>refresh.log 2>&1
+          echo "test_exit=$?" >>refresh.log
+          npm run smoke >>refresh.log 2>&1
+          echo "smoke_exit=$?" >>refresh.log
+          npm audit --omit=dev --json >audit-after.json 2>>refresh.log
+          echo "audit_exit=$?" >>refresh.log
+          exit 0
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ops-dependency-compatibility
+          path: |
+            ops/phishtopia-ops-mcp/refresh.log
+            ops/phishtopia-ops-mcp/audit-after.json
+            ops/phishtopia-ops-mcp/package.json
+            ops/phishtopia-ops-mcp/package-lock.json
+          if-no-files-found: error
+          retention-days: 1
