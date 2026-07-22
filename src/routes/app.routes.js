@@ -1,6 +1,5 @@
 import express from "express";
 
-import { socialShareCardPng } from "../assets/socialShareCard.js";
 import analyticsRoutes from "./analytics.routes.js";
 import authRoutes from "./auth.routes.js";
 import echoTraceRoutes from "./echotrace.routes.js";
@@ -16,15 +15,6 @@ const FEATURE_ROUTES = new Map([
 
 export function buildAppRouter() {
     const router = express.Router();
-
-    router.get("/images/share-card.png", (req, res) => {
-        res.set({
-            "Cache-Control": "public, max-age=86400",
-            "Content-Length": String(socialShareCardPng.length),
-            "Content-Type": "image/png"
-        });
-        res.send(socialShareCardPng);
-    });
 
     router.use("/auth", authRoutes);
     router.use("/internal/analytics", analyticsRoutes);
