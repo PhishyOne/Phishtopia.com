@@ -1,4 +1,4 @@
-name: Commit patched Ops dependencies
+name: Hono override compatibility report
 
 on:
   pull_request:
@@ -7,42 +7,52 @@ on:
       - .github/workflows/ops-audit-diagnostics.yml
 
 permissions:
-  contents: write
+  contents: read
 
 jobs:
-  refresh:
+  report:
     runs-on: ubuntu-24.04
     defaults:
       run:
         working-directory: ops/phishtopia-ops-mcp
     steps:
       - uses: actions/checkout@v4
-        with:
-          ref: ${{ github.head_ref }}
       - uses: actions/setup-node@v4
         with:
           node-version: 24
           cache: npm
           cache-dependency-path: ops/phishtopia-ops-mcp/package-lock.json
       - run: npm ci
-      - name: Patch and verify Ops dependencies
+      - name: Generate complete override report
         run: |
-          node -e 'const fs=require("node:fs"); const path="package.json"; const value=JSON.parse(fs.readFileSync(path,"utf8")); value.overrides={...(value.overrides||{}),"@hono/node-server":"2.0.5"}; fs.writeFileSync(path,JSON.stringify(value,null,2)+"\n");'
-          npm install --package-lock-only --ignore-scripts
-          npm update --package-lock-only --ignore-scripts fast-uri
-          npm ci
-          npm run format:check
-          npm run typecheck
-          npm test
-          npm run smoke
-          npm audit --omit=dev --audit-level=moderate
-      - name: Commit generated Ops dependency files
-        working-directory: .
-        run: |
-          rm .github/workflows/ops-audit-diagnostics.yml
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add ops/phishtopia-ops-mcp/package.json ops/phishtopia-ops-mcp/package-lock.json .github/workflows/ops-audit-diagnostics.yml
-          git diff --cached --quiet && exit 1
-          git commit -m "Patch vulnerable Ops transitive dependencies"
-          git push origin "HEAD:${{ github.head_ref }}"
+          set +e
+          : > override.log
+          node -e 'const fs=require("node:fs"); const path="package.json"; const value=JSON.parse(fs.readFileSync(path,"utf8")); value.overrides={...(value.overrides||{}),"@hono/node-server":"2.0.5"}; fs.writeFileSync(path,JSON.stringify(value,null,2)+"\n");' >>override.log 2>&1
+          echo "package_edit_exit=$?" >>override.log
+          npm install --package-lock-only --ignore-scripts >>override.log 2>&1
+          echo "install_exit=$?" >>override.log
+          npm update --package-lock-only --ignore-scripts fast-uri >>override.log 2>&1
+          echo "fast_uri_update_exit=$?" >>override.log
+          npm ci >>override.log 2>&1
+          echo "npm_ci_exit=$?" >>override.log
+          npm run format:check >>override.log 2>&1
+          echo "format_exit=$?" >>override.log
+          npm run typecheck >>override.log 2>&1
+          echo "typecheck_exit=$?" >>override.log
+          npm test >>override.log 2>&1
+          echo "test_exit=$?" >>override.log
+          npm run smoke >>override.log 2>&1
+          echo "smoke_exit=$?" >>override.log
+          npm audit --omit=dev --json >audit-after.json 2>>override.log
+          echo "audit_exit=$?" >>override.log
+          exit 0
+      - uses: actions/upload-artifact@v4
+        with:
+          name: hono-override-compatibility
+          path: |
+            ops/phishtopia-ops-mcp/override.log
+            ops/phishtopia-ops-mcp/audit-after.json
+            ops/phishtopia-ops-mcp/package.json
+            ops/phishtopia-ops-mcp/package-lock.json
+          if-no-files-found: error
+          retention-days: 1
