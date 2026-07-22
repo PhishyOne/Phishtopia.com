@@ -12,13 +12,13 @@ Thank you for helping keep Phishtopia and its users safe. Please report suspecte
 
 ## Reporting a vulnerability
 
-Use GitHub's private vulnerability-reporting form:
+Use GitHub's private vulnerability-reporting form whenever possible:
 
 https://github.com/PhishyOne/Phishtopia.com/security/advisories/new
 
-Do not include vulnerability details in a public issue, discussion, pull request, commit, gist, or social-media post.
+You may also report a vulnerability by emailing `security@phishtopia.com`.
 
-If GitHub does not offer the private form, open a minimal public issue titled **Private security contact requested**. Include no technical details. A private reporting channel will then be arranged.
+Do not include vulnerability details in a public issue, discussion, pull request, commit, gist, or social-media post.
 
 A useful report includes:
 
