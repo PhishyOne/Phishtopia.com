@@ -4,6 +4,9 @@ on:
   push:
     branches:
       - ops/verify-live-readiness-20260722
+  pull_request:
+    branches:
+      - main
 
 permissions:
   contents: read
