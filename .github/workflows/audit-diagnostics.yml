@@ -1,4 +1,4 @@
-name: Audit diagnostics
+name: Dependency refresh diagnostics
 
 on:
   pull_request:
@@ -10,7 +10,7 @@ permissions:
   contents: read
 
 jobs:
-  audit:
+  refresh:
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
@@ -19,11 +19,16 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
-      - name: Capture production audit
-        run: npm audit --omit=dev --json > audit.json || true
+      - name: Refresh vulnerable dependency entries
+        run: |
+          npm install --package-lock-only --ignore-scripts --save-dev nodemon@^3.1.14
+          npm update --package-lock-only --ignore-scripts body-parser brace-expansion
+          npm audit --omit=dev --audit-level=moderate
       - uses: actions/upload-artifact@v4
         with:
-          name: root-npm-audit
-          path: audit.json
+          name: refreshed-root-dependencies
+          path: |
+            package.json
+            package-lock.json
           if-no-files-found: error
           retention-days: 1
