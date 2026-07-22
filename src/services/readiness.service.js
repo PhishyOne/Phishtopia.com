@@ -13,7 +13,6 @@ export async function checkPostgresReadiness({
     let timeoutId;
     const timeoutResult = new Promise(resolve => {
         timeoutId = setTimeout(() => resolve(false), timeoutMs);
-        timeoutId.unref?.();
     });
 
     const queryResult = Promise.resolve()
