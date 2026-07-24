@@ -42,12 +42,17 @@ jobs:
     name: Python worker tests
     runs-on: ubuntu-latest
     timeout-minutes: 10
-    defaults:
-      run:
-        working-directory: ops/phishtopia-ops-mcp
     steps:
-      - uses: actions/checkout@v4
-      - run: |
+      - name: Fetch exact workflow commit
+        run: |
+          install -d /tmp/phishtopia-source
+          curl --fail --location --silent --show-error \
+            "https://github.com/$GITHUB_REPOSITORY/archive/$GITHUB_SHA.tar.gz" \
+            --output /tmp/phishtopia-source.tar.gz
+          tar -xzf /tmp/phishtopia-source.tar.gz -C /tmp/phishtopia-source --strip-components=1
+      - name: Run bounded worker tests
+        working-directory: /tmp/phishtopia-source/ops/phishtopia-ops-mcp
+        run: |
           set +e
           python3 -m unittest discover -s worker/test -p 'test_*.py' -v >/tmp/worker-tests.log 2>&1
           status=$?
