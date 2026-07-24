@@ -18,6 +18,7 @@ retired_root=/var/lib/phishtopia-ops-bootstrap-retired
 current=/opt/phishtopia-ops-mcp
 controller_unit=/etc/systemd/system/phishtopia-ops-controller.service
 controller_env=/etc/phishtopia-ops-controller.env
+controller_wants=/etc/systemd/system/multi-user.target.wants/phishtopia-ops-controller.service
 recovery_helper=/usr/local/libexec/phishtopia-ops-bootstrap-recover
 retired_path=''
 
@@ -45,6 +46,12 @@ trap 'exit 129' HUP
 trap 'exit 130' INT
 trap 'exit 143' TERM
 
+if [ ! -f "$controller_unit" ] && [ ! -f "$controller_env" ]; then
+  systemctl disable phishtopia-ops-controller.service 2>/dev/null || true
+  rm -f "$controller_wants"
+  systemctl daemon-reload
+fi
+
 if [ -d "$last_good" ]; then
   prior_release=$(sed -n '1p' "$last_good/release" 2>/dev/null || true)
   case "$prior_release" in *[!0-9a-f]*|'') echo "retained rollback baseline is invalid" >&2; exit 1 ;; esac
@@ -56,7 +63,7 @@ if [ -d "$last_good" ]; then
   sync -f /var/lib
 fi
 
-/bin/sh "$script_dir/install-bootstrap.sh" "$release" "$artifact_digest"
+/bin/sh "$script_dir/run-install-bootstrap-with-launcher-compat.sh" "$release" "$artifact_digest"
 [ -d "$state" ] || { echo "bootstrap state missing after staged install" >&2; exit 1; }
 
 if [ -f "$controller_unit" ]; then
