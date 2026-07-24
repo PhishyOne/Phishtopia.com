@@ -18,9 +18,9 @@ done
 
 tmp=$(mktemp -d)
 trap 'rm -rf "$tmp"' EXIT HUP INT TERM
-archive="$tmp/$release.tar.gz"
-source_tar="$tmp/$release-source.tar.gz"
-remote="$tmp/$release-remote.sh"
+archive="$tmp/phishtopia-ops-$release.tar.gz"
+source_tar="$tmp/phishtopia-ops-$release-source.tar.gz"
+remote="$tmp/phishtopia-ops-$release-remote.sh"
 
 printf '%s\n' '==> Verify fixed project and VM'
 gcloud projects describe "$PROJECT_ID" --format='value(projectId)' >/dev/null
@@ -58,7 +58,7 @@ with tarfile.open(archive, "r:gz") as bundle:
             or not (member.isdir() or member.isfile())
         ):
             raise SystemExit("repository archive entry rejected")
-    bundle.extractall(destination, members=members, filter="data")
+    bundle.extractall(destination, members=members)
 roots = [item for item in destination.iterdir() if item.is_dir()]
 if len(roots) != 1:
     raise SystemExit("repository archive root rejected")
