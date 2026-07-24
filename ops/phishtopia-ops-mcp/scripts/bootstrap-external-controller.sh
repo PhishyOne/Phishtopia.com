@@ -83,7 +83,7 @@ accounts = value.get('serviceAccounts')
 if not isinstance(accounts, list) or len(accounts) != 1:
     raise SystemExit(1)
 email = accounts[0].get('email') if isinstance(accounts[0], dict) else None
-if not isinstance(email, str) or not email.endswith('.iam.gserviceaccount.com'):
+if not isinstance(email, str) or not email.endswith(('.iam.gserviceaccount.com', '@developer.gserviceaccount.com')):
     raise SystemExit(1)
 print(email)
 PY
