@@ -49,6 +49,6 @@ systemctl reset-failed "$unit.service" 2>/dev/null || true
   --property=UMask=0077 --property=KillMode=mixed --property=TimeoutStopSec=30 \
   --property=MemoryHigh=128M --property=MemoryMax=192M --property=OOMScoreAdjust=500 \
   --property=RuntimeMaxSec=90 --property=StandardOutput=journal --property=StandardError=journal \
-  -- "$copy" doctor
+  -- /bin/sh "$copy" doctor
 
 echo "tunnel_preflight=passed"
