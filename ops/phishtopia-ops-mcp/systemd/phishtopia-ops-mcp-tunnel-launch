@@ -18,6 +18,7 @@ case "${1:-run}" in
   doctor)
     exec /usr/local/bin/tunnel-client doctor \
       --profile-file /etc/phishtopia-ops-mcp/tunnel.yaml \
+      --health.listen-addr 127.0.0.1:0 \
       --explain \
       --json
     ;;
