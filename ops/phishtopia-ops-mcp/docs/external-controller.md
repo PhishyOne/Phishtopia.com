@@ -2,11 +2,13 @@
 
 ## Status
 
-This is a reviewable design for Issue #15, not an active deployment. The ChatGPT Secure MCP app stays read-only. Activation requires a dedicated locked issue, repository variables, narrowly scoped Pub/Sub resources, Workload Identity Federation, and installation of the relay service through the verified Ops release process.
+This is a reviewable design for Issue #15, not an active deployment. The ChatGPT Secure MCP app stays read-only. Activation requires the dedicated locked issue, narrowly scoped Pub/Sub resources, Workload Identity Federation, repository variables, and installation of the relay service through the verified Ops release process.
+
+The dedicated command queue is issue `#43`. It was created and locked before activation; while this workflow remains unmerged or unconfigured, comments there have no production effect.
 
 ## Queue contract
 
-Only a newly created owner comment on one configured, locked issue in `PhishyOne/Phishtopia.com` is accepted. The controller verifies immutable repository ID `997939289`, owner ID `123998606`, `author_association=OWNER`, the exact issue number, and the issue lock state. Bot comments are ignored to prevent response recursion.
+Only a newly created owner comment on the configured, locked issue in `PhishyOne/Phishtopia.com` is accepted. The controller verifies immutable repository ID `997939289`, owner ID `123998606`, `author_association=OWNER`, issue number `43`, and the issue lock state. Bot comments are ignored to prevent response recursion.
 
 A command has exactly two parts:
 
@@ -30,23 +32,38 @@ No caller can select a project, topic, subscription, endpoint, socket, repositor
 
 ## Identity boundary
 
-The GitHub controller service account should have only:
+The GitHub controller service account receives only:
 
 - publish permission on the request topic;
 - consume/acknowledge permission on the GitHub response subscription.
 
-The VM service identity should have only:
+The existing VM service identity receives only these additional controller permissions:
 
 - consume/acknowledge permission on the VM request subscription;
 - publish permission on the response topic.
 
-Do not grant Pub/Sub Admin, Project Editor/Owner, Compute Admin, OS Login, service-account-key creation, Secret Accessor, or SSH permissions. Workload Identity Federation must bind the immutable repository ID and exact workflow identity. No JSON service-account key is stored in GitHub.
+Do not grant Pub/Sub Admin, Project Editor/Owner, Compute Admin, OS Login, service-account-key creation, Secret Accessor, or SSH permissions. Workload Identity Federation binds the immutable repository ID, owner ID, workflow path, main branch, `issue_comment` event, and owner actor ID. No JSON service-account key is stored in GitHub.
 
 Repository variables:
 
 - `PHISHTOPIA_OPS_QUEUE_ISSUE`
 - `PHISHTOPIA_OPS_WIF_PROVIDER`
 - `PHISHTOPIA_OPS_CONTROLLER_SERVICE_ACCOUNT`
+
+## Bounded cloud bootstrap
+
+Run `scripts/bootstrap-external-controller.sh --queue-issue 43` only from a reviewed, commit-pinned checkout. The script:
+
+- stops on the first failed prerequisite or unexpected existing resource;
+- discovers and verifies the fixed VM service account;
+- creates or verifies the controller service account, two topics, and two subscriptions;
+- applies only resource-level Pub/Sub grants;
+- creates or strictly verifies the GitHub OIDC provider;
+- binds only repository ID `997939289` to the controller service account;
+- performs a final IAM verification pass;
+- prints the three non-secret repository-variable values.
+
+It does not deploy code, install the relay, restart the VM or services, alter DNS, access secret payloads, create a service-account key, or submit an Ops job. Re-running the script is idempotent when the existing resources exactly match the policy. It refuses to rewrite an unexpected provider.
 
 ## Relay boundary
 
@@ -59,18 +76,19 @@ Repository variables:
 - The relay publishes the response before acknowledging the request.
 - Failed response publication leaves the request unacknowledged for safe redelivery.
 - GitHub workflows are serialized; stale responses are discarded by request ID.
+- Authentication, setup, transport, and posting failures produce only a stable issue response and bounded Actions diagnostic.
 - Provider errors, subprocess output, credentials, headers, secrets, raw logs, and database rows never enter issue comments.
 
 ## Controlled activation
 
-1. Merge only after normal CI passes.
-2. Create and lock the dedicated queue issue.
-3. Create the two topics and two subscriptions.
-4. Apply the narrow IAM grants above.
-5. Configure Workload Identity Federation with immutable repository/workflow conditions.
-6. Add the three repository variables.
-7. Install the relay source and systemd unit through the verified Ops release process.
-8. Verify the worker socket, relay health, and a status-only command.
+1. Keep PR #42 draft while review and normal CI complete.
+2. Keep issue #43 locked and unused.
+3. Run the bounded cloud bootstrap and preserve only its final non-secret output block.
+4. Configure the three repository variables from that output.
+5. Merge only after the branch is reviewed and CI is green.
+6. Install the relay source, environment file, and systemd unit through the verified Ops release process.
+7. Verify the worker socket and relay health without submitting a mutation.
+8. Submit a status-only command.
 9. Test one bounded reversible job and verify its durable record and sanitized response.
 
 Until those steps are completed, production remains unchanged.
