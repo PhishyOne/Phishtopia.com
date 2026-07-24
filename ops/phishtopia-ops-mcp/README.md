@@ -1,10 +1,10 @@
 # Phishtopia Ops MCP
 
-Private Phishtopia operations control plane for Issue #15. The MCP server remains an unprivileged stdio process behind the existing Secure MCP Tunnel. It exposes ten compatible read-only observers and three job tools. A separate root service accepts only a small local JSON protocol, validates every action again, persists jobs, and executes fixed operations.
+Private Phishtopia operations control plane for Issue #15. The ChatGPT-facing MCP server remains an unprivileged stdio process behind the Secure MCP Tunnel and exposes ten read-only observers. A separate root worker persists durable jobs and executes only fixed, independently validated operations.
 
-## Tool contract
+## ChatGPT tool contract
 
-The final MCP contract contains 13 tools:
+The MCP contract is deliberately read-only:
 
 - `get_production_summary`
 - `get_public_health`
@@ -16,70 +16,65 @@ The final MCP contract contains 13 tools:
 - `get_build_status`
 - `get_secret_metadata`
 - `get_cloudflare_dns_status`
-- `start_job`
-- `get_job_status`
-- `cancel_job`
 
-The first ten have read-only annotations. The Cloudflare observer is the sole narrow exception to the general secret-payload ban: it may access only the latest version of `phishtopia-cloudflare-dns-token`, use it only for fixed Cloudflare GET requests, and return only token status, zone visibility, DNS-read confirmation, and strictly validated metadata for the root A and `www` CNAME records. It never returns the token. `start_job` accepts exactly one of eight discriminated action schemas and an idempotency key. `get_job_status` and `cancel_job` accept only a UUID. Mutating job tools are annotated `readOnlyHint: false`, `destructiveHint: true`, `idempotentHint: true`, and `openWorldHint: false`.
+All ten use read-only annotations. The Cloudflare observer may read only the fixed DNS token and returns only strictly validated zone and record status; it never returns the token. `start_job`, `get_job_status`, and `cancel_job` are intentionally absent from the ChatGPT tool list so the private app remains read-only.
+
+## External controller
+
+Durable job submission, status, and cancellation move to a separate controller:
+
+```text
+owner comment on one locked GitHub issue
+  -> GitHub Actions with short-lived Google OIDC
+  -> fixed Pub/Sub request topic
+  -> unprivileged VM relay
+  -> root-owned worker Unix socket
+  -> fixed action implementation and rollback controls
+  -> fixed Pub/Sub response topic
+  -> sanitized issue comment
+```
+
+The workflow and relay validate every command independently, then the existing worker validates it again. The controller accepts no shell command, file path, URL, SQL text, secret value, arbitrary resource name, or user-supplied idempotency key.
+
+This change is dormant until the queue issue, repository variables, Workload Identity Federation binding, Pub/Sub resources, IAM grants, and VM relay service are configured. Merging it alone does not deploy or mutate production.
+
+See [external-controller.md](docs/external-controller.md), [architecture.md](docs/architecture.md), [threat-model.md](docs/threat-model.md), and [runbook.md](docs/runbook.md).
 
 ## Action allowlist
 
-- `upgrade_ops_release`: exact lowercase 40-character commit and 64-character archive digest.
-- `deploy_verified_release`: exact lowercase 40-character commit and 64-character archive digest.
-- `restart_phishtopia_service`: `phishtopia_app` or `phishtopia_ops_tunnel` only.
-- `rollback_release`: recorded app or ops release only.
-- `canary_and_promote`: an explicit `phishtopia-NNNNN-xxx` revision and two or more increasing fixed percentages, beginning no higher than 10 and ending at 100.
-- `run_tested_migration`: exact commit/digest and a repository manifest ID only.
-- `rotate_session_secret`: `phishtopia-session-secret` only; no payload accepted or returned.
-- `update_dns_with_rollback`: `phishtopia.com` or `www.phishtopia.com`, targeting only the fixed VM A address or fixed Cloud Run CNAME, and one of three TTLs. Records must remain DNS-only.
-
-No input schema includes a shell command, file path, URL, HTTP headers, SQL text, log query, credential, cookie, secret value, database row selector, project, service account, repository, bucket, database, zone, or arbitrary resource name.
-
-## Boundary
-
-```text
-private tunnel -> unprivileged MCP -> root-owned Unix socket -> root worker
-                                             |              |
-                                             |              +-- fixed action builders
-                                             +-- strict      +-- rollback baselines
-                                                 JSON        +-- SQLite WAL jobs
-                                                              +-- append-only audit
-```
-
-The Unix socket is `root:phishtopia-mcp` mode `0660`. The worker checks Linux peer credentials in addition to filesystem permissions. The MCP service has no capabilities and no write access to worker state. The worker database and audit log are root-only mode `0600`.
-
-See [architecture.md](docs/architecture.md), [threat-model.md](docs/threat-model.md), and [runbook.md](docs/runbook.md).
+- `upgrade_ops_release`: exact 40-character commit and 64-character archive digest.
+- `deploy_verified_release`: exact commit and digest.
+- `restart_phishtopia_service`: fixed app or Ops tunnel service only.
+- `rollback_release`: recorded app or Ops release only.
+- `canary_and_promote`: fixed revision syntax and increasing percentages ending at 100.
+- `run_tested_migration`: exact commit/digest and repository manifest ID.
+- `rotate_session_secret`: the fixed session secret only; no payload accepted or returned.
+- `update_dns_with_rollback`: fixed hostnames, targets, TTLs, and DNS-only mode.
 
 ## Safety and durability
 
+- The worker socket is `root:phishtopia-mcp` mode `0660` and checks Linux peer credentials.
 - SQLite uses WAL and `synchronous=FULL`.
-- An indexed partial uniqueness constraint permits only one queued/running/cancelling job per protected resource.
-- Idempotency keys are unique and are bound to a canonical action hash.
-- Deadlines are fixed by action; the model cannot extend them.
-- Every long action checks cancellation/deadline boundaries.
-- A worker restart converts interrupted work into a queued recovery job that restores the persisted baseline instead of blindly resuming a mutation.
-- Audit records contain only job ID, action, fixed resource, state, event, result code, and time. Accepted jobs expose a bounded sanitized preview that never echoes a DNS target or secret.
-- Errors are stable codes; subprocess output and exception messages are never returned.
-- DNS snapshots, env backups, and other rollback material remain root-only and never enter audit/MCP output.
-- The Cloudflare observer accepts no caller-selected secret, zone, hostname, record type, URL, method, or query. Its token is held only in process memory for the bounded check and is never placed in MCP output.
+- Idempotency keys bind to canonical action hashes.
+- Only one production mutation can be queued or running.
+- Deadlines and rollback behavior are fixed by action.
+- Worker state, rollback material, environment backups, and audit files remain root-only.
+- Errors and observations are bounded and sanitized; raw provider output is never returned.
+- The external controller binds immutable repository ID `997939289` and owner ID `123998606`.
 
 ## Tests
 
-All high-impact behavior is exercised through fakes or temporary local files/databases. The test suite does not call production DNS, Cloudflare, Secret Manager mutations, Cloud Run traffic updates, PostgreSQL mutations, PM2, systemd, or deployments.
-
 ```sh
 npm ci
+npm run format:check
 npm run typecheck
 npm test
 npm run smoke
 python3 -m unittest discover -s worker/test -p 'test_*.py' -v
+python3 -m unittest discover -s controller/test -p 'test_*.py' -v
+python3 -m compileall -q controller
 ./scripts/secret-scan.sh
+npm audit --omit=dev --audit-level=moderate
 ```
 
-`npm run smoke` uses an in-memory MCP transport and checks the exact names/annotations without starting a job. `smoke:live` invokes only the ten read-only observers, including the fixed Cloudflare validation.
-
-## Bootstrap prerequisite
-
-The staged installer requires an already verified release archive, its SHA-256 digest, the merged immutable commit, at least 640 MB `MemAvailable`, and at least 2 GB free disk. It preserves the existing tunnel YAML and loaded credential byte-for-byte, retains the old source/state/units as an exact rollback target, runs the separate root service from the versioned ops source, and restarts only the worker and `phishtopia-ops-mcp-tunnel.service`. A single post-installer verification timer rolls back the staged transaction unless external verification calls the fixed finalizer. Finalization atomically retains the pre-bootstrap state as a root-only last-known-good snapshot; that snapshot may be used only before any job history or application release exists.
-
-DNS mutation additionally requires a Cloudflare API token scoped only to DNS edit for the `phishtopia.com` zone, stored as the fixed Secret Manager secret `phishtopia-cloudflare-dns-token` with accessor permission granted only on that secret. The installer checks for an enabled version and fails before journal/source copying if it is absent; an analytics/read-only token is not accepted as a substitute. The action schema permits only the fixed VM A address or fixed Cloud Run CNAME.
+Tests use fakes or temporary local state and do not call production DNS, Cloudflare, Secret Manager mutations, Cloud Run traffic updates, PostgreSQL mutations, Pub/Sub, Workload Identity Federation, systemd, PM2, or deployments.

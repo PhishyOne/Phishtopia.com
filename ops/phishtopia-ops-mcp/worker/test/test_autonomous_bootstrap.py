@@ -110,7 +110,10 @@ CREATE TABLE public.users (id integer);
         self.assertLess(installer, restart)
         self.assertLess(restart, finalization)
         self.assertEqual(
-            value.count('install-bootstrap.sh" "$release" "$artifact_digest"'), 1
+            value.count(
+                'install-bootstrap-with-controller.sh" "$release" "$artifact_digest"'
+            ),
+            1,
         )
         self.assertIn("capture_failure", value)
         self.assertIn("sanitize-bootstrap-diagnostics.py", value)
@@ -120,6 +123,7 @@ CREATE TABLE public.users (id integer);
         self.assertIn("postgres-fingerprint.py", value)
         self.assertIn("cmp -s", value)
         self.assertIn("live-smoke.js", value)
+        self.assertIn("phishtopia-ops-controller.service", value)
         self.assertIn("retained_last_known_good", value)
         self.assertNotIn("while true", value)
         self.assertNotIn("until ", value)

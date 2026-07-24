@@ -4,11 +4,7 @@ import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { InMemoryTransport } from "@modelcontextprotocol/sdk/inMemory.js";
 
 import type { CommandRunner } from "../command.js";
-import {
-  MUTATING_JOB_ANNOTATIONS,
-  READ_ONLY_ANNOTATIONS,
-  TOOL_NAMES,
-} from "../constants.js";
+import { READ_ONLY_ANNOTATIONS, TOOL_NAMES } from "../constants.js";
 import { PhishtopiaOps, type HealthClient } from "../google.js";
 import { createServer } from "../server.js";
 
@@ -40,13 +36,18 @@ try {
     [...TOOL_NAMES].sort(),
   );
   for (const tool of listed.tools) {
-    const expected =
-      tool.name === "start_job" || tool.name === "cancel_job"
-        ? MUTATING_JOB_ANNOTATIONS
-        : READ_ONLY_ANNOTATIONS;
-    assert.equal(tool.annotations?.readOnlyHint, expected.readOnlyHint);
-    assert.equal(tool.annotations?.destructiveHint, expected.destructiveHint);
-    assert.equal(tool.annotations?.openWorldHint, expected.openWorldHint);
+    assert.equal(
+      tool.annotations?.readOnlyHint,
+      READ_ONLY_ANNOTATIONS.readOnlyHint,
+    );
+    assert.equal(
+      tool.annotations?.destructiveHint,
+      READ_ONLY_ANNOTATIONS.destructiveHint,
+    );
+    assert.equal(
+      tool.annotations?.openWorldHint,
+      READ_ONLY_ANNOTATIONS.openWorldHint,
+    );
   }
   const health = await client.callTool({
     name: "get_public_health",

@@ -1,0 +1,79 @@
+name: Phishtopia Ops controller
+
+on:
+  issue_comment:
+    types: [created]
+
+permissions:
+  contents: read
+  id-token: write
+  issues: write
+
+concurrency:
+  group: phishtopia-ops-controller-${{ github.repository_id }}
+  cancel-in-progress: false
+
+jobs:
+  controller:
+    if: github.repository == 'PhishyOne/Phishtopia.com' && github.event.issue.number == 43 && github.actor_id == '123998606'
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    defaults:
+      run:
+        working-directory: ops/phishtopia-ops-mcp
+    env:
+      QUEUE_ISSUE: '43'
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate issue command
+        id: prepare
+        run: python3 -m controller.github_event "$GITHUB_EVENT_PATH" --queue-issue "$QUEUE_ISSUE" --request-file /tmp/ops-request.json
+      - name: Authenticate with short-lived Google OIDC
+        id: auth
+        if: steps.prepare.outputs.decision == 'accepted'
+        uses: google-github-actions/auth@v3
+        with:
+          workload_identity_provider: projects/107649778409/locations/global/workloadIdentityPools/github-phishtopia-ops/providers/phishtopia-ops
+          service_account: phishtopia-ops-controller@project-43a8be4b-69a7-4d52-805.iam.gserviceaccount.com
+      - name: Install Google Cloud CLI
+        id: setup
+        if: steps.prepare.outputs.decision == 'accepted'
+        uses: google-github-actions/setup-gcloud@v3
+      - name: Submit and await sanitized response
+        if: steps.prepare.outputs.decision == 'accepted'
+        id: transport
+        continue-on-error: true
+        run: python3 -m controller.github_transport --request-file /tmp/ops-request.json --response-file /tmp/ops-response.json --comment-file /tmp/ops-comment.md
+      - name: Post sanitized result
+        id: post_success
+        if: steps.prepare.outputs.decision == 'accepted' && steps.transport.outcome == 'success'
+        env:
+          ISSUE: ${{ github.event.issue.number }}
+        run: |
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          Path('/tmp/comment.json').write_text(json.dumps({'body': Path('/tmp/ops-comment.md').read_text()}))
+          PY
+          gh api "repos/$GITHUB_REPOSITORY/issues/$ISSUE/comments" --method POST --input /tmp/comment.json >/dev/null
+      - name: Report sanitized controller failure
+        if: always() && steps.prepare.outputs.decision == 'accepted' && steps.post_success.outcome != 'success'
+        env:
+          ISSUE: ${{ github.event.issue.number }}
+          RUN_ID: ${{ github.run_id }}
+        run: |
+          python3 - <<'PY'
+          import json
+          import os
+          body = (
+              "### Phishtopia Ops\n\n"
+              "Controller setup or transport failed before a validated result was returned. "
+              f"GitHub Actions run `{os.environ['RUN_ID']}` contains the bounded diagnostic. "
+              "No raw provider output, credentials, commands, logs, or secret values are included here."
+          )
+          with open('/tmp/comment.json', 'w', encoding='utf-8') as handle:
+              json.dump({'body': body}, handle)
+          PY
+          gh api "repos/$GITHUB_REPOSITORY/issues/$ISSUE/comments" --method POST --input /tmp/comment.json >/dev/null
+          exit 1

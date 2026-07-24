@@ -2,11 +2,9 @@ name: CI
 
 on:
   pull_request:
-    branches:
-      - main
+    branches: [main]
   push:
-    branches:
-      - main
+    branches: [main]
 
 permissions:
   contents: read
@@ -17,9 +15,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
-      - name: Check out repository
-        uses: actions/checkout@v4
-
+      - uses: actions/checkout@v4
       - name: Run pinned Gitleaks 8.30.1
         run: |
           curl --fail --location --silent --show-error \
@@ -32,25 +28,40 @@ jobs:
   test:
     runs-on: ubuntu-latest
     timeout-minutes: 10
-
     steps:
-      - name: Check out repository
-        uses: actions/checkout@v4
-
-      - name: Use Node.js 22
-        uses: actions/setup-node@v4
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
         with:
           node-version: 22
           cache: npm
+      - run: npm ci
+      - run: npm test
+      - run: npm audit --omit=dev --audit-level=moderate
 
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Run tests
-        run: npm test
-
-      - name: Audit production dependencies
-        run: npm audit --omit=dev --audit-level=moderate
+  worker-tests:
+    name: Python worker tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Fetch exact workflow commit
+        run: |
+          install -d /tmp/phishtopia-source
+          curl --fail --location --silent --show-error \
+            "https://github.com/$GITHUB_REPOSITORY/archive/$GITHUB_SHA.tar.gz" \
+            --output /tmp/phishtopia-source.tar.gz
+          tar -xzf /tmp/phishtopia-source.tar.gz -C /tmp/phishtopia-source --strip-components=1
+      - name: Run bounded worker tests
+        working-directory: /tmp/phishtopia-source/ops/phishtopia-ops-mcp
+        run: |
+          set +e
+          python3 -m unittest discover -s worker/test -p 'test_*.py' -v >/tmp/worker-tests.log 2>&1
+          status=$?
+          set -e
+          if [ "$status" -ne 0 ]; then
+            tail -n 120 /tmp/worker-tests.log
+            exit "$status"
+          fi
+          cat /tmp/worker-tests.log
 
   ops-security:
     name: Ops security and fake integration tests
@@ -60,38 +71,28 @@ jobs:
       run:
         working-directory: ops/phishtopia-ops-mcp
     steps:
-      - name: Check out repository
-        uses: actions/checkout@v4
-
-      - name: Use Node.js 24
-        uses: actions/setup-node@v4
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
         with:
           node-version: 24
           cache: npm
           cache-dependency-path: ops/phishtopia-ops-mcp/package-lock.json
-
-      - name: Install locked dependencies
-        run: npm ci
-
+      - run: npm ci
       - name: Typecheck, test, and protocol smoke
         run: |
           npm run format:check
           npm run typecheck
           npm test
           npm run smoke
-
-      - name: Python worker tests
-        run: python3 -m unittest discover -s worker/test -p 'test_*.py' -v
-
-      - name: Parse every privileged shell script
+      - name: External controller tests
+        run: python3 -m unittest discover -s controller/test -p 'test_*.py' -v
+      - name: Compile external controller
+        run: python3 -m compileall -q controller
+      - name: Parse privileged shell scripts
         run: |
           set -eu
           for script in scripts/*.sh systemd/phishtopia-ops-mcp-tunnel-launch; do
             sh -n "$script"
           done
-
-      - name: Reject accidental secrets and runtime data
-        run: ./scripts/secret-scan.sh
-
-      - name: Audit production dependencies
-        run: npm audit --omit=dev --audit-level=moderate
+      - run: ./scripts/secret-scan.sh
+      - run: npm audit --omit=dev --audit-level=moderate

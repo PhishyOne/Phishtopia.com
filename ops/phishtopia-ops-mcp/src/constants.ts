@@ -31,9 +31,6 @@ export const TOOL_NAMES = [
   "get_build_status",
   "get_secret_metadata",
   "get_cloudflare_dns_status",
-  "start_job",
-  "get_job_status",
-  "cancel_job",
 ] as const;
 
 export const ACTION_NAMES = [
@@ -50,13 +47,6 @@ export const ACTION_NAMES = [
 export const READ_ONLY_ANNOTATIONS = {
   readOnlyHint: true,
   destructiveHint: false,
-  openWorldHint: false,
-} as const;
-
-export const MUTATING_JOB_ANNOTATIONS = {
-  readOnlyHint: false,
-  destructiveHint: true,
-  idempotentHint: true,
   openWorldHint: false,
 } as const;
 

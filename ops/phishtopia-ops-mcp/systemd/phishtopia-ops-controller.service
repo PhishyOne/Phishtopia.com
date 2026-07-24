@@ -1,0 +1,53 @@
+[Unit]
+Description=Phishtopia external Ops request relay
+Documentation=https://github.com/PhishyOne/Phishtopia.com/tree/main/ops/phishtopia-ops-mcp
+Wants=network-online.target
+After=network-online.target phishtopia-ops-worker.service
+Requires=phishtopia-ops-worker.service
+StartLimitIntervalSec=300
+StartLimitBurst=5
+
+[Service]
+Type=simple
+User=phishtopia-mcp
+Group=phishtopia-mcp
+WorkingDirectory=/opt/phishtopia-ops-mcp
+Environment=PYTHONPATH=/opt/phishtopia-ops-mcp
+Environment=PYTHONDONTWRITEBYTECODE=1
+EnvironmentFile=/etc/phishtopia-ops-controller.env
+ExecStart=/usr/bin/python3 -m controller.relay_daemon --queue-issue ${PHISHTOPIA_OPS_QUEUE_ISSUE}
+Restart=always
+RestartSec=5s
+TimeoutStopSec=30s
+KillMode=mixed
+UMask=0077
+NoNewPrivileges=true
+PrivateTmp=true
+PrivateDevices=true
+ProtectSystem=strict
+ProtectHome=true
+ProtectClock=true
+ProtectHostname=true
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectKernelLogs=true
+ProtectControlGroups=true
+ProtectProc=invisible
+RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6
+RestrictNamespaces=true
+RestrictRealtime=true
+RestrictSUIDSGID=true
+LockPersonality=true
+CapabilityBoundingSet=
+AmbientCapabilities=
+RemoveIPC=true
+SystemCallArchitectures=native
+SystemCallFilter=@system-service
+TasksMax=24
+LimitNOFILE=256
+MemoryHigh=64M
+MemoryMax=96M
+OOMScoreAdjust=500
+
+[Install]
+WantedBy=multi-user.target

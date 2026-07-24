@@ -15,6 +15,12 @@ systemctl is-active --quiet phishtopia-ops-mcp-tunnel.service
 /usr/bin/setpriv --reuid=phishtopia-mcp --regid=phishtopia-mcp --init-groups \
   --no-new-privs -- /opt/phishtopia-ops-runtime/node/bin/node \
   /opt/phishtopia-ops-mcp/dist/smoke/worker-contract-smoke.js
+if [ -f "$state/controller-installer-complete" ]; then
+  systemctl is-active --quiet phishtopia-ops-controller.service
+  [ "$(stat -c '%U:%G:%a' /etc/systemd/system/phishtopia-ops-controller.service)" = "root:root:644" ]
+  [ "$(stat -c '%U:%G:%a' /etc/phishtopia-ops-controller.env)" = "root:root:600" ]
+  [ "$(sed -n '1p' /etc/phishtopia-ops-controller.env)" = 'PHISHTOPIA_OPS_QUEUE_ISSUE=43' ]
+fi
 [ "$(sed -n '1p' "$state/tunnel-config.sha256")" = "$(sha256sum /etc/phishtopia-ops-mcp/tunnel.yaml | cut -d' ' -f1)" ]
 [ "$(sed -n '1p' "$state/tunnel-credential.sha256")" = "$(sha256sum /etc/credstore/phishtopia-ops-mcp/control-plane-api-key | cut -d' ' -f1)" ]
 [ "$(sed -n '1p' "$state/tunnel-launcher.sha256")" = "$(sha256sum /usr/local/libexec/phishtopia-ops-mcp-tunnel-launch | cut -d' ' -f1)" ]

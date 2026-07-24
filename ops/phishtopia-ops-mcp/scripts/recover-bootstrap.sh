@@ -8,6 +8,8 @@ worker=/usr/local/lib/phishtopia-ops-worker
 worker_unit=/etc/systemd/system/phishtopia-ops-worker.service
 tunnel_unit=/etc/systemd/system/phishtopia-ops-mcp-tunnel.service
 tunnel_launcher=/usr/local/libexec/phishtopia-ops-mcp-tunnel-launch
+controller_unit=/etc/systemd/system/phishtopia-ops-controller.service
+controller_env=/etc/phishtopia-ops-controller.env
 manifest=/var/lib/phishtopia-ops-worker/releases.json
 recovery_unit=/etc/systemd/system/phishtopia-ops-bootstrap-recover.service
 recovery_helper=/usr/local/libexec/phishtopia-ops-bootstrap-recover
@@ -22,7 +24,8 @@ exec 9>/run/phishtopia-ops-bootstrap.lock
 for unit in phishtopia-ops-bootstrap-npm phishtopia-ops-bootstrap-test-1 \
   phishtopia-ops-bootstrap-test-2 phishtopia-ops-bootstrap-test-3 \
   phishtopia-ops-bootstrap-test-4 phishtopia-ops-bootstrap-test-5 \
-  phishtopia-ops-bootstrap-test-6 phishtopia-ops-bootstrap-test-7; do
+  phishtopia-ops-bootstrap-test-6 phishtopia-ops-bootstrap-test-7 \
+  phishtopia-ops-controller-tests; do
   systemctl stop "$unit.service" 2>/dev/null || true
 done
 
@@ -38,7 +41,7 @@ if [ ! -d "$state" ]; then
   exit 0
 fi
 
-systemctl stop phishtopia-ops-worker.service phishtopia-ops-mcp-tunnel.service 2>/dev/null || true
+systemctl stop phishtopia-ops-controller.service phishtopia-ops-worker.service phishtopia-ops-mcp-tunnel.service 2>/dev/null || true
 
 if [ -f "$state/worker-dir.present" ] && [ -d "$state/worker.old" ]; then
   rm -rf "$worker"
@@ -61,6 +64,17 @@ else
   rm -f "$worker_unit"
 fi
 cp -a "$state/tunnel.unit" "$tunnel_unit"
+
+if [ -f "$state/controller-unit.present" ] && [ -f "$state/controller.unit" ]; then
+  cp -a "$state/controller.unit" "$controller_unit"
+else
+  rm -f "$controller_unit"
+fi
+if [ -f "$state/controller-env.present" ] && [ -f "$state/controller.env" ]; then
+  cp -a "$state/controller.env" "$controller_env"
+else
+  rm -f "$controller_env"
+fi
 
 if [ -f "$state/manifest.present" ]; then
   mkdir -p "$(dirname "$manifest")"
@@ -109,6 +123,11 @@ if [ "$(sed -n '1p' "$state/tunnel.enabled")" = enabled ]; then
 else
   systemctl disable phishtopia-ops-mcp-tunnel.service 2>/dev/null || true
 fi
+if [ -f "$state/controller.enabled" ] && [ "$(sed -n '1p' "$state/controller.enabled")" = enabled ] && [ -f "$controller_unit" ]; then
+  systemctl enable phishtopia-ops-controller.service
+else
+  systemctl disable phishtopia-ops-controller.service 2>/dev/null || true
+fi
 if [ "$(sed -n '1p' "$state/worker.active")" = active ] && [ -f "$worker_unit" ]; then
   systemctl start phishtopia-ops-worker.service
 else
@@ -119,6 +138,12 @@ if [ "$(sed -n '1p' "$state/tunnel.active")" = active ]; then
   systemctl is-active --quiet phishtopia-ops-mcp-tunnel.service
 else
   systemctl stop phishtopia-ops-mcp-tunnel.service 2>/dev/null || true
+fi
+if [ -f "$state/controller.active" ] && [ "$(sed -n '1p' "$state/controller.active")" = active ] && [ -f "$controller_unit" ] && [ -f "$controller_env" ]; then
+  systemctl restart phishtopia-ops-controller.service
+  systemctl is-active --quiet phishtopia-ops-controller.service
+else
+  systemctl stop phishtopia-ops-controller.service 2>/dev/null || true
 fi
 
 [ "$(sed -n '1p' "$state/tunnel-config.sha256")" = "$(sha256sum /etc/phishtopia-ops-mcp/tunnel.yaml | cut -d' ' -f1)" ]
