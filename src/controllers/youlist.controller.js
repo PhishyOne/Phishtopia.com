@@ -3,24 +3,48 @@ import {
     createYouListComment,
     editYouListComment,
     getPagedYouList,
-    isValidMediaType,
     removeYouListComment
 } from "../services/youlist.service.js";
+import {
+    isValidMediaType,
+    normalizePage,
+    normalizePositiveInteger,
+    normalizeSearchQuery
+} from "../services/youlist.validation.js";
+
+function noStore(res) {
+    res.set("Cache-Control", "no-store");
+}
+
+function sendMutationResult(res, result) {
+    noStore(res);
+    if (!result.ok) {
+        return res.status(result.status).json({ success: false, error: result.error });
+    }
+    return res.json({ success: true });
+}
 
 export function renderYouListPage(req, res) {
+    noStore(res);
     res.render("project34", {
         bodyClass: "project34",
         extraStyles: ["/project34/styles/main.css"],
         extraScripts: ["/js/canvas.js", "/js/youlist.js"],
-        movieList: JSON.stringify([]),
         user: req.session.user || null,
+        csrfToken: res.locals.csrfToken,
         currentUrl: req.originalUrl
     });
 }
 
 export async function searchMedia(req, res) {
     try {
-        const results = await searchTMDB(req.query.q);
+        const query = normalizeSearchQuery(req.query.q);
+        if (query === null) {
+            return res.status(400).json({ error: "Search query is too long" });
+        }
+        if (query.length < 2) return res.json([]);
+
+        const results = await searchTMDB(query);
         res.json(results);
     } catch (err) {
         console.error("TMDB search error:", err);
@@ -30,10 +54,11 @@ export async function searchMedia(req, res) {
 
 export async function getMediaDetails(req, res) {
     try {
-        const { type, id } = req.params;
+        const { type } = req.params;
+        const id = normalizePositiveInteger(req.params.id);
 
-        if (!isValidMediaType(type)) {
-            return res.status(400).json({ error: "Invalid media type" });
+        if (!isValidMediaType(type) || id === null) {
+            return res.status(400).json({ error: "Invalid media item" });
         }
 
         const item = await fetchTMDBItem(type, id);
@@ -46,7 +71,8 @@ export async function getMediaDetails(req, res) {
 
 export async function getList(req, res) {
     try {
-        const list = await getPagedYouList(req.query.page);
+        noStore(res);
+        const list = await getPagedYouList(normalizePage(req.query.page));
         res.json(list);
     } catch (err) {
         console.error("Grouped list fetch error:", err);
@@ -62,15 +88,11 @@ export async function createComment(req, res) {
             comment: req.body.comment,
             userId: req.session.user?.id
         });
-
-        if (!result.ok) {
-            return res.status(result.status).json({ error: result.error });
-        }
-
-        res.json({ success: true });
+        sendMutationResult(res, result);
     } catch (err) {
         console.error("Add comment error:", err);
-        res.status(500).json({ error: "Failed to add comment" });
+        noStore(res);
+        res.status(500).json({ success: false, error: "Failed to add comment" });
     }
 }
 
@@ -81,15 +103,11 @@ export async function editComment(req, res) {
             comment: req.body.comment,
             userId: req.session.user?.id
         });
-
-        if (!result.ok) {
-            return res.status(result.status).json({ error: result.error });
-        }
-
-        res.json({ success: true });
+        sendMutationResult(res, result);
     } catch (err) {
         console.error("Edit comment error:", err);
-        res.status(500).json({ error: "Failed to edit comment" });
+        noStore(res);
+        res.status(500).json({ success: false, error: "Failed to edit comment" });
     }
 }
 
@@ -99,14 +117,10 @@ export async function deleteComment(req, res) {
             commentId: req.params.id,
             userId: req.session.user?.id
         });
-
-        if (!result.ok) {
-            return res.status(result.status).json({ error: result.error });
-        }
-
-        res.json({ success: true });
+        sendMutationResult(res, result);
     } catch (err) {
         console.error("Delete comment error:", err);
-        res.status(500).json({ error: "Failed to delete comment" });
+        noStore(res);
+        res.status(500).json({ success: false, error: "Failed to delete comment" });
     }
 }
