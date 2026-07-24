@@ -15,9 +15,9 @@ import { prewarmYouListCache } from "../services/youlist.service.js";
 const router = express.Router();
 
 router.get("/", requireLogin, provideCsrfToken, renderYouListPage);
-router.get("/api/search", searchMedia);
-router.get("/api/item/:type/:id", getMediaDetails);
-router.get("/api/list", getList);
+router.get("/api/search", requireLogin, searchMedia);
+router.get("/api/item/:type/:id", requireLogin, getMediaDetails);
+router.get("/api/list", requireLogin, getList);
 router.post("/api/comment", requireLogin, requireCsrfToken, createComment);
 router.put("/api/comment/:id", requireLogin, requireCsrfToken, editComment);
 router.delete("/api/comment/:id", requireLogin, requireCsrfToken, deleteComment);
