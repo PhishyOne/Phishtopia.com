@@ -1,5 +1,6 @@
 import express from "express";
 import { requireLogin } from "../middleware/requireLogin.js";
+import { provideCsrfToken, requireCsrfToken } from "../middleware/csrf.js";
 import {
     createComment,
     deleteComment,
@@ -13,13 +14,13 @@ import { prewarmYouListCache } from "../services/youlist.service.js";
 
 const router = express.Router();
 
-router.get("/", requireLogin, renderYouListPage);
+router.get("/", requireLogin, provideCsrfToken, renderYouListPage);
 router.get("/api/search", searchMedia);
 router.get("/api/item/:type/:id", getMediaDetails);
 router.get("/api/list", getList);
-router.post("/api/comment", requireLogin, createComment);
-router.put("/api/comment/:id", requireLogin, editComment);
-router.delete("/api/comment/:id", requireLogin, deleteComment);
+router.post("/api/comment", requireLogin, requireCsrfToken, createComment);
+router.put("/api/comment/:id", requireLogin, requireCsrfToken, editComment);
+router.delete("/api/comment/:id", requireLogin, requireCsrfToken, deleteComment);
 
 if (process.env.PREWARM_TMDB_CACHE === "true") {
     prewarmYouListCache()
