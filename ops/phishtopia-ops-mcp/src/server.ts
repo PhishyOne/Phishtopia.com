@@ -1,19 +1,11 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 
 import type { CloudflareDnsStatusClient } from "./cloudflare.js";
-import {
-  MUTATING_JOB_ANNOTATIONS,
-  READ_ONLY_ANNOTATIONS,
-  TOOL_NAMES,
-} from "./constants.js";
+import { READ_ONLY_ANNOTATIONS, TOOL_NAMES } from "./constants.js";
 import type { PhishtopiaOps } from "./google.js";
-import type { JobClient } from "./job-client.js";
 import {
-  JobIdInputSchema,
-  JobOutputSchema,
   NoArgsSchema,
   SecretMetadataInputSchema,
-  StartJobInputSchema,
   ToolOutputSchema,
   type ToolOutput,
 } from "./schema.js";
@@ -40,12 +32,6 @@ export const TOOL_DEFINITIONS = {
     "Read-only metadata and version states for one allowlisted secret; payload access is impossible.",
   get_cloudflare_dns_status:
     "Read-only validation of the fixed Cloudflare DNS token, phishtopia.com zone, root A record, and www CNAME; the token is never returned.",
-  start_job:
-    "Start one durable, deadline-bounded allowlisted Phishtopia operation after a sanitized preview and independent root-worker validation.",
-  get_job_status:
-    "Read bounded sanitized status metadata for one durable Phishtopia operations job.",
-  cancel_job:
-    "Request cancellation and automatic rollback for one durable Phishtopia operations job.",
 } as const;
 
 function result(value: ToolOutput) {
@@ -87,24 +73,15 @@ function noArgTool(
   );
 }
 
-function jobResult(value: unknown) {
-  const parsed = JobOutputSchema.parse(value);
-  return {
-    structuredContent: parsed,
-    content: [{ type: "text" as const, text: JSON.stringify(parsed) }],
-  };
-}
-
 export function createServer(
   ops: PhishtopiaOps,
-  jobs?: JobClient,
   cloudflare?: CloudflareDnsStatusClient,
 ): McpServer {
   const server = new McpServer(
-    { name: "phishtopia-ops-mcp", version: "0.3.0" },
+    { name: "phishtopia-ops-mcp", version: "0.4.0" },
     {
       instructions:
-        "Ten observer tools query fixed Phishtopia resources. Three job tools submit only typed allowlisted actions to an independently validating root worker. Outputs are bounded and sanitized; credentials, raw logs, user data, arbitrary commands, paths, URLs, SQL, and HTTP proxying are never exposed. The Cloudflare observer may read only the fixed DNS token and returns only strictly validated zone and record status.",
+        "Ten read-only observer tools query fixed Phishtopia resources. Outputs are bounded and sanitized; credentials, raw logs, user data, arbitrary commands, paths, URLs, SQL, write operations, and HTTP proxying are never exposed. The Cloudflare observer may read only the fixed DNS token and returns only strictly validated zone and record status. Mutating jobs are submitted only through the separately authenticated external controller.",
     },
   );
 
@@ -135,63 +112,6 @@ export function createServer(
     async ({ secret }) => {
       try {
         return result(await ops.getSecretMetadata(secret));
-      } catch (error) {
-        return unavailable(error);
-      }
-    },
-  );
-
-  server.registerTool(
-    "start_job",
-    {
-      title: "start allowlisted operations job",
-      description: TOOL_DEFINITIONS.start_job,
-      inputSchema: StartJobInputSchema,
-      outputSchema: JobOutputSchema,
-      annotations: MUTATING_JOB_ANNOTATIONS,
-    },
-    async (input) => {
-      try {
-        if (!jobs) throw new Error("worker_unavailable");
-        return jobResult(await jobs.start(StartJobInputSchema.parse(input)));
-      } catch (error) {
-        return unavailable(error);
-      }
-    },
-  );
-
-  server.registerTool(
-    "get_job_status",
-    {
-      title: "get operations job status",
-      description: TOOL_DEFINITIONS.get_job_status,
-      inputSchema: JobIdInputSchema,
-      outputSchema: JobOutputSchema,
-      annotations: READ_ONLY_ANNOTATIONS,
-    },
-    async ({ jobId }) => {
-      try {
-        if (!jobs) throw new Error("worker_unavailable");
-        return jobResult(await jobs.status(jobId));
-      } catch (error) {
-        return unavailable(error);
-      }
-    },
-  );
-
-  server.registerTool(
-    "cancel_job",
-    {
-      title: "cancel operations job",
-      description: TOOL_DEFINITIONS.cancel_job,
-      inputSchema: JobIdInputSchema,
-      outputSchema: JobOutputSchema,
-      annotations: MUTATING_JOB_ANNOTATIONS,
-    },
-    async ({ jobId }) => {
-      try {
-        if (!jobs) throw new Error("worker_unavailable");
-        return jobResult(await jobs.cancel(jobId));
       } catch (error) {
         return unavailable(error);
       }
