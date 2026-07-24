@@ -5,6 +5,7 @@ import unittest
 
 
 ROOT = pathlib.Path(__file__).resolve().parents[2]
+WORKFLOW = (ROOT / "../../.github/workflows/phishtopia-ops-controller.yml").resolve()
 
 
 class ExternalControllerActivationTests(unittest.TestCase):
@@ -12,7 +13,11 @@ class ExternalControllerActivationTests(unittest.TestCase):
         return (ROOT / relative).read_text(encoding="utf-8")
 
     def test_workflow_pins_non_secret_identity_values(self) -> None:
-        value = self.read("../../.github/workflows/phishtopia-ops-controller.yml")
+        if not WORKFLOW.is_file():
+            self.skipTest(
+                "repository-level workflow is intentionally outside the packaged Ops release"
+            )
+        value = WORKFLOW.read_text(encoding="utf-8")
         self.assertIn("github.event.issue.number == 43", value)
         self.assertIn("github.actor_id == '123998606'", value)
         self.assertIn("projects/107649778409/locations/global/workloadIdentityPools/github-phishtopia-ops/providers/phishtopia-ops", value)
