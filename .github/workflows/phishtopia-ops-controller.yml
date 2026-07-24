@@ -15,14 +15,14 @@ concurrency:
 
 jobs:
   controller:
-    if: github.repository == 'PhishyOne/Phishtopia.com' && vars.PHISHTOPIA_OPS_QUEUE_ISSUE != ''
+    if: github.repository == 'PhishyOne/Phishtopia.com' && github.event.issue.number == 43 && github.actor_id == '123998606'
     runs-on: ubuntu-latest
     timeout-minutes: 8
     defaults:
       run:
         working-directory: ops/phishtopia-ops-mcp
     env:
-      QUEUE_ISSUE: ${{ vars.PHISHTOPIA_OPS_QUEUE_ISSUE }}
+      QUEUE_ISSUE: '43'
       GH_TOKEN: ${{ github.token }}
     steps:
       - uses: actions/checkout@v4
@@ -34,8 +34,8 @@ jobs:
         if: steps.prepare.outputs.decision == 'accepted'
         uses: google-github-actions/auth@v3
         with:
-          workload_identity_provider: ${{ vars.PHISHTOPIA_OPS_WIF_PROVIDER }}
-          service_account: ${{ vars.PHISHTOPIA_OPS_CONTROLLER_SERVICE_ACCOUNT }}
+          workload_identity_provider: projects/107649778409/locations/global/workloadIdentityPools/github-phishtopia-ops/providers/phishtopia-ops
+          service_account: phishtopia-ops-controller@project-43a8be4b-69a7-4d52-805.iam.gserviceaccount.com
       - name: Install Google Cloud CLI
         id: setup
         if: steps.prepare.outputs.decision == 'accepted'
