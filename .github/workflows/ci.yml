@@ -60,7 +60,16 @@ jobs:
           npm test
           npm run smoke
       - name: Python worker tests
-        run: python3 -m unittest discover -s worker/test -p 'test_*.py' -v
+        run: |
+          set +e
+          python3 -m unittest discover -s worker/test -p 'test_*.py' -v >/tmp/worker-tests.log 2>&1
+          status=$?
+          set -e
+          if [ "$status" -ne 0 ]; then
+            tail -n 120 /tmp/worker-tests.log
+            exit "$status"
+          fi
+          cat /tmp/worker-tests.log
       - name: External controller tests
         run: python3 -m unittest discover -s controller/test -p 'test_*.py' -v
       - name: Compile external controller
