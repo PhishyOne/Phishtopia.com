@@ -127,6 +127,20 @@ test("YouList still requires authentication", async () => {
     assert.equal(response.headers.get("location"), "/auth/login");
 });
 
+test("YouList APIs require authentication", async () => {
+    const routes = [
+        "/youlist/api/search?q=alien",
+        "/youlist/api/item/movie/1",
+        "/youlist/api/list?page=1"
+    ];
+
+    for (const route of routes) {
+        const response = await request(route);
+        assert.equal(response.status, 302, `${route} should redirect to login`);
+        assert.equal(response.headers.get("location"), "/auth/login");
+    }
+});
+
 test("retired course and legacy routes return 404", async () => {
     const retiredRoutes = [
         "/player-int",
