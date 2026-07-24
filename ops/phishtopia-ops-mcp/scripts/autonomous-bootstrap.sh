@@ -36,7 +36,7 @@ capture_failure() {
     printf 'exit_status=%s\n' "$status"
     printf 'started_at=%s\n' "$started_at"
     printf 'captured_at=%s\n' "$(date -u '+%Y-%m-%d %H:%M:%S UTC')"
-    for unit in phishtopia-ops-tunnel-preflight.service phishtopia-ops-worker.service phishtopia-ops-mcp-tunnel.service; do
+    for unit in phishtopia-ops-tunnel-preflight.service phishtopia-ops-worker.service phishtopia-ops-mcp-tunnel.service phishtopia-ops-controller.service; do
       printf '\n[unit %s]\n' "$unit"
       systemctl show "$unit" --no-pager \
         --property=LoadState,ActiveState,SubState,Result,ExecMainCode,ExecMainStatus,NRestarts 2>&1 || true
@@ -85,9 +85,13 @@ compare_database() {
 verify_runtime() {
   systemctl is-active --quiet phishtopia-ops-worker.service
   systemctl is-active --quiet phishtopia-ops-mcp-tunnel.service
+  systemctl is-active --quiet phishtopia-ops-controller.service
   finalizer="$current/scripts/finalize-bootstrap.sh"
   [ -f "$finalizer" ] && [ ! -L "$finalizer" ] && [ -x "$finalizer" ]
   [ "$(stat -c '%U:%G:%a' "$finalizer")" = "root:root:755" ]
+  [ "$(stat -c '%U:%G:%a' /etc/systemd/system/phishtopia-ops-controller.service)" = "root:root:644" ]
+  [ "$(stat -c '%U:%G:%a' /etc/phishtopia-ops-controller.env)" = "root:root:600" ]
+  [ "$(sed -n '1p' /etc/phishtopia-ops-controller.env)" = 'PHISHTOPIA_OPS_QUEUE_ISSUE=43' ]
   "$runtime/node/bin/node" "$current/dist/smoke/protocol-smoke.js"
   /usr/bin/setpriv --reuid=phishtopia-mcp --regid=phishtopia-mcp --init-groups \
     --no-new-privs -- "$runtime/node/bin/node" "$current/dist/smoke/worker-contract-smoke.js"
@@ -111,16 +115,18 @@ stage=tunnel_preflight
 /bin/sh "$script_dir/tunnel-preflight.sh" "$script_dir/../systemd/phishtopia-ops-mcp-tunnel-launch"
 
 stage=installer
-/bin/sh "$script_dir/install-bootstrap.sh" "$release" "$artifact_digest"
+/bin/sh "$script_dir/install-bootstrap-with-controller.sh" "$release" "$artifact_digest"
 
 stage=staged_verification
-verify_runtime 
+verify_runtime
 
 stage=restart_verification
 systemctl restart phishtopia-ops-worker.service
 systemctl is-active --quiet phishtopia-ops-worker.service
 systemctl restart phishtopia-ops-mcp-tunnel.service
 systemctl is-active --quiet phishtopia-ops-mcp-tunnel.service
+systemctl restart phishtopia-ops-controller.service
+systemctl is-active --quiet phishtopia-ops-controller.service
 verify_runtime
 
 stage=finalization
