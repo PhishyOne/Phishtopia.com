@@ -1,4 +1,4 @@
-name: Dependency audit diagnostic
+name: Dependency lock refresh diagnostic
 
 on:
   pull_request:
@@ -8,8 +8,8 @@ permissions:
   contents: read
 
 jobs:
-  audit-report:
-    name: Capture npm audit report
+  lock-refresh:
+    name: Generate EJS 6 lock refresh
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
@@ -19,18 +19,15 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
-      - name: Capture production dependency audit
-        run: |
-          set +e
-          npm audit --omit=dev --json > npm-audit.json
-          status=$?
-          set -e
-          printf '%s\n' "$status" > npm-audit-status.txt
+      - name: Generate exact EJS 6.0.1 dependency files
+        run: npm install --package-lock-only --ignore-scripts --save-prefix='^' ejs@6.0.1
+      - name: Verify production dependency audit
+        run: npm audit --omit=dev --audit-level=moderate
       - uses: actions/upload-artifact@v4
         with:
-          name: npm-audit-report
+          name: ejs-6-lock-refresh
           path: |
-            npm-audit.json
-            npm-audit-status.txt
+            package.json
+            package-lock.json
           if-no-files-found: error
           retention-days: 1
