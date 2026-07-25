@@ -82,8 +82,14 @@ function buildCloudflareReportText(report) {
     ].join("\n");
 }
 
-export async function sendVerificationEmail({ email, verificationToken }) {
+function verificationExpiryText(expiresAt) {
+    if (!Number.isSafeInteger(expiresAt)) return "";
+    return `This link expires at ${new Date(expiresAt).toUTCString()}.`;
+}
+
+export async function sendVerificationEmail({ email, verificationToken, expiresAt }) {
     const verifyUrl = `${getAppBaseUrl()}/auth/verify-email?token=${verificationToken}`;
+    const expiryText = verificationExpiryText(expiresAt);
 
     if (process.env.SEND_EMAIL === "false") {
         console.log("Email sending disabled. Verification link:", verifyUrl);
@@ -96,8 +102,17 @@ export async function sendVerificationEmail({ email, verificationToken }) {
     await transporter.sendMail({
         from: `"Phishtopia" <${process.env.EMAIL_USER}>`,
         to: email,
-        subject: "Verify your email",
-        html: `<p>Click the link to verify your email:</p><a href="${verifyUrl}">${verifyUrl}</a>`
+        subject: "Verify your Phishtopia email",
+        text: [
+            "Verify your Phishtopia email by opening this link:",
+            verifyUrl,
+            expiryText
+        ].filter(Boolean).join("\n\n"),
+        html: [
+            "<p>Verify your Phishtopia email by opening this link:</p>",
+            `<p><a href="${verifyUrl}">${verifyUrl}</a></p>`,
+            expiryText ? `<p>${expiryText}</p>` : ""
+        ].join("")
     });
 
     return { sent: true, verifyUrl };

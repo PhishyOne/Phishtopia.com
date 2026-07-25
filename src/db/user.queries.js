@@ -25,13 +25,41 @@ export async function findUserByUsername(username, executor = db) {
 export async function findUserByUsernameOrEmail({ username, email }, executor = db) {
     const result = await executor.query(
         `
-        SELECT username, email
+        SELECT id, username, email, email_verified
         FROM public.users
         WHERE LOWER(username) = LOWER($1)
            OR LOWER(email) = LOWER($2)
         LIMIT 1
         `,
         [username, email]
+    );
+
+    return result.rows[0] || null;
+}
+
+export async function findUserByEmail(email, executor = db) {
+    const result = await executor.query(
+        `
+        SELECT id, email, email_verified
+        FROM public.users
+        WHERE LOWER(email) = LOWER($1)
+        LIMIT 1
+        `,
+        [email]
+    );
+
+    return result.rows[0] || null;
+}
+
+export async function updateUserVerificationToken({ userId, verificationToken }, executor = db) {
+    const result = await executor.query(
+        `
+        UPDATE public.users
+        SET verify_token = $1
+        WHERE id = $2 AND email_verified = false
+        RETURNING id
+        `,
+        [verificationToken, userId]
     );
 
     return result.rows[0] || null;

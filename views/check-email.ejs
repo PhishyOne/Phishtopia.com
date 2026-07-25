@@ -3,7 +3,8 @@
 <main class="container auth-page">
     <h2>Check your email</h2>
 
-    <p>We created your account for <strong><%= email %></strong>.</p>
+    <p>We sent a verification link to <strong><%= email %></strong>.</p>
+    <p>The link expires after 24 hours and can only be used once.</p>
 
     <% const showDevVerifyLink = typeof emailSent !== "undefined" && emailSent === false && typeof verifyUrl !== "undefined" && verifyUrl; %>
 
@@ -14,9 +15,10 @@
             <p style="word-break: break-all;"><code><%= verifyUrl %></code></p>
         </div>
     <% } else { %>
-        <p>Please check your inbox for the verification link before logging in.</p>
+        <p>Please check your inbox and spam folder before logging in.</p>
     <% } %>
 
+    <p>Need another link? <a href="/auth/resend-verification">Resend the verification email</a>.</p>
     <p><a href="/auth/login">Back to login</a></p>
 </main>
 

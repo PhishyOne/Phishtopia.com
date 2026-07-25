@@ -1,0 +1,35 @@
+<%- include('partials/header', { title: 'Resend verification email' }) %>
+
+<main class="container auth-page">
+    <h2>Resend verification email</h2>
+
+    <% if (error) { %>
+        <div class="alert alert-danger"><%= error %></div>
+    <% } %>
+
+    <% if (message) { %>
+        <div class="alert alert-info"><%= message %></div>
+    <% } %>
+
+    <p>Enter the email address used during registration.</p>
+
+    <form action="/auth/resend-verification" method="POST">
+        <div>
+            <label for="verification-email" class="form-label">Email</label>
+            <input
+                type="email"
+                autocomplete="email"
+                id="verification-email"
+                name="email"
+                class="textbox"
+                value="<%= email %>"
+                required
+            >
+        </div>
+        <button class="btn" type="submit">Send new verification link</button>
+    </form>
+
+    <p><a href="/auth/login">Back to login</a></p>
+</main>
+
+<%- include('partials/footer', { extraScripts: [] }) %>
