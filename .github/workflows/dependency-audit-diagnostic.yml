@@ -5,15 +5,17 @@ on:
     branches: [main]
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   lock-refresh:
-    name: Generate EJS 6 lock refresh
+    name: Commit EJS 6 lock refresh
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.head_ref }}
       - uses: actions/setup-node@v4
         with:
           node-version: 22
@@ -23,11 +25,17 @@ jobs:
         run: npm install --package-lock-only --ignore-scripts --save-prefix='^' ejs@6.0.1
       - name: Verify production dependency audit
         run: npm audit --omit=dev --audit-level=moderate
-      - uses: actions/upload-artifact@v4
-        with:
-          name: ejs-6-lock-refresh
-          path: |
-            package.json
-            package-lock.json
-          if-no-files-found: error
-          retention-days: 1
+      - name: Commit generated dependency files
+        env:
+          TARGET_BRANCH: ${{ github.head_ref }}
+        run: |
+          set -eu
+          git add package.json package-lock.json
+          if git diff --cached --quiet; then
+            echo 'dependency_files_already_current=true'
+            exit 0
+          fi
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git commit -m 'Upgrade EJS to remove vulnerable dependency chain'
+          git push origin "HEAD:$TARGET_BRANCH"
