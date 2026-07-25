@@ -42,6 +42,22 @@ export function safeInternalRedirect(value, fallback = "/") {
     }
 }
 
+export function safePostLoginRedirect(value, fallback = "/") {
+    const redirect = safeInternalRedirect(value, fallback);
+    if (typeof redirect !== "string") return fallback;
+
+    try {
+        const pathname = new URL(redirect, DEFAULT_SITE_URL).pathname;
+        if (pathname === "/auth" || pathname.startsWith("/auth/")) {
+            return fallback;
+        }
+    } catch {
+        return fallback;
+    }
+
+    return redirect;
+}
+
 export function safeSameSiteReferer(value, fallback = "/") {
     if (typeof value !== "string" || !value.trim()) return fallback;
 
