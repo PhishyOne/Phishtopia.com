@@ -1,15 +1,21 @@
 import bcrypt from "bcryptjs";
-import crypto from "crypto";
 import db from "../db/pool.js";
 import {
     createUser,
+    findUserByEmail,
     findUserByUsername,
     findUserByUsernameOrEmail,
+    updateUserVerificationToken,
     verifyUserEmailByToken
 } from "../db/user.queries.js";
+import {
+    createEmailVerificationToken,
+    inspectEmailVerificationToken
+} from "../security/emailVerificationToken.js";
 import { sendVerificationEmail } from "./email.service.js";
 
 const SALT_ROUNDS = 10;
+const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 function normalizeRegisterInput({ username, password, confirmPassword, email }) {
     return {
@@ -29,7 +35,7 @@ function buildRegisterValidationError({ username, password, confirmPassword, ema
         return "Username must be at least 3 characters";
     }
 
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    if (!EMAIL_PATTERN.test(email)) {
         return "Enter a valid email address";
     }
 
@@ -58,7 +64,15 @@ function duplicateUserMessage(err) {
     return "Already exists";
 }
 
-export async function registerUser(input) {
+function makeVerificationToken(dependencies) {
+    const options = {};
+    if (dependencies.now !== undefined) options.now = dependencies.now;
+    if (dependencies.randomBytes !== undefined) options.randomBytes = dependencies.randomBytes;
+    if (dependencies.tokenTtlMs !== undefined) options.ttlMs = dependencies.tokenTtlMs;
+    return createEmailVerificationToken(options);
+}
+
+export async function registerUser(input, dependencies = {}) {
     const values = normalizeRegisterInput(input);
     const validationError = buildRegisterValidationError(values);
 
@@ -66,7 +80,8 @@ export async function registerUser(input) {
         return { ok: false, status: 400, error: validationError, values };
     }
 
-    const existingUser = await findUserByUsernameOrEmail(values);
+    const findExistingUser = dependencies.findExistingUser || findUserByUsernameOrEmail;
+    const existingUser = await findExistingUser(values);
     if (existingUser) {
         const sameUsername = existingUser.username?.toLowerCase() === values.username.toLowerCase();
         return {
@@ -77,23 +92,28 @@ export async function registerUser(input) {
         };
     }
 
-    const verificationToken = crypto.randomBytes(32).toString("hex");
-    const passwordHash = await bcrypt.hash(values.password, SALT_ROUNDS);
-    const client = await db.connect();
+    const { token: verificationToken, expiresAt } = makeVerificationToken(dependencies);
+    const hashPassword = dependencies.hashPassword || (password => bcrypt.hash(password, SALT_ROUNDS));
+    const passwordHash = await hashPassword(values.password);
+    const connectDb = dependencies.connectDb || (() => db.connect());
+    const createUserRecord = dependencies.createUserRecord || createUser;
+    const sendEmail = dependencies.sendEmail || sendVerificationEmail;
+    const client = await connectDb();
 
     try {
         await client.query("BEGIN");
 
-        await createUser({
+        await createUserRecord({
             username: values.username,
             passwordHash,
             email: values.email,
             verificationToken
         }, client);
 
-        const emailResult = await sendVerificationEmail({
+        const emailResult = await sendEmail({
             email: values.email,
-            verificationToken
+            verificationToken,
+            expiresAt
         });
 
         await client.query("COMMIT");
@@ -102,7 +122,8 @@ export async function registerUser(input) {
             ok: true,
             email: values.email,
             verifyUrl: emailResult.verifyUrl,
-            emailSent: emailResult.sent
+            emailSent: emailResult.sent,
+            verificationExpiresAt: expiresAt
         };
     } catch (err) {
         await client.query("ROLLBACK").catch(() => null);
@@ -112,6 +133,57 @@ export async function registerUser(input) {
             return { ok: false, status: 409, error: duplicateMessage, values };
         }
 
+        throw err;
+    } finally {
+        client.release();
+    }
+}
+
+export async function resendVerificationEmail(input, dependencies = {}) {
+    const email = input?.email?.trim().toLowerCase() || "";
+    if (!EMAIL_PATTERN.test(email)) {
+        return { ok: false, status: 400, error: "Enter a valid email address", email };
+    }
+
+    const findByEmail = dependencies.findByEmail || findUserByEmail;
+    const user = await findByEmail(email);
+
+    // Keep the public response generic so this endpoint cannot enumerate accounts.
+    if (!user || user.email_verified) {
+        return { ok: true, email, sent: false };
+    }
+
+    const { token: verificationToken, expiresAt } = makeVerificationToken(dependencies);
+    const connectDb = dependencies.connectDb || (() => db.connect());
+    const updateVerificationToken = dependencies.updateVerificationToken || updateUserVerificationToken;
+    const sendEmail = dependencies.sendEmail || sendVerificationEmail;
+    const client = await connectDb();
+
+    try {
+        await client.query("BEGIN");
+        const updated = await updateVerificationToken({
+            userId: user.id,
+            verificationToken
+        }, client);
+
+        let emailResult = { sent: false };
+        if (updated) {
+            emailResult = await sendEmail({
+                email: user.email,
+                verificationToken,
+                expiresAt
+            });
+        }
+
+        await client.query("COMMIT");
+        return {
+            ok: true,
+            email,
+            sent: Boolean(updated && emailResult.sent),
+            verificationExpiresAt: updated ? expiresAt : null
+        };
+    } catch (err) {
+        await client.query("ROLLBACK").catch(() => null);
         throw err;
     } finally {
         client.release();
@@ -138,15 +210,41 @@ export async function authenticateUser({ username, password }) {
     };
 }
 
-export async function verifyEmailToken(token) {
-    if (!token) {
-        return { ok: false, message: "Invalid token" };
+export async function verifyEmailToken(token, dependencies = {}) {
+    const normalizedToken = typeof token === "string" ? token.trim() : "";
+    const tokenState = inspectEmailVerificationToken(normalizedToken, {
+        now: dependencies.now === undefined ? Date.now : dependencies.now
+    });
+
+    if (!tokenState.ok) {
+        if (tokenState.reason === "expired") {
+            return {
+                ok: false,
+                status: 410,
+                message: "Verification link has expired. Request a new verification email."
+            };
+        }
+
+        return {
+            ok: false,
+            status: 400,
+            message: "Verification link is invalid."
+        };
     }
 
-    const verifiedUser = await verifyUserEmailByToken(token);
+    const verifyByToken = dependencies.verifyByToken || verifyUserEmailByToken;
+    const verifiedUser = await verifyByToken(normalizedToken);
     if (!verifiedUser) {
-        return { ok: false, message: "Token invalid or expired" };
+        return {
+            ok: false,
+            status: 400,
+            message: "Verification link is invalid or has already been used."
+        };
     }
 
-    return { ok: true, message: "Email verified! You can now log in." };
+    return {
+        ok: true,
+        status: 200,
+        message: "Email verified! You can now log in."
+    };
 }
