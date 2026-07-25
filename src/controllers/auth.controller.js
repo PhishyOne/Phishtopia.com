@@ -9,7 +9,7 @@ import {
     establishAuthenticatedSession
 } from "../services/session.service.js";
 import {
-    safeInternalRedirect,
+    safePostLoginRedirect,
     safeSameSiteReferer
 } from "../utils/redirects.js";
 
@@ -78,7 +78,7 @@ export function showRegister(req, res) {
 
 export function showLogin(req, res) {
     if (req.query.returnTo) {
-        const returnTo = safeInternalRedirect(req.query.returnTo, null);
+        const returnTo = safePostLoginRedirect(req.query.returnTo, null);
         if (returnTo) req.session.returnTo = returnTo;
         else delete req.session.returnTo;
     }
@@ -190,7 +190,7 @@ export async function login(req, res) {
             });
         }
 
-        const redirectTo = safeInternalRedirect(req.session.returnTo, "/");
+        const redirectTo = safePostLoginRedirect(req.session.returnTo, "/");
         await establishAuthenticatedSession(req, result.user);
 
         return res.redirect(redirectTo);
