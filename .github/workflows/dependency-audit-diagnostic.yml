@@ -1,0 +1,36 @@
+name: Dependency audit diagnostic
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  audit-report:
+    name: Capture npm audit report
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Capture production dependency audit
+        run: |
+          set +e
+          npm audit --omit=dev --json > npm-audit.json
+          status=$?
+          set -e
+          printf '%s\n' "$status" > npm-audit-status.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: npm-audit-report
+          path: |
+            npm-audit.json
+            npm-audit-status.txt
+          if-no-files-found: error
+          retention-days: 1
