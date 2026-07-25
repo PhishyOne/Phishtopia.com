@@ -37,6 +37,20 @@ export async function findUserByUsernameOrEmail({ username, email }, executor = 
     return result.rows[0] || null;
 }
 
+export async function findUserByEmail(email, executor = db) {
+    const result = await executor.query(
+        `
+        SELECT id, email, email_verified
+        FROM public.users
+        WHERE LOWER(email) = LOWER($1)
+        LIMIT 1
+        `,
+        [email]
+    );
+
+    return result.rows[0] || null;
+}
+
 export async function updateUserVerificationToken({ userId, verificationToken }, executor = db) {
     const result = await executor.query(
         `
