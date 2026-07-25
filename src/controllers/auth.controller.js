@@ -1,4 +1,9 @@
-import { authenticateUser, registerUser, verifyEmailToken } from "../services/auth.service.js";
+import {
+    authenticateUser,
+    registerUser,
+    resendVerificationEmail,
+    verifyEmailToken
+} from "../services/auth.service.js";
 import {
     destroySession,
     establishAuthenticatedSession
@@ -10,6 +15,7 @@ import {
 
 const LOG_AUTH_EVENTS = process.env.LOG_AUTH_EVENTS === "true";
 const LOCAL_DB_MESSAGE = "This action is unavailable in the local preview because no database is configured.";
+const GENERIC_RESEND_MESSAGE = "If an unverified account exists for that address, a new verification email has been sent.";
 
 function isLocalDatabaseUnavailable(error) {
     return process.env.NODE_ENV !== "production" && error?.code === "DB_CONFIG_MISSING";
@@ -49,6 +55,23 @@ function renderLogin(res, {
     });
 }
 
+function renderResendVerification(res, {
+    error = null,
+    message = null,
+    email = "",
+    status = 200
+} = {}) {
+    return res.status(status).render("resend-verification", {
+        title: "Resend verification email",
+        bodyClass: "auth",
+        extraStyles: [],
+        extraScripts: [],
+        error,
+        message,
+        email
+    });
+}
+
 export function showRegister(req, res) {
     return renderRegister(res);
 }
@@ -63,18 +86,29 @@ export function showLogin(req, res) {
     return renderLogin(res);
 }
 
-export async function verifyEmail(req, res) {
-    try {
-        const result = await verifyEmailToken(req.query.token);
-        return res.send(result.message);
-    } catch (err) {
-        console.error(err);
-        if (isLocalDatabaseUnavailable(err)) {
-            return res.status(503).send(LOCAL_DB_MESSAGE);
-        }
-        return res.status(500).send("Server error");
-    }
+export function showResendVerification(req, res) {
+    return renderResendVerification(res);
 }
+
+export function createVerifyEmailHandler({ verifyToken = verifyEmailToken } = {}) {
+    return async function verifyEmailHandler(req, res) {
+        res.set("Cache-Control", "no-store");
+        res.set("Referrer-Policy", "no-referrer");
+
+        try {
+            const result = await verifyToken(req.query.token);
+            return res.status(result.status).type("text/plain").send(result.message);
+        } catch (err) {
+            console.error(err);
+            if (isLocalDatabaseUnavailable(err)) {
+                return res.status(503).type("text/plain").send(LOCAL_DB_MESSAGE);
+            }
+            return res.status(500).type("text/plain").send("Server error");
+        }
+    };
+}
+
+export const verifyEmail = createVerifyEmailHandler();
 
 export async function register(req, res) {
     const { username, password, email } = req.body;
@@ -85,6 +119,7 @@ export async function register(req, res) {
 
         if (!result.ok) {
             return renderRegister(res, {
+                status: result.status || 400,
                 error: result.error,
                 username: result.values?.username || username,
                 email: result.values?.email || email
@@ -94,7 +129,8 @@ export async function register(req, res) {
         return res.render("check-email", {
             email: result.email,
             verifyUrl: result.verifyUrl,
-            emailSent: result.emailSent
+            emailSent: result.emailSent,
+            verificationExpiresAt: result.verificationExpiresAt
         });
     } catch (err) {
         console.error(err);
@@ -103,6 +139,36 @@ export async function register(req, res) {
                 status: 503,
                 error: LOCAL_DB_MESSAGE,
                 username,
+                email
+            });
+        }
+        return res.status(500).send("Server error");
+    }
+}
+
+export async function resendVerification(req, res) {
+    const email = req.body.email;
+
+    try {
+        const result = await resendVerificationEmail({ email });
+        if (!result.ok) {
+            return renderResendVerification(res, {
+                status: result.status || 400,
+                error: result.error,
+                email: result.email || email
+            });
+        }
+
+        return renderResendVerification(res, {
+            message: GENERIC_RESEND_MESSAGE,
+            email: ""
+        });
+    } catch (err) {
+        console.error(err);
+        if (isLocalDatabaseUnavailable(err)) {
+            return renderResendVerification(res, {
+                status: 503,
+                error: LOCAL_DB_MESSAGE,
                 email
             });
         }
