@@ -28,7 +28,10 @@ export function renderYouListPage(req, res) {
     noStore(res);
     res.render("project34", {
         bodyClass: "project34",
-        extraStyles: ["/project34/styles/main.css"],
+        extraStyles: [
+            "/project34/styles/main.css",
+            "/styles/youlist-mobile.css"
+        ],
         extraScripts: ["/js/canvas.js", "/js/youlist.js"],
         user: req.session.user || null,
         csrfToken: res.locals.csrfToken,
