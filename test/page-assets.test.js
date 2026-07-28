@@ -21,6 +21,12 @@ const EXPECTED_PAGES = {
         styles: [],
         scripts: []
     },
+    archive: {
+        title: "Course Project Archive",
+        bodyClass: "archive-page",
+        styles: ["/styles/archive.css"],
+        scripts: ["/js/canvas.js"]
+    },
     login: {
         title: "Login",
         bodyClass: "auth",
@@ -104,6 +110,7 @@ test("routes and controllers use page definitions instead of scattered asset arr
 test("active templates do not override page metadata or asset declarations", async () => {
     const templates = [
         "views/index.ejs",
+        "views/archive.ejs",
         "views/contact.ejs",
         "views/login.ejs",
         "views/register.ejs",
@@ -174,6 +181,7 @@ async function assertRenderedPage(path, pageName) {
 
 test("public routes render the titles, body classes, and assets from page definitions", async () => {
     await assertRenderedPage("/", "home");
+    await assertRenderedPage("/archive", "archive");
     await assertRenderedPage("/contact", "contact");
     await assertRenderedPage("/auth/login", "login");
     await assertRenderedPage("/auth/register", "register");
