@@ -1,0 +1,59 @@
+<%- include('../partials/header', { title: 'YouList - Movies' }) %>
+
+  <main class="youlist-container"
+    data-current-user-id="<%= user?.id || '' %>"
+    data-csrf-token="<%= csrfToken %>">
+    <section class="hero-section gradient-background">
+      <h1 class="gradient-text">YouList - Movies</h1>
+    </section>
+
+    <section class="search-sort-bar">
+      <form class="search-form" onsubmit="return false;">
+        <div class="search-wrapper">
+          <input type="text" name="search" maxlength="100" autocomplete="off"
+            placeholder="Search movies..." class="search-input">
+          <button type="button" name="button" class="clear-input" aria-label="Clear search">×</button>
+        </div>
+      </form>
+    </section>
+
+    <section class="movielist-section temporary movie-card" id="temp-card" style="display:none;">
+      <div class="movie-poster">
+        <img id="temp-poster" src="/images/youlist-placeholder.jpg" alt="Movie poster placeholder">
+      </div>
+      <div class="Details">
+        <div class="Title">
+          <h2 id="temp-title">Movie Title</h2>
+        </div>
+        <div class="Director">
+          <h3 id="temp-director">Director: N/A</h3>
+        </div>
+        <div class="ReleaseYear">
+          <h3 id="temp-year">Year: N/A</h3>
+        </div>
+        <div class="Genre">
+          <h3 id="temp-genre">Genre: N/A</h3>
+        </div>
+        <div class="Cast">
+          <h3 id="temp-cast">Stars: N/A</h3>
+        </div>
+        <div class="CommentsSection">
+          <textarea id="temp-comment" class="user-comment" aria-label="Movie comment"
+            maxlength="1000" placeholder="Add your comment..."></textarea>
+          <div class="comment-buttons">
+            <button type="button" id="submit-comment">Submit</button>
+            <button type="button" id="cancel-comment">Cancel</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="movie-list" class="movie-list-grid" aria-live="polite"></section>
+
+    <div class="pagination">
+      <button type="button" id="prev-page">Prev</button>
+      <button type="button" id="next-page" disabled>Next</button>
+    </div>
+  </main>
+
+  <%- include('../partials/footer') %>
