@@ -2,6 +2,8 @@ import express from "express";
 import axios from "axios";
 import { parse } from "csv-parse/sync";
 
+import { pageLocals } from "../config/pageAssets.js";
+
 const router = express.Router();
 
 function getColor(count, maxCount) {
@@ -36,7 +38,7 @@ function topN(items, n) {
 }
 
 function renderEchoTrace(res, options = {}) {
-    return res.render("echotrace/index", {
+    return res.render("echotrace/index", pageLocals("echotrace", {
         error: options.error ?? null,
         playerName: options.playerName ?? null,
         topRegions: options.topRegions ?? [],
@@ -44,11 +46,8 @@ function renderEchoTrace(res, options = {}) {
         startDate: options.startDate ?? null,
         endDate: options.endDate ?? null,
         killSelected: options.killSelected ?? true,
-        deathSelected: options.deathSelected ?? true,
-        extraStyles: ["/styles/echotrace.css"],
-        extraScripts: ["/js/echotrace-logo.js", "/js/echotrace.js"],
-        bodyClass: "player-int"
-    });
+        deathSelected: options.deathSelected ?? true
+    }));
 }
 
 async function fetchAllPagesParallel(baseUrl) {

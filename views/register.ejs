@@ -1,4 +1,4 @@
-<%- include('partials/header', { title: 'Register' }) %>
+<%- include('partials/header') %>
 
     <div class="container">
         <h2>Register</h2>
@@ -51,4 +51,4 @@
                 <div class="alert alert-danger" id="error-box" style="display:none;"></div>
                 <p class="h3">Already have an account? <a href="/auth/login">Login</a></p>
     </div>
-    <%- include('partials/footer', { extraScripts: ["/js/register.js", "/js/auth.js"] }) %>
+    <%- include('partials/footer') %>

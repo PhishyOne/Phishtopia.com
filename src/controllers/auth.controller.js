@@ -1,3 +1,4 @@
+import { pageLocals } from "../config/pageAssets.js";
 import {
     authenticateUser,
     registerUser,
@@ -27,16 +28,12 @@ function renderRegister(res, {
     email = "",
     status = 200
 } = {}) {
-    return res.status(status).render("register", {
-        title: "Register",
-        bodyClass: "register",
-        extraStyles: [],
-        extraScripts: [],
+    return res.status(status).render("register", pageLocals("register", {
         error,
         username,
         email,
         password: ""
-    });
+    }));
 }
 
 function renderLogin(res, {
@@ -44,15 +41,11 @@ function renderLogin(res, {
     username = "",
     status = 200
 } = {}) {
-    return res.status(status).render("login", {
-        title: "Login",
-        bodyClass: "auth",
-        extraStyles: [],
-        extraScripts: [],
+    return res.status(status).render("login", pageLocals("login", {
         error,
         username,
         password: ""
-    });
+    }));
 }
 
 function renderResendVerification(res, {
@@ -61,15 +54,11 @@ function renderResendVerification(res, {
     email = "",
     status = 200
 } = {}) {
-    return res.status(status).render("resend-verification", {
-        title: "Resend verification email",
-        bodyClass: "auth",
-        extraStyles: [],
-        extraScripts: [],
+    return res.status(status).render("resend-verification", pageLocals("resendVerification", {
         error,
         message,
         email
-    });
+    }));
 }
 
 export function showRegister(req, res) {
@@ -126,12 +115,12 @@ export async function register(req, res) {
             });
         }
 
-        return res.render("check-email", {
+        return res.render("check-email", pageLocals("checkEmail", {
             email: result.email,
             verifyUrl: result.verifyUrl,
             emailSent: result.emailSent,
             verificationExpiresAt: result.verificationExpiresAt
-        });
+        }));
     } catch (err) {
         console.error(err);
         if (isLocalDatabaseUnavailable(err)) {
