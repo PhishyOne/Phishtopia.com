@@ -10,6 +10,10 @@
             <% } %>
 
                 <form action="/auth/login" method="POST">
+                    <% if (returnTo) { %>
+                        <input type="hidden" name="returnTo" value="<%= returnTo %>">
+                    <% } %>
+
                     <div>
                         <label for="username-tb" class="form-label">Username</label>
                         <input type="text" autocomplete="username" id="username-tb" name="username" class="textbox" required>
