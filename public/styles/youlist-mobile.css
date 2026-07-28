@@ -1,0 +1,59 @@
+/* Mobile layout corrections for YouList cards. */
+@media (max-width: 768px) {
+    .youlist-container .movielist-section {
+        grid-template-columns: 96px minmax(0, 1fr);
+        grid-template-areas: none;
+        align-items: start;
+        gap: 0.75rem;
+        padding: 0.85rem;
+        text-align: left;
+    }
+
+    .youlist-container .movie-poster {
+        width: 96px;
+        max-width: 96px;
+        margin: 0;
+        align-self: start;
+    }
+
+    .youlist-container .movie-poster img {
+        width: 100%;
+        aspect-ratio: 2 / 3;
+        object-fit: cover;
+    }
+
+    .youlist-container .Details {
+        min-width: 0;
+        align-items: stretch;
+        gap: 0.35rem;
+    }
+
+    .youlist-container .Title h2 {
+        font-size: 1.15rem;
+        line-height: 1.2;
+    }
+
+    .youlist-container .Director,
+    .youlist-container .ReleaseYear,
+    .youlist-container .Genre,
+    .youlist-container .Cast {
+        font-size: 0.9rem;
+    }
+
+    .youlist-container .comment-buttons {
+        justify-content: flex-start;
+    }
+}
+
+@media (max-width: 360px) {
+    .youlist-container .movielist-section {
+        grid-template-columns: 82px minmax(0, 1fr);
+        gap: 0.65rem;
+        padding: 0.7rem;
+    }
+
+    .youlist-container .movie-poster {
+        width: 82px;
+        max-width: 82px;
+    }
+}
