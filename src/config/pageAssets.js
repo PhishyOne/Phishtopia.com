@@ -17,6 +17,12 @@ export const PAGE_DEFINITIONS = Object.freeze({
         title: "Contact Me",
         bodyClass: "contact"
     }),
+    archive: definePage({
+        title: "Course Project Archive",
+        bodyClass: "archive-page",
+        styles: ["/styles/archive.css"],
+        scripts: ["/js/canvas.js"]
+    }),
     login: definePage({
         title: "Login",
         bodyClass: "auth",
