@@ -2,7 +2,7 @@
 
 The original App Brewery course projects are no longer part of the active Phishtopia runtime. Their complete pre-cleanup source and assets are preserved on [`archive/course-projects-2026-07-28`](https://github.com/PhishyOne/Phishtopia.com/tree/archive/course-projects-2026-07-28).
 
-This document preserves the titles, descriptions, screenshots, original routes, and source locations that were recorded by the former course-progress page. Screenshots below are loaded directly from the archive branch rather than copied back into the production tree.
+This document preserves the titles, descriptions, screenshots, original routes, and source locations recorded by the former course-progress page. Screenshots are loaded directly from the archive branch rather than copied into the production tree.
 
 ## Back-end projects
 
@@ -12,7 +12,7 @@ This document preserves the titles, descriptions, screenshots, original routes, 
 
 This project took me a while to complete, but I'm proud of the result! Here, users can search for tv shows and movies and add their comments to a shared list. This was a capstone project, tying together external api integration, database management, and user authentication (which I'll be learning about next chapter).
 
-[View screenshot](https://github.com/PhishyOne/Phishtopia.com/blob/archive/course-projects-2026-07-28/public/project34/images/preview.png?raw=1) · [View archived source](https://github.com/PhishyOne/Phishtopia.com/tree/archive/course-projects-2026-07-28/app-brewery-server)
+[View screenshot](https://github.com/PhishyOne/Phishtopia.com/blob/archive/course-projects-2026-07-28/app-brewery-server/public/project34/images/preview.png?raw=1) · [View archived source](https://github.com/PhishyOne/Phishtopia.com/tree/archive/course-projects-2026-07-28/app-brewery-server)
 
 ### Chapter 33-3 - To Do List
 
@@ -20,7 +20,7 @@ This project took me a while to complete, but I'm proud of the result! Here, use
 
 For my next trick, I used each method of CRUD (Create, Read, Update, Delete) to make a simple to do list that will not erase after a refresh. This list is stored in a PostgreSQL database, so have fun and add as many (shared) items as you'd like.
 
-[View screenshot](https://github.com/PhishyOne/Phishtopia.com/blob/archive/course-projects-2026-07-28/views/project33-3/preview.png?raw=1) · [View archived source](https://github.com/PhishyOne/Phishtopia.com/tree/archive/course-projects-2026-07-28/app-brewery-server)
+[View screenshot](https://github.com/PhishyOne/Phishtopia.com/blob/archive/course-projects-2026-07-28/app-brewery-server/public/project33-3/preview.png?raw=1) · [View archived source](https://github.com/PhishyOne/Phishtopia.com/tree/archive/course-projects-2026-07-28/app-brewery-server)
 
 ### Chapter 33-2 - Family Travel Tracker
 
@@ -28,7 +28,7 @@ For my next trick, I used each method of CRUD (Create, Read, Update, Delete) to 
 
 This was just an extension of the previous project, allowing multiple users to track their travels.
 
-[View screenshot](https://github.com/PhishyOne/Phishtopia.com/blob/archive/course-projects-2026-07-28/views/project33-2/preview.png?raw=1) · [View archived source](https://github.com/PhishyOne/Phishtopia.com/tree/archive/course-projects-2026-07-28/app-brewery-server)
+[View screenshot](https://github.com/PhishyOne/Phishtopia.com/blob/archive/course-projects-2026-07-28/app-brewery-server/public/project33-2/preview.png?raw=1) · [View archived source](https://github.com/PhishyOne/Phishtopia.com/tree/archive/course-projects-2026-07-28/app-brewery-server)
 
 ### Chapter 33-1 - Travel Tracker
 
@@ -36,7 +36,7 @@ This was just an extension of the previous project, allowing multiple users to t
 
 This was a pretty neat project for a user to track their travels around the world. I demonstrate my ability to access a database to send and receive data. I also went the extra mile and added a clear button for the map and autocomplete for the input box.
 
-[View screenshot](https://github.com/PhishyOne/Phishtopia.com/blob/archive/course-projects-2026-07-28/views/project33-1/preview.png?raw=1) · [View archived source](https://github.com/PhishyOne/Phishtopia.com/tree/archive/course-projects-2026-07-28/app-brewery-server)
+[View screenshot](https://github.com/PhishyOne/Phishtopia.com/blob/archive/course-projects-2026-07-28/app-brewery-server/public/project33-1/preview.png?raw=1) · [View archived source](https://github.com/PhishyOne/Phishtopia.com/tree/archive/course-projects-2026-07-28/app-brewery-server)
 
 ### Chapter 30 - Blog API
 
@@ -44,7 +44,7 @@ This was a pretty neat project for a user to track their travels around the worl
 
 Here, I create a server to allow users to look at, add, modify, or delete blog posts. Once again, the hardest part of this project was integrating it into this server as a router after it was originally completed.
 
-[View screenshot](https://github.com/PhishyOne/Phishtopia.com/blob/archive/course-projects-2026-07-28/views/project30/preview.png?raw=1) · [View archived source](https://github.com/PhishyOne/Phishtopia.com/tree/archive/course-projects-2026-07-28/app-brewery-server)
+[View screenshot](https://github.com/PhishyOne/Phishtopia.com/blob/archive/course-projects-2026-07-28/app-brewery-server/public/project30/preview.png?raw=1) · [View archived source](https://github.com/PhishyOne/Phishtopia.com/tree/archive/course-projects-2026-07-28/app-brewery-server)
 
 ### Chapter 29 - Capstone Project - Eve Echoes PlayInt
 
@@ -52,7 +52,7 @@ Here, I create a server to allow users to look at, add, modify, or delete blog p
 
 Now I get to have some fun! I constructed an Eve Echoes intelligence-gathering web application using the public API provided by echoes.mobi. The user enters a player's name and the application retrieves timestamps and locations from kill/loss-mails. This data is then processed and displayed as places and times most likely to find the player.
 
-[View screenshot](https://github.com/PhishyOne/Phishtopia.com/blob/archive/course-projects-2026-07-28/views/project29/images/preview.png?raw=1) · [View archived source](https://github.com/PhishyOne/Phishtopia.com/tree/archive/course-projects-2026-07-28/app-brewery-server)
+[View screenshot](https://github.com/PhishyOne/Phishtopia.com/blob/archive/course-projects-2026-07-28/app-brewery-server/public/project29/images/preview.png?raw=1) · [View archived source](https://github.com/PhishyOne/Phishtopia.com/tree/archive/course-projects-2026-07-28/app-brewery-server)
 
 ### Chapter 28 - Secrets
 
@@ -60,7 +60,7 @@ Now I get to have some fun! I constructed an Eve Echoes intelligence-gathering w
 
 Interacting with other servers' API's was interesting, but only a fraction of what I learned is put on display here. Using the given setup, users retrieve a random secret from the app brewery server. However, I also learned how to create, modify, ane delete information using the API documentation from another server. I also learned how to generate and maintain actual backend secrets like usernames and passwords, bearer tokens, and API keys, but there was no opportunity to display any of this here.
 
-[View screenshot](https://github.com/PhishyOne/Phishtopia.com/blob/archive/course-projects-2026-07-28/views/project28/preview.png?raw=1) · [View archived source](https://github.com/PhishyOne/Phishtopia.com/tree/archive/course-projects-2026-07-28/app-brewery-server)
+[View screenshot](https://github.com/PhishyOne/Phishtopia.com/blob/archive/course-projects-2026-07-28/app-brewery-server/public/project28/preview.png?raw=1) · [View archived source](https://github.com/PhishyOne/Phishtopia.com/tree/archive/course-projects-2026-07-28/app-brewery-server)
 
 ### Chapter 25 - Band Name Generator
 
@@ -68,7 +68,7 @@ Interacting with other servers' API's was interesting, but only a fraction of wh
 
 This was a lot more work than it appears. I set up a server with Heroku, changed the structure of this site for compatibility, and successfully deployed the previous projects on github pages and this project on Heroku. Oh and made a band name generator...almost forgot.
 
-[View screenshot](https://github.com/PhishyOne/Phishtopia.com/blob/archive/course-projects-2026-07-28/views/project25/preview.png?raw=1) · [View archived source](https://github.com/PhishyOne/Phishtopia.com/tree/archive/course-projects-2026-07-28/app-brewery-server)
+[View screenshot](https://github.com/PhishyOne/Phishtopia.com/blob/archive/course-projects-2026-07-28/app-brewery-server/public/project25/preview.png?raw=1) · [View archived source](https://github.com/PhishyOne/Phishtopia.com/tree/archive/course-projects-2026-07-28/app-brewery-server)
 
 ## Front-end projects
 
