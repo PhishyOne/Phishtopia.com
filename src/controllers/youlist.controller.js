@@ -1,3 +1,4 @@
+import { pageLocals } from "../config/pageAssets.js";
 import { fetchTMDBItem, searchTMDB } from "../services/tmdb.service.js";
 import {
     createYouListComment,
@@ -26,17 +27,9 @@ function sendMutationResult(res, result) {
 
 export function renderYouListPage(req, res) {
     noStore(res);
-    res.render("youlist", {
-        bodyClass: "youlist",
-        extraStyles: [
-            "/styles/youlist.css",
-            "/styles/youlist-mobile.css"
-        ],
-        extraScripts: ["/js/canvas.js", "/js/youlist.js"],
-        user: req.session.user || null,
-        csrfToken: res.locals.csrfToken,
-        currentUrl: req.originalUrl
-    });
+    res.render("youlist", pageLocals("youlist", {
+        csrfToken: res.locals.csrfToken
+    }));
 }
 
 export async function searchMedia(req, res) {
