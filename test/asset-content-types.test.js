@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { readdir, readFile } from "node:fs/promises";
-import { join } from "node:path";
+import { extname, join } from "node:path";
 import { after, before, test } from "node:test";
 import { fileURLToPath } from "node:url";
 
@@ -27,14 +27,14 @@ const EXPECTED_ASSETS = new Map([
     ["/fonts/evealpha-bold.ttf", /^font\/ttf\b/]
 ]);
 
-async function listFiles(relativePath) {
-    const entries = await readdir(join(publicDir, relativePath), { withFileTypes: true });
+async function listFiles(baseDir, relativePath) {
+    const entries = await readdir(join(baseDir, relativePath), { withFileTypes: true });
     const paths = [];
 
     for (const entry of entries) {
         const child = join(relativePath, entry.name);
-        if (entry.isDirectory()) paths.push(...await listFiles(child));
-        else paths.push(`/${child.replaceAll("\\", "/")}`);
+        if (entry.isDirectory()) paths.push(...await listFiles(baseDir, child));
+        else paths.push(child.replaceAll("\\", "/"));
     }
 
     return paths;
@@ -42,13 +42,27 @@ async function listFiles(relativePath) {
 
 test("active frontend asset inventory is explicit and contains no orphan files", async () => {
     const actualAssets = (await Promise.all([
-        listFiles("styles"),
-        listFiles("js"),
-        listFiles("images"),
-        listFiles("fonts")
-    ])).flat().sort();
+        listFiles(publicDir, "styles"),
+        listFiles(publicDir, "js"),
+        listFiles(publicDir, "images"),
+        listFiles(publicDir, "fonts")
+    ])).flat().map(path => `/${path}`).sort();
 
     assert.deepEqual(actualAssets, [...EXPECTED_ASSETS.keys()].sort());
+});
+
+test("every inventoried asset has a production source reference", async () => {
+    const sourceRoots = ["src", "views", "public/styles", "public/js"];
+    const sourceFiles = (await Promise.all(sourceRoots.map(path => listFiles(rootDir, path))))
+        .flat()
+        .filter(path => [".js", ".ejs", ".css"].includes(extname(path)));
+    const sourceText = (await Promise.all(
+        sourceFiles.map(path => readFile(join(rootDir, path), "utf8"))
+    )).join("\n");
+
+    for (const assetPath of EXPECTED_ASSETS.keys()) {
+        assert.ok(sourceText.includes(assetPath), `${assetPath} should have an active production reference`);
+    }
 });
 
 test("font declarations live in EchoTrace CSS instead of the shared header", async () => {
