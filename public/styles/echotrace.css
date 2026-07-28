@@ -1,18 +1,26 @@
 /* EchoTrace page styles. The player-int body class is retained only as a temporary CSS namespace. */
+@font-face {
+    font-family: 'Shentox';
+    src: url('https://web.ccpgamescdn.com/aws/webfonts/shentox/webfonts-2.0/Shentox-Medium.woff2') format('woff2');
+    font-weight: 500;
+    font-style: normal;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: 'Eve Alpha';
+    src: url('/fonts/evealpha-bold.ttf') format('truetype');
+    font-weight: 700;
+    font-style: normal;
+    font-display: swap;
+}
+
 body.player-int {
     background: linear-gradient(180deg, #04071a 0%, #071133 100%);
     color: #fff;
     padding: 0;
     font-family: 'Shentox', Arial, sans-serif;
     overflow-x: hidden;
-}
-
-@font-face {
-    font-family: 'Eve Alpha';
-    src: url('/styles/evealpha_bold.ttf') format('truetype');
-    font-weight: 700;
-    font-style: normal;
-    font-display: swap;
 }
 
 body.player-int #eve-title {
