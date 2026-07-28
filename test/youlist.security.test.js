@@ -107,10 +107,22 @@ test("YouList client rendering does not inject API data through innerHTML", asyn
 });
 
 test("YouList page exposes only escaped data attributes and input limits", async () => {
-    const template = await readFile(new URL("../views/project34/index.ejs", import.meta.url), "utf8");
+    const template = await readFile(new URL("../views/youlist/index.ejs", import.meta.url), "utf8");
     assert.match(template, /data-current-user-id="<%= user\?\.id \|\| '' %>"/);
     assert.match(template, /data-csrf-token="<%= csrfToken %>"/);
     assert.doesNotMatch(template, /<%- JSON\.stringify\(user/);
+    assert.doesNotMatch(template, /project34/);
+    assert.match(template, /\/images\/youlist-placeholder\.jpg/);
     assert.match(template, /maxlength="1000"/);
     assert.match(template, /maxlength="100"/);
+});
+
+test("YouList controller and TMDB fallback use canonical feature paths", async () => {
+    const controller = await readFile(new URL("../src/controllers/youlist.controller.js", import.meta.url), "utf8");
+    const tmdbService = await readFile(new URL("../src/services/tmdb.service.js", import.meta.url), "utf8");
+
+    assert.match(controller, /res\.render\("youlist"/);
+    assert.doesNotMatch(controller, /project34/);
+    assert.match(tmdbService, /\/images\/youlist-placeholder\.jpg/);
+    assert.doesNotMatch(tmdbService, /project34/);
 });
