@@ -69,8 +69,15 @@ async function assertFilesAvoidRetiredPaths(files) {
 }
 
 test("active server source has no retired course-work dependencies", async () => {
-    const sourceFiles = (await listFiles("src")).filter(path => path.endsWith(".js"));
+    const sourceFiles = (await listFiles("src")).filter(path =>
+        path.endsWith(".js") && path !== "src/middleware/staticAssets.js"
+    );
     await assertFilesAvoidRetiredPaths(sourceFiles);
+
+    const staticAssets = await readFile(join(rootDir, "src/middleware/staticAssets.js"), "utf8");
+    assert.match(staticAssets, /RETIRED_PUBLIC_PATH/);
+    assert.match(staticAssets, /project\(\?:25\|28\|29\|30\|33-1\|33-2\|33-3\|34\)/);
+    assert.doesNotMatch(staticAssets, /projectAssetsDir/);
 });
 
 test("active templates and browser assets use canonical feature paths", async () => {
@@ -148,7 +155,7 @@ test("active public pages do not emit retired local URLs", async () => {
     }
 });
 
-test("EchoTrace serves canonical assets and legacy asset paths are gone", async () => {
+test("EchoTrace serves canonical assets and retired public paths are blocked", async () => {
     const canonicalAssets = [
         ["/styles/echotrace.css", /text\/css/],
         ["/js/echotrace.js", /javascript/],
@@ -165,6 +172,9 @@ test("EchoTrace serves canonical assets and legacy asset paths are gone", async 
         "/styles/player-int.css",
         "/js/player-int.js",
         "/js/little-logo.js",
+        "/project34/images/placeholder.png",
+        "/project29/images/preview.png",
+        "/static/20-Simon/",
         "/projects/assets"
     ]) {
         const response = await request(path);
