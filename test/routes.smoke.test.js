@@ -61,6 +61,7 @@ test("readiness endpoint fails closed when PostgreSQL is not configured", async 
 test("surviving public pages render successfully", async () => {
     const routes = [
         "/",
+        "/archive",
         "/contact",
         "/auth/login",
         "/auth/register",
@@ -74,6 +75,18 @@ test("surviving public pages render successfully", async () => {
         assert.equal(response.status, 200, `${route} should return 200`);
         assert.match(response.headers.get("content-type") || "", /text\/html/);
     }
+});
+
+test("archive gallery exposes preserved material without restoring retired routes", async () => {
+    const response = await request("/archive");
+    assert.equal(response.status, 200);
+
+    const body = await response.text();
+    assert.match(body, /<h1>Course Project Archive<\/h1>/);
+    assert.match(body, /archive\/course-projects-2026-07-28/);
+    assert.match(body, /href="\/archive"/);
+    assert.equal((body.match(/class="archive-card"/g) || []).length, 24);
+    assert.doesNotMatch(body, /href="\/(?:project\d|static\/)/);
 });
 
 test("homepage advertises complete social preview metadata", async () => {
@@ -173,7 +186,9 @@ test("the remaining home alias redirects to the canonical homepage", async () =>
 });
 
 test("core static assets are still served", async () => {
-    const response = await request("/styles/main.css");
-    assert.equal(response.status, 200);
-    assert.match(response.headers.get("content-type") || "", /text\/css/);
+    for (const asset of ["/styles/main.css", "/styles/archive.css"]) {
+        const response = await request(asset);
+        assert.equal(response.status, 200, `${asset} should return 200`);
+        assert.match(response.headers.get("content-type") || "", /text\/css/);
+    }
 });
