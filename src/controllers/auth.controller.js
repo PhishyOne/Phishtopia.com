@@ -39,12 +39,14 @@ function renderRegister(res, {
 function renderLogin(res, {
     error = null,
     username = "",
+    returnTo = "",
     status = 200
 } = {}) {
     return res.status(status).render("login", pageLocals("login", {
         error,
         username,
-        password: ""
+        password: "",
+        returnTo
     }));
 }
 
@@ -66,13 +68,14 @@ export function showRegister(req, res) {
 }
 
 export function showLogin(req, res) {
-    if (req.query.returnTo) {
+    if (Object.hasOwn(req.query, "returnTo")) {
         const returnTo = safePostLoginRedirect(req.query.returnTo, null);
         if (returnTo) req.session.returnTo = returnTo;
         else delete req.session.returnTo;
     }
 
-    return renderLogin(res);
+    const returnTo = safePostLoginRedirect(req.session.returnTo, null) || "";
+    return renderLogin(res, { returnTo });
 }
 
 export function showResendVerification(req, res) {
@@ -165,8 +168,16 @@ export async function resendVerification(req, res) {
     }
 }
 
+export function resolveLoginReturnTo(bodyReturnTo, sessionReturnTo, fallback = "/") {
+    const postedReturnTo = safePostLoginRedirect(bodyReturnTo, null);
+    if (postedReturnTo) return postedReturnTo;
+
+    return safePostLoginRedirect(sessionReturnTo, fallback);
+}
+
 export async function login(req, res) {
     const { username, password } = req.body;
+    const returnTo = resolveLoginReturnTo(req.body.returnTo, req.session.returnTo, null) || "";
     if (LOG_AUTH_EVENTS) console.log("Login attempt:", { username });
 
     try {
@@ -175,11 +186,12 @@ export async function login(req, res) {
         if (!result.ok) {
             return renderLogin(res, {
                 error: result.error,
-                username
+                username,
+                returnTo
             });
         }
 
-        const redirectTo = safePostLoginRedirect(req.session.returnTo, "/");
+        const redirectTo = returnTo || "/";
         await establishAuthenticatedSession(req, result.user);
 
         return res.redirect(redirectTo);
@@ -189,7 +201,8 @@ export async function login(req, res) {
             return renderLogin(res, {
                 status: 503,
                 error: LOCAL_DB_MESSAGE,
-                username
+                username,
+                returnTo
             });
         }
         return res.status(500).send("Server error");

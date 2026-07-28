@@ -122,13 +122,13 @@ test("database-less login previews return a clear service-unavailable message", 
     assert.match(body, /unavailable in the local preview because no database is configured/i);
 });
 
-test("YouList still requires authentication", async () => {
+test("YouList still requires authentication and preserves the page destination", async () => {
     const response = await request("/youlist");
     assert.equal(response.status, 302);
-    assert.equal(response.headers.get("location"), "/auth/login");
+    assert.equal(response.headers.get("location"), "/auth/login?returnTo=%2Fyoulist");
 });
 
-test("YouList APIs require authentication", async () => {
+test("YouList APIs require authentication without becoming page return targets", async () => {
     const routes = [
         "/youlist/api/search?q=alien",
         "/youlist/api/item/movie/1",
