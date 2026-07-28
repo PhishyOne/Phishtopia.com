@@ -3,6 +3,7 @@ import { createTimedMemoryCache } from "../cache/timedMemoryCache.js";
 
 const ITEM_CACHE_TTL_MS = 24 * 60 * 60 * 1000;
 const SEARCH_CACHE_TTL_MS = 60 * 1000;
+const PLACEHOLDER_POSTER = "/images/youlist-placeholder.jpg";
 const itemCache = createTimedMemoryCache(ITEM_CACHE_TTL_MS);
 const searchCache = createTimedMemoryCache(SEARCH_CACHE_TTL_MS);
 
@@ -27,7 +28,7 @@ function normalizeMediaItem(data, credits, type) {
             : data.first_air_date?.slice(0, 4),
         poster: data.poster_path
             ? `https://image.tmdb.org/t/p/w500${data.poster_path}`
-            : "/project34/images/placeholder.png",
+            : PLACEHOLDER_POSTER,
         genre: data.genres?.map(genre => genre.name).join(", ") || "N/A",
         director,
         cast: credits.cast?.slice(0, 5).map(castMember => castMember.name).join(", ") || "N/A"
@@ -44,7 +45,7 @@ function normalizeSearchResult(item) {
             : item.first_air_date?.slice(0, 4),
         poster: item.poster_path
             ? `https://image.tmdb.org/t/p/w92${item.poster_path}`
-            : "/project34/images/placeholder.png",
+            : PLACEHOLDER_POSTER,
         popularity: item.popularity
     };
 }
