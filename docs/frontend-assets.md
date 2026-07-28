@@ -9,8 +9,15 @@ Phishtopia uses Express static files directly. There is no bundler or frontend b
 - `public/js/<feature>.js`: browser behavior owned by an active feature.
 - `public/images/`: shared and active feature images referenced by production templates or browser code.
 - `public/fonts/`: locally hosted font files.
+- `src/config/pageAssets.js`: the canonical title, body class, stylesheet list, and script list for each rendered page.
 
 Do not add new files under project-number directories, `app-brewery-server`, or `views/app-brewery-static`. Those sources are preserved only on `archive/course-projects-2026-07-28`.
+
+## Page rendering
+
+Routes and controllers call `pageLocals(pageName, values)` when rendering an EJS page. Templates include the shared header and footer without supplying their own titles, body classes, stylesheets, or scripts.
+
+Add a new page definition before mounting a new rendered route. Do not recreate `extraStyles` or `extraScripts` arrays inside a controller or template.
 
 ## Current active inventory
 
@@ -51,6 +58,7 @@ EchoTrace also loads Shentox from CCP's public webfont host. Its `@font-face` de
 2. Give each active feature one canonical CSS file and one canonical JavaScript file unless a real separation is justified.
 3. Put local font files under `public/fonts`, never under `public/styles`.
 4. Use root-relative URLs such as `/styles/tool.css` and `/images/tool-icon.svg`.
-5. Add every production asset to `test/asset-content-types.test.js`. The test verifies the complete inventory and expected HTTP content types.
-6. Remove an asset from the inventory in the same PR that removes its final production reference.
-7. Keep third-party URLs explicit and feature-scoped. Do not copy external assets into the repository without checking licensing and maintenance cost.
+5. Declare rendered-page metadata and assets in `src/config/pageAssets.js`.
+6. Add every production asset to `test/asset-content-types.test.js`. The test verifies the complete inventory and expected HTTP content types.
+7. Remove an asset from the inventory in the same PR that removes its final production reference.
+8. Keep third-party URLs explicit and feature-scoped. Do not copy external assets into the repository without checking licensing and maintenance cost.
