@@ -91,9 +91,10 @@ test("active templates and browser assets use canonical feature paths", async ()
     assert.match(youListClient, /\/images\/youlist-placeholder\.jpg/);
 
     const echoTraceRouter = await readFile(join(rootDir, "src/routes/echotrace.routes.js"), "utf8");
-    assert.match(echoTraceRouter, /res\.render\("echotrace\/index"/);
-    assert.match(echoTraceRouter, /\/styles\/echotrace\.css/);
-    assert.match(echoTraceRouter, /\/js\/echotrace\.js/);
+    const pageAssets = await readFile(join(rootDir, "src/config/pageAssets.js"), "utf8");
+    assert.match(echoTraceRouter, /res\.render\("echotrace\/index", pageLocals\("echotrace"/);
+    assert.match(pageAssets, /\/styles\/echotrace\.css/);
+    assert.match(pageAssets, /\/js\/echotrace\.js/);
 });
 
 test("course archive points to the preserved branch and retains the manifest", async () => {
