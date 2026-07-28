@@ -1,24 +1,16 @@
 import express from "express";
 
-function pageOptions(req, bodyClass, extraScripts = []) {
-    return {
-        bodyClass,
-        extraStyles: [],
-        extraScripts,
-        user: req.session?.user || null,
-        currentUrl: req.originalUrl
-    };
-}
+import { pageLocals } from "../config/pageAssets.js";
 
 export function buildPagesRouter() {
     const router = express.Router();
 
     router.get("/", (req, res) => {
-        res.render("index", pageOptions(req, "home-page", ["/js/canvas.js"]));
+        res.render("index", pageLocals("home"));
     });
 
     router.get("/contact", (req, res) => {
-        res.render("contact", pageOptions(req, "contact"));
+        res.render("contact", pageLocals("contact"));
     });
 
     return router;
