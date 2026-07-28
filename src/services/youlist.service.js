@@ -8,16 +8,18 @@ import {
     updateComment
 } from "../db/youlist.queries.js";
 import { fetchTMDBItem } from "./tmdb.service.js";
+import {
+    isValidMediaType,
+    normalizeComment,
+    normalizePage,
+    normalizePositiveInteger
+} from "./youlist.validation.js";
 
 export const YOU_LIST_PAGE_SIZE = 20;
-const VALID_MEDIA_TYPES = new Set(["movie", "tv"]);
-
-export function isValidMediaType(type) {
-    return VALID_MEDIA_TYPES.has(type);
-}
+export { isValidMediaType } from "./youlist.validation.js";
 
 export async function getPagedYouList(page = 1) {
-    const safePage = Math.max(parseInt(page, 10) || 1, 1);
+    const safePage = normalizePage(page);
     const offset = (safePage - 1) * YOU_LIST_PAGE_SIZE;
     const totalItems = await countYouListItems();
     const totalPages = Math.ceil(totalItems / YOU_LIST_PAGE_SIZE);
@@ -50,24 +52,36 @@ export async function getPagedYouList(page = 1) {
 }
 
 export async function createYouListComment({ movieId, type, comment, userId }) {
-    if (!movieId || !type || !comment) {
-        return { ok: false, status: 400, error: "Missing required fields" };
+    const safeMovieId = normalizePositiveInteger(movieId);
+    const safeUserId = normalizePositiveInteger(userId);
+    const safeComment = normalizeComment(comment);
+
+    if (safeMovieId === null || safeUserId === null || safeComment === null) {
+        return { ok: false, status: 400, error: "Invalid request" };
     }
 
     if (!isValidMediaType(type)) {
         return { ok: false, status: 400, error: "Invalid media type" };
     }
 
-    await addComment({ movieId, type, comment, userId });
+    await addComment({ movieId: safeMovieId, type, comment: safeComment, userId: safeUserId });
     return { ok: true };
 }
 
 export async function editYouListComment({ commentId, comment, userId }) {
-    if (!userId || !comment) {
+    const safeCommentId = normalizePositiveInteger(commentId);
+    const safeUserId = normalizePositiveInteger(userId);
+    const safeComment = normalizeComment(comment);
+
+    if (safeCommentId === null || safeUserId === null || safeComment === null) {
         return { ok: false, status: 400, error: "Invalid request" };
     }
 
-    const updated = await updateComment({ commentId, comment, userId });
+    const updated = await updateComment({
+        commentId: safeCommentId,
+        comment: safeComment,
+        userId: safeUserId
+    });
     if (!updated) {
         return { ok: false, status: 403, error: "Not allowed" };
     }
@@ -76,11 +90,14 @@ export async function editYouListComment({ commentId, comment, userId }) {
 }
 
 export async function removeYouListComment({ commentId, userId }) {
-    if (!userId) {
-        return { ok: false, status: 401, error: "Unauthorized" };
+    const safeCommentId = normalizePositiveInteger(commentId);
+    const safeUserId = normalizePositiveInteger(userId);
+
+    if (safeCommentId === null || safeUserId === null) {
+        return { ok: false, status: 400, error: "Invalid request" };
     }
 
-    const deleted = await deleteComment({ commentId, userId });
+    const deleted = await deleteComment({ commentId: safeCommentId, userId: safeUserId });
     if (!deleted) {
         return { ok: false, status: 403, error: "Not allowed" };
     }
