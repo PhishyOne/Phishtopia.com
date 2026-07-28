@@ -29,7 +29,7 @@ export function renderYouListPage(req, res) {
     res.render("project34", {
         bodyClass: "project34",
         extraStyles: [
-            "/project34/styles/main.css",
+            "/styles/youlist.css",
             "/styles/youlist-mobile.css"
         ],
         extraScripts: ["/js/canvas.js", "/js/youlist.js"],
