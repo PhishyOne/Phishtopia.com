@@ -1,4 +1,4 @@
-const PLACEHOLDER_POSTER = "/project34/images/placeholder.png";
+const PLACEHOLDER_POSTER = "/images/youlist-placeholder.jpg";
 const MAX_COMMENT_LENGTH = 1000;
 const MIN_SEARCH_CHARS = 2;
 
