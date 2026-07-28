@@ -1,0 +1,92 @@
+<%- include('partials/header.ejs') %>
+
+<main class="archive-shell">
+    <header class="archive-hero">
+        <p class="archive-eyebrow">From Chapter 2 to Chapter 34</p>
+        <h1>Course Project Archive</h1>
+        <p class="archive-intro">
+            This is the preserved trail from my first structured HTML page through database-backed Node applications.
+            The original code and assets remain frozen on a dedicated GitHub branch, while this page provides a safe,
+            readable gallery without restoring retired production routes.
+        </p>
+
+        <div class="archive-summary" aria-label="Archive summary">
+            <span><strong><%= archive.backEnd.length + archive.frontEnd.length %></strong> projects</span>
+            <span><strong><%= archive.backEnd.length %></strong> back-end</span>
+            <span><strong><%= archive.frontEnd.length %></strong> front-end</span>
+        </div>
+
+        <div class="archive-hero-actions">
+            <a class="archive-action archive-action-primary" href="<%= archive.branchUrl %>" target="_blank" rel="noopener noreferrer">
+                Browse the preserved branch
+            </a>
+            <a class="archive-action" href="<%= archive.manifestUrl %>" target="_blank" rel="noopener noreferrer">
+                Read the full manifest
+            </a>
+        </div>
+    </header>
+
+    <aside class="archive-note">
+        <strong>Archive, not abandoned:</strong> the old demos are no longer executed on the production server.
+        Screenshots and source remain available, and projects that grew into active Phishtopia tools link to their current versions.
+    </aside>
+
+    <% const sections = [
+        { id: 'back-end', title: 'Back-End Projects', subtitle: 'Node, Express, APIs, PostgreSQL, authentication, and server-rendered applications.', projects: archive.backEnd },
+        { id: 'front-end', title: 'Front-End Projects', subtitle: 'The HTML, CSS, Bootstrap, JavaScript, layout, and interaction work that came first.', projects: archive.frontEnd }
+    ]; %>
+
+    <% sections.forEach(section => { %>
+        <section class="archive-section" id="<%= section.id %>">
+            <div class="archive-section-heading">
+                <div>
+                    <p class="archive-section-kicker"><%= section.projects.length %> preserved projects</p>
+                    <h2><%= section.title %></h2>
+                </div>
+                <p><%= section.subtitle %></p>
+            </div>
+
+            <div class="archive-grid">
+                <% section.projects.forEach((project, index) => { %>
+                    <article class="archive-card">
+                        <a
+                            class="archive-image-link"
+                            href="<%= project.screenshot %>"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            aria-label="Open the archived screenshot for Chapter <%= project.chapter %>, <%= project.title %>"
+                        >
+                            <img
+                                src="<%= project.screenshot %>"
+                                alt="Archived screenshot of Chapter <%= project.chapter %>, <%= project.title %>"
+                                loading="<%= index < 2 ? 'eager' : 'lazy' %>"
+                                decoding="async"
+                            >
+                            <span>Open screenshot</span>
+                        </a>
+
+                        <div class="archive-card-body">
+                            <p class="archive-card-meta">Chapter <%= project.chapter %></p>
+                            <h3><%= project.title %></h3>
+                            <p class="archive-card-description"><%= project.description %></p>
+
+                            <p class="archive-original-route">
+                                <span>Original route</span>
+                                <code><%= project.originalRoute %></code>
+                            </p>
+
+                            <div class="archive-card-actions">
+                                <a href="<%= project.source %>" target="_blank" rel="noopener noreferrer">Archived source</a>
+                                <% if (project.currentPath) { %>
+                                    <a class="archive-current-link" href="<%= project.currentPath %>">Current version</a>
+                                <% } %>
+                            </div>
+                        </div>
+                    </article>
+                <% }); %>
+            </div>
+        </section>
+    <% }); %>
+</main>
+
+<%- include('partials/footer.ejs') %>
