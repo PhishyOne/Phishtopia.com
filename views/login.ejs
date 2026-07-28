@@ -1,39 +1,39 @@
 <%- include('partials/header') %>
 
-<div class="container">
-    <h2>Login</h2>
+    <div class="container">
+        <h2>Login</h2>
 
-    <% if (error) { %>
-        <div class="alert alert-danger">
-            <%= error %>
-        </div>
-    <% } %>
-
-    <form action="/auth/login" method="POST">
-        <div>
-            <label for="username-tb" class="form-label">Username</label>
-            <input type="text" autocomplete="username" id="username-tb" name="username" class="textbox" required>
-        </div>
-
-        <div>
-            <label for="password" class="form-label">Password</label>
-            <div class="password-field">
-                <input type="password" autocomplete="current-password" id="password" name="password" class="textbox" required>
-                <button
-                    type="button"
-                    class="password-toggle"
-                    data-password-toggle="password"
-                    aria-label="Show password"
-                    aria-pressed="false"
-                >👁</button>
+        <% if (error) { %>
+            <div class="alert alert-danger">
+                <%= error %>
             </div>
-        </div>
+            <% } %>
 
-        <button class="btn" id="login-btn">Login</button>
-    </form>
+                <form action="/auth/login" method="POST">
+                    <div>
+                        <label for="username-tb" class="form-label">Username</label>
+                        <input type="text" autocomplete="username" id="username-tb" name="username" class="textbox" required>
+                    </div>
 
-    <p>Don't have an account? <a href="/auth/register">Register</a></p>
-    <p>Didn't receive your verification email? <a href="/auth/resend-verification">Send a new link</a></p>
-</div>
+                    <div>
+                        <label for="password" class="form-label">Password</label>
+                        <div class="password-field">
+                            <input type="password" autocomplete="current-password" id="password" name="password" class="textbox" required>
+                            <button
+                                type="button"
+                                class="password-toggle"
+                                data-password-toggle="password"
+                                aria-label="Show password"
+                                aria-pressed="false"
+                            >👁</button>
+                        </div>
+                    </div>
 
-<%- include('partials/footer') %>
+                    <button class="btn" id="login-btn">Login</button>
+                </form>
+
+                <p>Don't have an account? <a href="/auth/register">Register</a></p>
+                <p>Didn't receive your verification email? <a href="/auth/resend-verification">Send a new link</a></p>
+    </div>
+
+    <%- include('partials/footer') %>
