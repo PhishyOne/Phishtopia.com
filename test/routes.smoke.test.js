@@ -64,6 +64,7 @@ test("surviving public pages render successfully", async () => {
         "/contact",
         "/auth/login",
         "/auth/register",
+        "/auth/resend-verification",
         "/echotrace",
         "/storecalc"
     ];
