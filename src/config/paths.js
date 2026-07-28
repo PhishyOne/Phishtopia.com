@@ -12,4 +12,3 @@ export const logsDir =
     : process.env.NODE_ENV === "test"
       ? join(tmpdir(), "phishtopia-test-logs")
       : join(rootDir, "logs");
-export const projectAssetsDir = join(rootDir, "public", "projects");
