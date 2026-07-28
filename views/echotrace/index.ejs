@@ -1,0 +1,150 @@
+<%- include('../partials/header', { title: 'EchoTrace' }) %>
+
+<canvas id="stars-bg"></canvas>
+<main class="container">
+    <div class="title-container">
+        <div class="logo-container">
+            <canvas id="gearCanvas"></canvas>
+            <img src="/images/logoBG.jpg" alt="Logo Background" class="logo-bg">
+        </div>
+        <h1 id="eve-title">EchoTrace</h1>
+    </div>
+
+    <div class="join-container">
+        <h2>Join International Team [INTM]:</h2>
+        <a href="https://discord.com/channels/1196004493255516230/1197120187489595482">
+            <img src="/images/discord.svg" alt="Discord Logo" class="discord-logo">
+        </a>
+    </div>
+
+    <div class="join-container">
+        <h2>What is [INTM]?</h2>
+        <a href="https://www.youtube.com/watch?v=3JE9PedLWqE&list=PLPlRnK8RqmvoasFKFmFRS55O12O6PvD4Z&index=1">
+            <img src="/images/youtube.svg" alt="YouTube Logo" class="youtube-logo">
+        </a>
+    </div>
+
+    <h2 id="pig-title">Trace player activity by killmail patterns</h2>
+    <p>Current UTC Time: <span id="utc-time"></span></p>
+
+    <div class="search-box">
+        <form id="playerForm" action="/echotrace/submit" method="GET">
+            <div class="search-row">
+                <label for="playerInput">Enter Player Name or ID:</label>
+                <input type="text" id="playerInput" name="name" placeholder="Name or numeric player ID" required
+                    value="<%= playerName ? playerName : '' %>">
+            </div>
+
+            <div class="toggle-date-row" id="toggleFilters">
+                <span>Optional Filters</span>
+                <span class="toggle-arrow">&#9656;</span>
+            </div>
+
+            <div class="filters-row">
+                <div class="date-row">
+                    <label for="startDate">From:</label>
+                    <input type="date" id="startDate" name="start" value="<%= startDate || '' %>">
+
+                    <label for="endDate">To:</label>
+                    <input type="date" id="endDate" name="end"
+                        value="<%= endDate || new Date().toISOString().split('T')[0] %>">
+                </div>
+
+                <div class="checkbox-row">
+                    <label>
+                        <input type="checkbox" name="kill" value="1"
+                            <%= typeof killSelected === 'undefined' || killSelected ? 'checked' : '' %>>
+                        Killer
+                    </label>
+                    <label>
+                        <input type="checkbox" name="death" value="1"
+                            <%= typeof deathSelected === 'undefined' || deathSelected ? 'checked' : '' %>>
+                        Victim
+                    </label>
+                </div>
+            </div>
+
+            <button type="submit">Search</button>
+        </form>
+    </div>
+
+    <div id="loading" style="display:none; text-align:center; margin-top:20px;">
+        <p>Fetching all kills and losses — this may take a few seconds...</p>
+        <div class="spinner"></div>
+    </div>
+
+    <% if (error) { %>
+        <p style="color:red;"><%= error %></p>
+    <% } %>
+
+    <% if (playerName) { %>
+        <h3 id="result">Results for <%= playerName %></h3>
+    <% } %>
+
+    <% if (topRegions.length || hourlyPercentages.length) { %>
+        <div class="date-range">
+            <% if (startDate || endDate) { %>
+                <p>
+                    Showing data
+                    <% if (startDate) { %>from <strong><%= startDate %></strong><% } %>
+                    <% if (endDate) { %>to <strong><%= endDate %></strong><% } %>
+                </p>
+            <% } else { %>
+                <p>Showing all available data.</p>
+            <% } %>
+        </div>
+    <% } %>
+
+    <% if (topRegions.length) { %>
+        <h3>Top 5 Regions</h3>
+        <ul class="tree">
+            <% topRegions.forEach(region => { %>
+                <li>
+                    <span class="caret">
+                        <span class="color-dot" style="background-color:<%= region.color %>"></span>
+                        <%= region.name %> (<%= region.percent %>%)
+                    </span>
+                    <ul class="nested">
+                        <% region.constellations.forEach(con => { %>
+                            <li>
+                                <span class="caret">
+                                    <span class="color-dot" style="background-color:<%= con.color %>"></span>
+                                    <%= con.name %> (<%= con.percent %>%)
+                                </span>
+                                <ul class="nested">
+                                    <% con.systems.forEach(sys => { %>
+                                        <li>
+                                            <span class="color-dot" style="background-color:<%= sys.color %>"></span>
+                                            <%= sys.name %> (<%= sys.percent %>%)
+                                        </li>
+                                    <% }) %>
+                                </ul>
+                            </li>
+                        <% }) %>
+                    </ul>
+                </li>
+            <% }) %>
+        </ul>
+    <% } else if (playerName) { %>
+        <p>No region data available.</p>
+    <% } %>
+
+    <% if (hourlyPercentages.length) { %>
+        <h3>Activity by Hour</h3>
+        <% [hourlyPercentages.slice(0, 12), hourlyPercentages.slice(12, 24)].forEach(row => { %>
+            <div class="hourly-chart-row">
+                <% row.forEach(slot => { %>
+                    <div class="hour-column">
+                        <div class="hour-bar" style="--bar-height: <%= slot.height %>px;">
+                            <span class="hour-percent"><%= slot.percent.toFixed(1) %>%</span>
+                        </div>
+                        <div class="hour-label"><%= slot.hour %>:00 UTC</div>
+                    </div>
+                <% }) %>
+            </div>
+        <% }) %>
+        <p>Each bar height represents % of total kills/losses for that hour.</p>
+    <% } %>
+</main>
+
+<%- include('../partials/footer') %>

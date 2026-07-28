@@ -1,4 +1,4 @@
-/* ===== player-int Page Styles ===== */
+/* EchoTrace page styles. The player-int body class is retained only as a temporary CSS namespace. */
 body.player-int {
     background: linear-gradient(180deg, #04071a 0%, #071133 100%);
     color: #fff;
@@ -7,7 +7,6 @@ body.player-int {
     overflow-x: hidden;
 }
 
-/* ===== Fonts ===== */
 @font-face {
     font-family: 'Eve Alpha';
     src: url('/styles/evealpha_bold.ttf') format('truetype');
@@ -23,11 +22,9 @@ body.player-int #eve-title {
     color: #fff;
 }
 
-/* ===== Star Background Canvas ===== */
 body.player-int #stars-bg {
     position: fixed;
-    top: 0;
-    left: 0;
+    inset: 0;
     width: 100vw;
     height: 100vh;
     z-index: -1;
@@ -38,7 +35,6 @@ body.player-int #stars-bg {
         linear-gradient(180deg, #04071a 0%, #071133 100%);
 }
 
-/* ===== Container ===== */
 body.player-int .container {
     max-width: 1200px;
     margin: 0 auto;
@@ -52,10 +48,8 @@ body.player-int .container p {
     font-size: 18px;
     line-height: 1.6;
     color: #ddd;
-    
 }
 
-/* ===== Titles ===== */
 body.player-int h2 {
     font-family: 'Shentox', Arial, sans-serif;
     font-size: 28px;
@@ -67,7 +61,7 @@ body.player-int h2 {
 body.player-int h3 {
     font-family: 'Shentox', Arial, sans-serif;
     font-size: 20px;
-    margin: 20px 0 10px 0;
+    margin: 20px 0 10px;
     color: #fff;
 }
 
@@ -82,14 +76,12 @@ body.player-int #result {
     color: #03a9f4;
 }
 
-/* ===== Labels ===== */
 body.player-int label {
     font-size: 24px;
     font-weight: bold;
     color: #f00b0bff;
 }
 
-/* ===== Search Box ===== */
 body.player-int .search-box {
     margin-bottom: 20px;
 }
@@ -100,7 +92,6 @@ body.player-int .search-box form {
     gap: 8px;
 }
 
-/* Rows in search box */
 body.player-int .search-box .search-row,
 body.player-int .search-box .date-row {
     display: flex;
@@ -142,7 +133,6 @@ body.player-int .search-box button:hover {
     transform: translateY(-1px);
 }
 
-/* ===== Loading Spinner ===== */
 body.player-int .spinner {
     border: 6px solid #f3f3f3;
     border-top: 6px solid #f00b0bff;
@@ -150,20 +140,14 @@ body.player-int .spinner {
     width: 40px;
     height: 40px;
     margin: 10px auto;
-    animation: spin 1s linear infinite;
+    animation: echotrace-spin 1s linear infinite;
 }
 
-@keyframes spin {
-    0% {
-        transform: rotate(0deg);
-    }
-
-    100% {
-        transform: rotate(360deg);
-    }
+@keyframes echotrace-spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
 }
 
-/* ===== Collapsible Tree ===== */
 body.player-int .tree,
 body.player-int .tree ul,
 body.player-int .tree ul ul,
@@ -210,7 +194,6 @@ body.player-int .tree ul ul ul {
     padding-left: 40px;
 }
 
-/* ===== Color Dots ===== */
 body.player-int .color-dot {
     display: inline-block;
     width: 12px;
@@ -220,7 +203,6 @@ body.player-int .color-dot {
     vertical-align: middle;
 }
 
-/* ===== Hourly Activity Chart ===== */
 body.player-int .hourly-chart-row {
     display: flex;
     align-items: flex-end;
@@ -273,7 +255,6 @@ body.player-int .hour-column:hover .hour-bar .hour-percent {
     opacity: 1;
 }
 
-/* ===== Logo and Join Sections ===== */
 body.player-int .title-container {
     display: flex;
     align-items: center;
@@ -330,7 +311,6 @@ body.player-int #gearCanvas {
     background: transparent;
 }
 
-/* ===== Date Range ===== */
 body.player-int .date-range {
     text-align: left;
     padding: 0.5rem 1rem;
@@ -347,16 +327,9 @@ body.player-int .date-range p {
     font-weight: bold;
 }
 
-body.player-int .date-row.expanded {
-    max-height: 100px;
-}
-
-/* Collapsible Date Row - no need to collapse separately */
-/* Filters Row */
 body.player-int .filters-row {
     overflow: hidden;
     max-height: 0;
-    /* collapsed */
     transition: max-height 0.3s ease;
     margin-top: 6px;
     display: flex;
@@ -366,20 +339,15 @@ body.player-int .filters-row {
 
 body.player-int .filters-row.expanded {
     max-height: 300px;
-    /* enough to show dates + checkboxes */
 }
 
-/* Remove height:0 from date-row */
 body.player-int .date-row {
     display: flex;
     flex-wrap: wrap;
     gap: 6px;
-    /*align-items: center;*/
     margin-top: 6px;
-    /* NO height or overflow rules */
 }
 
-/* Checkbox Row */
 body.player-int .checkbox-row {
     display: flex;
     gap: 15px;
@@ -387,7 +355,6 @@ body.player-int .checkbox-row {
     color: #f00b0bff;
 }
 
-/* Toggle container: text + arrow */
 body.player-int .toggle-date-row {
     display: flex;
     align-items: center;
@@ -404,7 +371,6 @@ body.player-int .toggle-arrow {
     transition: transform 0.2s ease;
 }
 
-/* Date row and PvP row styling inside filters */
 body.player-int .filters-row .date-row,
 body.player-int .filters-row .pvp-row {
     display: flex;
@@ -414,7 +380,6 @@ body.player-int .filters-row .pvp-row {
     margin-top: 6px;
 }
 
-/* ===== Responsive ===== */
 @media (max-width: 768px) {
     body.player-int .title-container {
         flex-direction: column;

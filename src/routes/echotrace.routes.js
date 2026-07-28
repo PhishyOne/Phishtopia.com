@@ -36,7 +36,7 @@ function topN(items, n) {
 }
 
 function renderEchoTrace(res, options = {}) {
-    return res.render("player-int", {
+    return res.render("echotrace/index", {
         error: options.error ?? null,
         playerName: options.playerName ?? null,
         topRegions: options.topRegions ?? [],
@@ -45,8 +45,8 @@ function renderEchoTrace(res, options = {}) {
         endDate: options.endDate ?? null,
         killSelected: options.killSelected ?? true,
         deathSelected: options.deathSelected ?? true,
-        extraStyles: ["/styles/player-int.css"],
-        extraScripts: ["/js/little-logo.js", "/js/player-int.js"],
+        extraStyles: ["/styles/echotrace.css"],
+        extraScripts: ["/js/echotrace-logo.js", "/js/echotrace.js"],
         bodyClass: "player-int"
     });
 }
@@ -175,22 +175,26 @@ router.get("/submit", async (req, res) => {
         });
 
         const regions = Object.entries(regionMap).map(([regionName, regionData]) => {
-            const constellations = Object.entries(regionData.constellations).map(([constellationName, constellationData]) => {
-                const systems = Object.entries(constellationData.systems).map(([systemName, systemData]) => ({
-                    name: systemName,
-                    count: systemData.count,
-                    percent: Number(((systemData.count / totalCount) * 100).toFixed(1)),
-                    color: getColor(systemData.count, globalMaxSystemCount)
-                }));
+            const constellations = Object.entries(regionData.constellations).map(
+                ([constellationName, constellationData]) => {
+                    const systems = Object.entries(constellationData.systems).map(
+                        ([systemName, systemData]) => ({
+                            name: systemName,
+                            count: systemData.count,
+                            percent: Number(((systemData.count / totalCount) * 100).toFixed(1)),
+                            color: getColor(systemData.count, globalMaxSystemCount)
+                        })
+                    );
 
-                return {
-                    name: constellationName,
-                    count: constellationData.count,
-                    percent: Number(((constellationData.count / totalCount) * 100).toFixed(1)),
-                    color: getColor(constellationData.count, globalMaxSystemCount),
-                    systems: topN(systems, 5)
-                };
-            });
+                    return {
+                        name: constellationName,
+                        count: constellationData.count,
+                        percent: Number(((constellationData.count / totalCount) * 100).toFixed(1)),
+                        color: getColor(constellationData.count, globalMaxSystemCount),
+                        systems: topN(systems, 5)
+                    };
+                }
+            );
 
             return {
                 name: regionName,
