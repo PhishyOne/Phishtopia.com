@@ -1,17 +1,17 @@
 /* Mobile layout corrections for YouList cards. */
 @media (max-width: 768px) {
     .youlist-container .movielist-section {
-        grid-template-columns: 96px minmax(0, 1fr);
+        grid-template-columns: 116px minmax(0, 1fr);
         grid-template-areas: none;
         align-items: start;
-        gap: 0.75rem;
+        gap: 0.8rem;
         padding: 0.85rem;
         text-align: left;
     }
 
     .youlist-container .movie-poster {
-        width: 96px;
-        max-width: 96px;
+        width: 116px;
+        max-width: 116px;
         margin: 0;
         align-self: start;
     }
@@ -25,19 +25,27 @@
     .youlist-container .Details {
         min-width: 0;
         align-items: stretch;
-        gap: 0.35rem;
+        gap: 0.25rem;
     }
 
     .youlist-container .Title h2 {
-        font-size: 1.15rem;
+        font-size: 1.35rem;
+        line-height: 1.15;
+        margin-bottom: 0.15rem;
+    }
+
+    .youlist-container .Director h3,
+    .youlist-container .ReleaseYear h3,
+    .youlist-container .Genre h3,
+    .youlist-container .Cast h3 {
+        font-size: 1.05rem;
         line-height: 1.2;
     }
 
-    .youlist-container .Director,
-    .youlist-container .ReleaseYear,
-    .youlist-container .Genre,
-    .youlist-container .Cast {
-        font-size: 0.9rem;
+    .youlist-container .comment,
+    .youlist-container .all-comments p {
+        font-size: 1.1rem;
+        line-height: 1.25;
     }
 
     .youlist-container .comment-buttons {
@@ -47,13 +55,24 @@
 
 @media (max-width: 360px) {
     .youlist-container .movielist-section {
-        grid-template-columns: 82px minmax(0, 1fr);
+        grid-template-columns: 100px minmax(0, 1fr);
         gap: 0.65rem;
         padding: 0.7rem;
     }
 
     .youlist-container .movie-poster {
-        width: 82px;
-        max-width: 82px;
+        width: 100px;
+        max-width: 100px;
+    }
+
+    .youlist-container .Title h2 {
+        font-size: 1.2rem;
+    }
+
+    .youlist-container .Director h3,
+    .youlist-container .ReleaseYear h3,
+    .youlist-container .Genre h3,
+    .youlist-container .Cast h3 {
+        font-size: 0.98rem;
     }
 }
