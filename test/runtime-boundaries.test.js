@@ -4,6 +4,8 @@ import { join } from "node:path";
 import { after, before, test } from "node:test";
 import { fileURLToPath } from "node:url";
 
+import { COURSE_ARCHIVE } from "../src/data/courseArchive.js";
+
 const rootDir = fileURLToPath(new URL("../", import.meta.url));
 const activeViewRoots = [
     "views/partials",
@@ -13,6 +15,7 @@ const activeViewRoots = [
 ];
 const activeViewFiles = [
     "views/index.ejs",
+    "views/archive.ejs",
     "views/contact.ejs",
     "views/login.ejs",
     "views/register.ejs",
@@ -21,6 +24,7 @@ const activeViewFiles = [
 ];
 const activeAssetFiles = [
     "public/styles/main.css",
+    "public/styles/archive.css",
     "public/styles/youlist.css",
     "public/styles/youlist-mobile.css",
     "public/styles/echotrace.css",
@@ -68,8 +72,11 @@ async function assertFilesAvoidRetiredPaths(files) {
 }
 
 test("active server source has no retired course-work dependencies", async () => {
+    const archiveMetadataPath = "src/data/courseArchive.js";
     const sourceFiles = (await listFiles("src")).filter(path =>
-        path.endsWith(".js") && path !== "src/middleware/staticAssets.js"
+        path.endsWith(".js")
+        && path !== "src/middleware/staticAssets.js"
+        && path !== archiveMetadataPath
     );
     await assertFilesAvoidRetiredPaths(sourceFiles);
 
@@ -77,6 +84,10 @@ test("active server source has no retired course-work dependencies", async () =>
     assert.match(staticAssets, /RETIRED_PUBLIC_PATH/);
     assert.match(staticAssets, /project\(\?:25\|28\|29\|30\|33-1\|33-2\|33-3\|34\)/);
     assert.doesNotMatch(staticAssets, /projectAssetsDir/);
+
+    const archiveMetadata = await readFile(join(rootDir, archiveMetadataPath), "utf8");
+    assert.match(archiveMetadata, /archive\/course-projects-2026-07-28/);
+    assert.doesNotMatch(archiveMetadata, /currentPath:\s*["'`]\/(?:project|static)/);
 });
 
 test("active templates and browser assets use canonical feature paths", async () => {
@@ -111,6 +122,19 @@ test("course archive points to the preserved branch and retains the manifest", a
     ]) {
         assert.ok(archive.includes(title), `archive should retain ${title}`);
     }
+
+    const projects = [...COURSE_ARCHIVE.backEnd, ...COURSE_ARCHIVE.frontEnd];
+    assert.equal(projects.length, 24);
+    assert.match(COURSE_ARCHIVE.branchUrl, /archive\/course-projects-2026-07-28/);
+
+    for (const project of projects) {
+        assert.match(project.screenshot, /\/blob\/archive\/course-projects-2026-07-28\//);
+        assert.match(project.source, /\/tree\/archive\/course-projects-2026-07-28\//);
+        assert.ok(
+            project.currentPath === null || ["/youlist", "/echotrace"].includes(project.currentPath),
+            `${project.title} must not reactivate a retired route`
+        );
+    }
 });
 
 let server;
@@ -144,7 +168,7 @@ async function request(path) {
 }
 
 test("active public pages do not emit retired local URLs", async () => {
-    for (const path of ["/", "/contact", "/auth/login", "/auth/register", "/echotrace", "/storecalc"]) {
+    for (const path of ["/", "/archive", "/contact", "/auth/login", "/auth/register", "/echotrace", "/storecalc"]) {
         const response = await request(path);
         assert.equal(response.status, 200, `${path} should return 200`);
         const html = await response.text();
