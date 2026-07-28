@@ -25,7 +25,6 @@ const activeAssetFiles = [
     "public/styles/youlist-mobile.css",
     "public/styles/echotrace.css",
     "public/js/canvas.js",
-    "public/js/navbar.js",
     "public/js/youlist.js",
     "public/js/echotrace.js",
     "public/js/echotrace-logo.js"
