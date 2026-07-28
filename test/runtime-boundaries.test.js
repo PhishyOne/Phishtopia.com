@@ -34,7 +34,8 @@ const activeAssetFiles = [
 const retiredRuntimePatterns = [
     /app-brewery-server/,
     /["'`]\/static(?:\/|["'`])/,
-    /\/project(?:25|28|29|30|33-1|33-2|33-3|34)(?:\/|["'`])/,
+    /["'`]\/projects(?:\/|["'`])/,
+    /\/project\d[\w-]*(?:\/|["'`])/,
     /project34/,
     /["'`]\/player-int(?:\/|["'`])/,
     /res\.render\(["'`]player-int["'`]/,
@@ -101,9 +102,9 @@ test("course archive points to the preserved branch and retains the manifest", a
         "Chapter 13 - Capstone - My Own Site",
         "Chapter 2 - Movie Rank"
     ]) {
-        assert.match(archive, new RegExp(title.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
+        assert.ok(archive.includes(title), `archive should retain ${title}`);
     }
-}
+});
 
 let server;
 let baseUrl;
@@ -140,7 +141,10 @@ test("active public pages do not emit retired local URLs", async () => {
         const response = await request(path);
         assert.equal(response.status, 200, `${path} should return 200`);
         const html = await response.text();
-        assert.doesNotMatch(html, /(?:href|src|action)=["']\/(?:static|project\d|player-int)(?:\/|["'])/);
+        assert.doesNotMatch(
+            html,
+            /(?:href|src|action)=["']\/(?:static|projects|project\d[\w-]*|player-int)(?:\/|["'])/
+        );
     }
 });
 
