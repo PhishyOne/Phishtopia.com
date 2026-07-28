@@ -3,6 +3,8 @@ export function requireLogin(req, res, next) {
 
     if (req.method === "GET" && !req.originalUrl.startsWith("/api/")) {
         req.session.returnTo = req.originalUrl;
+        const encodedReturnTo = encodeURIComponent(req.originalUrl);
+        return res.redirect(`/auth/login?returnTo=${encodedReturnTo}`);
     }
 
     return res.redirect("/auth/login");
