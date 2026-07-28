@@ -26,8 +26,8 @@ function sendMutationResult(res, result) {
 
 export function renderYouListPage(req, res) {
     noStore(res);
-    res.render("project34", {
-        bodyClass: "project34",
+    res.render("youlist", {
+        bodyClass: "youlist",
         extraStyles: [
             "/styles/youlist.css",
             "/styles/youlist-mobile.css"
