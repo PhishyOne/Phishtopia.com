@@ -1,0 +1,169 @@
+import assert from "node:assert/strict";
+import { readdir, readFile } from "node:fs/promises";
+import { join } from "node:path";
+import { after, before, test } from "node:test";
+import { fileURLToPath } from "node:url";
+
+const rootDir = fileURLToPath(new URL("../", import.meta.url));
+const activeViewRoots = [
+    "views/partials",
+    "views/youlist",
+    "views/echotrace",
+    "views/storecalc"
+];
+const activeViewFiles = [
+    "views/index.ejs",
+    "views/contact.ejs",
+    "views/login.ejs",
+    "views/register.ejs",
+    "views/resend-verification.ejs",
+    "views/check-email.ejs"
+];
+const activeAssetFiles = [
+    "public/styles/main.css",
+    "public/styles/youlist.css",
+    "public/styles/youlist-mobile.css",
+    "public/styles/echotrace.css",
+    "public/js/canvas.js",
+    "public/js/navbar.js",
+    "public/js/youlist.js",
+    "public/js/echotrace.js",
+    "public/js/echotrace-logo.js"
+];
+
+const retiredRuntimePatterns = [
+    /app-brewery-server/,
+    /["'`]\/static(?:\/|["'`])/,
+    /\/project(?:25|28|29|30|33-1|33-2|33-3|34)(?:\/|["'`])/,
+    /project34/,
+    /["'`]\/player-int(?:\/|["'`])/,
+    /res\.render\(["'`]player-int["'`]/,
+    /\/styles\/player-int\.css/,
+    /\/js\/player-int\.js/,
+    /\/js\/little-logo\.js/,
+    /projectAssetsDir/
+];
+
+async function listFiles(relativePath) {
+    const absolutePath = join(rootDir, relativePath);
+    const entries = await readdir(absolutePath, { withFileTypes: true });
+    const files = [];
+
+    for (const entry of entries) {
+        const child = join(relativePath, entry.name);
+        if (entry.isDirectory()) files.push(...await listFiles(child));
+        else files.push(child);
+    }
+
+    return files;
+}
+
+async function assertFilesAvoidRetiredPaths(files) {
+    for (const relativePath of files) {
+        const content = await readFile(join(rootDir, relativePath), "utf8");
+        for (const pattern of retiredRuntimePatterns) {
+            assert.doesNotMatch(content, pattern, `${relativePath} must not reference ${pattern}`);
+        }
+    }
+}
+
+test("active server source has no retired course-work dependencies", async () => {
+    const sourceFiles = (await listFiles("src")).filter(path => path.endsWith(".js"));
+    await assertFilesAvoidRetiredPaths(sourceFiles);
+});
+
+test("active templates and browser assets use canonical feature paths", async () => {
+    const nestedViews = (await Promise.all(activeViewRoots.map(listFiles))).flat();
+    await assertFilesAvoidRetiredPaths([
+        ...activeViewFiles,
+        ...nestedViews,
+        ...activeAssetFiles
+    ]);
+
+    const youListClient = await readFile(join(rootDir, "public/js/youlist.js"), "utf8");
+    assert.match(youListClient, /\/images\/youlist-placeholder\.jpg/);
+
+    const echoTraceRouter = await readFile(join(rootDir, "src/routes/echotrace.routes.js"), "utf8");
+    assert.match(echoTraceRouter, /res\.render\("echotrace\/index"/);
+    assert.match(echoTraceRouter, /\/styles\/echotrace\.css/);
+    assert.match(echoTraceRouter, /\/js\/echotrace\.js/);
+});
+
+test("course archive points to the preserved branch and retains the manifest", async () => {
+    const archive = await readFile(join(rootDir, "docs/course-project-archive.md"), "utf8");
+    assert.match(archive, /archive\/course-projects-2026-07-28/);
+
+    for (const title of [
+        "Chapter 34 - Movie Database (YouList)",
+        "Chapter 33-3 - To Do List",
+        "Chapter 29 - Capstone Project - Eve Echoes PlayInt",
+        "Chapter 20 - Simon",
+        "Chapter 13 - Capstone - My Own Site",
+        "Chapter 2 - Movie Rank"
+    ]) {
+        assert.match(archive, new RegExp(title.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
+    }
+}
+
+let server;
+let baseUrl;
+
+before(async () => {
+    process.env.NODE_ENV = "test";
+    process.env.SESSION_SECRET = "test-only-session-secret-that-is-long-enough";
+    process.env.SITE_URL = "https://phishtopia.com";
+    process.env.PREWARM_TMDB_CACHE = "false";
+    delete process.env.DATABASE_URL;
+    delete process.env.DB_HOST;
+
+    const { createApp } = await import("../src/app.js");
+    const app = await createApp();
+    await new Promise((resolve, reject) => {
+        server = app.listen(0, "127.0.0.1", error => error ? reject(error) : resolve());
+    });
+    baseUrl = `http://127.0.0.1:${server.address().port}`;
+});
+
+after(async () => {
+    if (!server?.listening) return;
+    await new Promise((resolve, reject) => {
+        server.close(error => error ? reject(error) : resolve());
+    });
+});
+
+async function request(path) {
+    return fetch(`${baseUrl}${path}`, { redirect: "manual" });
+}
+
+test("active public pages do not emit retired local URLs", async () => {
+    for (const path of ["/", "/contact", "/auth/login", "/auth/register", "/echotrace", "/storecalc"]) {
+        const response = await request(path);
+        assert.equal(response.status, 200, `${path} should return 200`);
+        const html = await response.text();
+        assert.doesNotMatch(html, /(?:href|src|action)=["']\/(?:static|project\d|player-int)(?:\/|["'])/);
+    }
+});
+
+test("EchoTrace serves canonical assets and legacy asset paths are gone", async () => {
+    const canonicalAssets = [
+        ["/styles/echotrace.css", /text\/css/],
+        ["/js/echotrace.js", /javascript/],
+        ["/js/echotrace-logo.js", /javascript/]
+    ];
+
+    for (const [path, contentType] of canonicalAssets) {
+        const response = await request(path);
+        assert.equal(response.status, 200, `${path} should return 200`);
+        assert.match(response.headers.get("content-type") || "", contentType);
+    }
+
+    for (const path of [
+        "/styles/player-int.css",
+        "/js/player-int.js",
+        "/js/little-logo.js",
+        "/projects/assets"
+    ]) {
+        const response = await request(path);
+        assert.equal(response.status, 404, `${path} should return 404`);
+    }
+});
