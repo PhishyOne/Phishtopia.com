@@ -19,11 +19,16 @@ Routes and controllers call `pageLocals(pageName, values)` when rendering an EJS
 
 Add a new page definition before mounting a new rendered route. Do not recreate `extraStyles` or `extraScripts` arrays inside a controller or template.
 
+The shared branded error template is rendered through `src/middleware/errorResponses.js`. It uses the normal header and footer, while API and static-asset failures keep lightweight non-HTML responses. `/js/error-scenes.js` loads the matching cinematic WebP from `/images/errors/` only on error pages and layers it over the CSS fallback through `/styles/errors-cinematic.css`.
+
 ## Current active inventory
 
 ### Styles
 
 - `/styles/main.css`
+- `/styles/archive.css`
+- `/styles/errors.css`
+- `/styles/errors-cinematic.css`
 - `/styles/youlist.css`
 - `/styles/youlist-mobile.css`
 - `/styles/echotrace.css`
@@ -34,12 +39,17 @@ Add a new page definition before mounting a new rendered route. Do not recreate 
 - `/js/canvas.js`
 - `/js/echotrace-logo.js`
 - `/js/echotrace.js`
+- `/js/error-scenes.js`
 - `/js/register.js`
 - `/js/youlist.js`
 
 ### Images
 
 - `/images/discord.svg`
+- `/images/errors/403.webp`
+- `/images/errors/404.webp`
+- `/images/errors/429.webp`
+- `/images/errors/500.webp`
 - `/images/logoBG.jpg`
 - `/images/phishLogo.png`
 - `/images/share-card.png`

@@ -23,6 +23,12 @@ export const PAGE_DEFINITIONS = Object.freeze({
         styles: ["/styles/archive.css"],
         scripts: ["/js/canvas.js"]
     }),
+    error: definePage({
+        title: "Error | Phishtopia",
+        bodyClass: "error-page",
+        styles: ["/styles/errors.css", "/styles/errors-cinematic.css"],
+        scripts: ["/js/error-scenes.js"]
+    }),
     login: definePage({
         title: "Login",
         bodyClass: "auth",

@@ -6,6 +6,7 @@ import { logsDir, viewsDir } from "./config/paths.js";
 import { buildSessionMiddleware } from "./config/session.js";
 import { canonicalRedirects } from "./middleware/canonicalRedirects.js";
 import { errorHandler } from "./middleware/errorHandler.js";
+import { notFoundHandler } from "./middleware/notFoundHandler.js";
 import { registerStaticAssets } from "./middleware/staticAssets.js";
 import { staticAssetLogger } from "./middleware/staticAssetLogger.js";
 import { templateLocals } from "./middleware/templateLocals.js";
@@ -44,6 +45,7 @@ export async function createApp() {
     app.locals.basedir = viewsDir;
 
     app.use(buildAppRouter());
+    app.use(notFoundHandler);
     app.use(errorHandler);
 
     return app;
