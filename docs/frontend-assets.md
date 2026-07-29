@@ -19,7 +19,7 @@ Routes and controllers call `pageLocals(pageName, values)` when rendering an EJS
 
 Add a new page definition before mounting a new rendered route. Do not recreate `extraStyles` or `extraScripts` arrays inside a controller or template.
 
-The shared branded error template is rendered through `src/middleware/errorResponses.js`. It uses the normal header and footer, while API and static-asset failures keep lightweight non-HTML responses. `/js/error-scenes.js` loads the status-specific WebP from `/images/errors/`, and `/styles/errors-cinematic.css` layers the scene over the CSS-only fallback.
+The shared branded error template is rendered through `src/middleware/errorResponses.js`. It uses the normal header and footer, while API and static-asset failures keep lightweight non-HTML responses. `/js/error-scenes.js` loads the matching cinematic WebP from `/images/errors/` only on error pages and layers it over the CSS fallback through `/styles/errors-cinematic.css`.
 
 ## Current active inventory
 
