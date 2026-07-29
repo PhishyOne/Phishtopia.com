@@ -1,0 +1,80 @@
+<%- include("../partials/header") %>
+
+<main class="error-stage error-stage--<%= errorPage.status %>" aria-labelledby="error-title">
+    <div class="error-bubbles" aria-hidden="true">
+        <span class="error-bubble" style="--x: 5%; --size: 10px; --duration: 15s; --delay: -4s;"></span>
+        <span class="error-bubble" style="--x: 13%; --size: 20px; --duration: 19s; --delay: -12s;"></span>
+        <span class="error-bubble" style="--x: 22%; --size: 7px; --duration: 13s; --delay: -7s;"></span>
+        <span class="error-bubble" style="--x: 31%; --size: 14px; --duration: 17s; --delay: -2s;"></span>
+        <span class="error-bubble" style="--x: 43%; --size: 8px; --duration: 14s; --delay: -10s;"></span>
+        <span class="error-bubble" style="--x: 55%; --size: 22px; --duration: 21s; --delay: -15s;"></span>
+        <span class="error-bubble" style="--x: 64%; --size: 11px; --duration: 16s; --delay: -5s;"></span>
+        <span class="error-bubble" style="--x: 73%; --size: 17px; --duration: 18s; --delay: -13s;"></span>
+        <span class="error-bubble" style="--x: 82%; --size: 8px; --duration: 14s; --delay: -8s;"></span>
+        <span class="error-bubble" style="--x: 91%; --size: 25px; --duration: 22s; --delay: -16s;"></span>
+    </div>
+
+    <section class="error-card">
+        <p class="error-kicker"><%= errorPage.eyebrow %></p>
+
+        <div class="error-monument" aria-label="Error <%= errorPage.status %>">
+            <span class="error-number"><%= errorPage.status %></span>
+
+            <span class="error-emblem" aria-hidden="true">
+                <% if (errorPage.icon === "compass") { %>
+                    <svg viewBox="0 0 100 100" focusable="false">
+                        <circle cx="50" cy="50" r="34"></circle>
+                        <path d="M62 31 54 54 31 63 46 46Z"></path>
+                        <circle cx="50" cy="50" r="4"></circle>
+                        <path d="M50 10v10M50 80v10M10 50h10M80 50h10"></path>
+                    </svg>
+                <% } else if (errorPage.icon === "lock") { %>
+                    <svg viewBox="0 0 100 100" focusable="false">
+                        <rect x="25" y="43" width="50" height="39" rx="8"></rect>
+                        <path d="M35 43V32c0-11 7-19 15-19s15 8 15 19v11"></path>
+                        <circle cx="50" cy="61" r="5"></circle>
+                        <path d="M50 66v8"></path>
+                    </svg>
+                <% } else if (errorPage.icon === "current") { %>
+                    <svg viewBox="0 0 100 100" focusable="false">
+                        <path d="M15 35c12-12 24-12 36 0s24 12 34 0"></path>
+                        <path d="M15 51c12-12 24-12 36 0s24 12 34 0"></path>
+                        <path d="M15 67c12-12 24-12 36 0s24 12 34 0"></path>
+                    </svg>
+                <% } else { %>
+                    <svg viewBox="0 0 100 100" focusable="false">
+                        <circle cx="50" cy="50" r="19"></circle>
+                        <circle cx="50" cy="50" r="6"></circle>
+                        <path d="M50 11v14M50 75v14M11 50h14M75 50h14M23 23l10 10M67 67l10 10M77 23 67 33M33 67 23 77"></path>
+                    </svg>
+                <% } %>
+            </span>
+        </div>
+
+        <div class="error-plaque">
+            <h1 id="error-title"><%= errorPage.title %></h1>
+            <p><%= errorPage.message %></p>
+        </div>
+
+        <nav class="error-actions" aria-label="Error recovery links">
+            <a class="error-action error-action--home" href="/">
+                <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                    <path d="M3 11.5 12 4l9 7.5"></path>
+                    <path d="M5.5 10.5V20h13v-9.5M9.5 20v-6h5v6"></path>
+                </svg>
+                <span>Back Home</span>
+            </a>
+            <a class="error-action error-action--archive" href="/archive">
+                <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                    <circle cx="12" cy="12" r="9"></circle>
+                    <path d="m15.5 8.5-2.2 4.8-4.8 2.2 2.2-4.8Z"></path>
+                </svg>
+                <span>Projects</span>
+            </a>
+        </nav>
+
+        <p class="error-footnote">Home of the Improbable.</p>
+    </section>
+</main>
+
+<%- include("../partials/footer") %>
