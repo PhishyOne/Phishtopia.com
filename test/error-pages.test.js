@@ -107,6 +107,8 @@ test("unknown browser routes render the branded 404 without leaking internals", 
 
     const html = await response.text();
     assert.match(html, /<body class="error-page">/);
+    assert.match(html, /class="error-stage error-stage--404 error-stage--scene-ready"/);
+    assert.match(html, /--error-scene: url\('\/images\/errors\/404\.webp'\)/);
     assert.match(html, /This page is off the map\./);
     assert.match(html, /drifted into uncharted waters/);
     assert.match(html, /href="\/styles\/errors\.css"/);
@@ -166,6 +168,8 @@ test("403 and 429 browser responses use their status-specific copy", async () =>
         const html = await response.text();
         assert.match(html, new RegExp(title.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
         assert.match(html, new RegExp(message));
+        assert.match(html, new RegExp(`/images/errors/${status}\\.webp`));
+        assert.match(html, /error-stage--scene-ready/);
     }
 });
 
@@ -179,6 +183,8 @@ test("500 responses render safe copy for browsers and safe JSON for APIs", async
     assert.match(browserResponse.headers.get("content-type") || "", /^text\/html\b/);
     const html = await browserResponse.text();
     assert.match(html, /Something stirred in the depths\./);
+    assert.match(html, /\/images\/errors\/500\.webp/);
+    assert.match(html, /error-stage--scene-ready/);
     assert.doesNotMatch(html, /secret database host|internal-db\.example|node_modules/);
 
     const apiResponse = await fetch(`${responseBaseUrl}/internal/boom`, {
