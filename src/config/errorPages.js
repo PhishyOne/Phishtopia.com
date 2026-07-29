@@ -3,6 +3,14 @@ function defineErrorPage({ status, eyebrow, title, message, apiMessage, icon }) 
 }
 
 export const ERROR_PAGES = Object.freeze({
+    400: defineErrorPage({
+        status: 400,
+        eyebrow: "Bad request",
+        title: "This request drifted off course.",
+        message: "The server could not understand or process it.",
+        apiMessage: "Bad request",
+        icon: "compass"
+    }),
     403: defineErrorPage({
         status: 403,
         eyebrow: "Access forbidden",
@@ -18,6 +26,22 @@ export const ERROR_PAGES = Object.freeze({
         message: "Looks like you’ve drifted into uncharted waters.",
         apiMessage: "Not found",
         icon: "compass"
+    }),
+    405: defineErrorPage({
+        status: 405,
+        eyebrow: "Method not allowed",
+        title: "You can’t swim that direction.",
+        message: "That request method isn’t allowed here.",
+        apiMessage: "Method not allowed",
+        icon: "current"
+    }),
+    410: defineErrorPage({
+        status: 410,
+        eyebrow: "Gone",
+        title: "This page has sunk for good.",
+        message: "It once lived here, but has been permanently removed.",
+        apiMessage: "Gone",
+        icon: "anchor"
     }),
     429: defineErrorPage({
         status: 429,
