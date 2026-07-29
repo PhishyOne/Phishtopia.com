@@ -1,8 +1,10 @@
 import assert from "node:assert/strict";
-import { readFile } from "node:fs/promises";
+import { spawnSync } from "node:child_process";
+import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { test } from "node:test";
 import { fileURLToPath } from "node:url";
-import { join } from "node:path";
 
 const rootDir = fileURLToPath(new URL("../", import.meta.url));
 const statuses = Object.freeze({
@@ -22,6 +24,8 @@ const statuses = Object.freeze({
     message: "The request timed out before the current returned."
   }
 });
+
+const nginxSnippet = join(rootDir, "ops", "nginx", "phishtopia-upstream-errors.conf");
 
 test("static upstream-error pages are self-contained and status-specific", async () => {
   for (const [status, expected] of Object.entries(statuses)) {
@@ -60,10 +64,7 @@ test("shared upstream-error CSS is local, responsive, and script-free", async ()
 });
 
 test("Nginx snippet intercepts only the three upstream statuses with internal documents", async () => {
-  const config = await readFile(
-    join(rootDir, "ops", "nginx", "phishtopia-upstream-errors.conf"),
-    "utf8"
-  );
+  const config = await readFile(nginxSnippet, "utf8");
 
   assert.match(config, /\bproxy_intercept_errors\s+on;/);
 
@@ -94,6 +95,44 @@ test("Nginx snippet intercepts only the three upstream statuses with internal do
   assert.doesNotMatch(config, /\bproxy_pass\b/);
   assert.doesNotMatch(config, /\breturn\s+200\b/);
   assert.doesNotMatch(config, /\$\{|\$http_|\$arg_/);
+});
+
+test("Nginx accepts the reviewed include when the binary is available", async (t) => {
+  const version = spawnSync("nginx", ["-v"], { encoding: "utf8" });
+  if (version.error?.code === "ENOENT") {
+    t.skip("nginx is not installed on this runner");
+    return;
+  }
+  assert.equal(version.status, 0, version.stderr || version.stdout);
+
+  const directory = await mkdtemp(join(tmpdir(), "phishtopia-nginx-test-"));
+  try {
+    const configPath = join(directory, "nginx.conf");
+    await writeFile(configPath, `
+pid ${join(directory, "nginx.pid")};
+error_log stderr;
+events {}
+http {
+  access_log off;
+  server {
+    listen 127.0.0.1:8080;
+    include ${nginxSnippet};
+    location / {
+      proxy_pass http://127.0.0.1:9;
+    }
+  }
+}
+`, "utf8");
+
+    const result = spawnSync(
+      "nginx",
+      ["-t", "-p", `${directory}/`, "-c", configPath],
+      { encoding: "utf8" }
+    );
+    assert.equal(result.status, 0, result.stderr || result.stdout);
+  } finally {
+    await rm(directory, { recursive: true, force: true });
+  }
 });
 
 test("upstream-error runbook documents safe activation, verification, and rollback", async () => {
