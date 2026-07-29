@@ -27,6 +27,9 @@ const EXPECTED_ASSETS = new Map([
     ["/images/errors/404.webp", /^image\/webp\b/],
     ["/images/errors/429.webp", /^image\/webp\b/],
     ["/images/errors/500.webp", /^image\/webp\b/],
+    ["/images/errors/502.webp", /^image\/webp\b/],
+    ["/images/errors/503.webp", /^image\/webp\b/],
+    ["/images/errors/504.webp", /^image\/webp\b/],
     ["/images/logoBG.jpg", /^image\/jpeg\b/],
     ["/images/phishLogo.png", /^image\/png\b/],
     ["/images/share-card.png", /^image\/png\b/],
@@ -60,10 +63,10 @@ test("active frontend asset inventory is explicit and contains no orphan files",
 });
 
 test("every inventoried asset has a production source reference", async () => {
-    const sourceRoots = ["src", "views", "public/styles", "public/js"];
+    const sourceRoots = ["src", "views", "public/styles", "public/js", "ops/nginx"];
     const sourceFiles = (await Promise.all(sourceRoots.map(path => listFiles(rootDir, path))))
         .flat()
-        .filter(path => [".js", ".ejs", ".css"].includes(extname(path)));
+        .filter(path => [".js", ".ejs", ".css", ".conf"].includes(extname(path)));
     const sourceText = (await Promise.all(
         sourceFiles.map(path => readFile(join(rootDir, path), "utf8"))
     )).join("\n");
