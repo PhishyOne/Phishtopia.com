@@ -9,6 +9,7 @@ Phishtopia uses Express static files directly. There is no bundler or frontend b
 - `public/js/<feature>.js`: browser behavior owned by an active feature.
 - `public/images/`: shared and active feature images referenced by production templates or browser code.
 - `public/fonts/`: locally hosted font files.
+- `public/__system-errors/`: self-contained static HTML and CSS used by Nginx when the Node application cannot answer.
 - `src/config/pageAssets.js`: the canonical title, body class, stylesheet list, and script list for each rendered page.
 
 Do not add new files under project-number directories, `app-brewery-server`, or `views/app-brewery-static`. Those sources are preserved only on `archive/course-projects-2026-07-28`.
@@ -19,7 +20,9 @@ Routes and controllers call `pageLocals(pageName, values)` when rendering an EJS
 
 Add a new page definition before mounting a new rendered route. Do not recreate `extraStyles` or `extraScripts` arrays inside a controller or template.
 
-The shared branded error template is rendered through `src/middleware/errorResponses.js`. It uses the normal header and footer, while API and static-asset failures keep lightweight non-HTML responses. `/js/error-scenes.js` loads the matching cinematic WebP from `/images/errors/` only on error pages and layers it over the CSS fallback through `/styles/errors-cinematic.css`.
+The shared branded error template is rendered through `src/middleware/errorResponses.js`. It uses the normal header and footer, while API and static-asset failures keep lightweight non-HTML responses. Supported cinematic pages receive their scene URL in the initial server-rendered HTML; `/js/error-scenes.js` remains only as a fallback.
+
+Nginx upstream failures use the static files in `public/__system-errors/` plus the matching `/images/errors/502.webp`, `/images/errors/503.webp`, and `/images/errors/504.webp`. Their reviewed include lives at `ops/nginx/phishtopia-upstream-errors.conf`. These pages must not depend on Express, EJS, JavaScript, remote fonts, or third-party assets.
 
 ## Current active inventory
 
@@ -50,6 +53,9 @@ The shared branded error template is rendered through `src/middleware/errorRespo
 - `/images/errors/404.webp`
 - `/images/errors/429.webp`
 - `/images/errors/500.webp`
+- `/images/errors/502.webp`
+- `/images/errors/503.webp`
+- `/images/errors/504.webp`
 - `/images/logoBG.jpg`
 - `/images/phishLogo.png`
 - `/images/share-card.png`
@@ -72,3 +78,4 @@ EchoTrace also loads Shentox from CCP's public webfont host. Its `@font-face` de
 6. Add every production asset to `test/asset-content-types.test.js`. The test verifies the complete inventory and expected HTTP content types.
 7. Remove an asset from the inventory in the same PR that removes its final production reference.
 8. Keep third-party URLs explicit and feature-scoped. Do not copy external assets into the repository without checking licensing and maintenance cost.
+9. Keep Nginx fallback pages self-contained and validate the include with `nginx -t` before any reload.

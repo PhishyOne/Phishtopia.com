@@ -1,0 +1,243 @@
+:root {
+  color-scheme: dark;
+  font-family: "Cormorant Garamond", Georgia, serif;
+  --ink: #eafaff;
+  --muted: #b7d8df;
+  --panel: rgba(2, 17, 27, 0.92);
+  --line: rgba(95, 184, 194, 0.55);
+  --cyan: #31d7f3;
+  --orange: #ff9a58;
+}
+
+* { box-sizing: border-box; }
+
+html, body { min-height: 100%; }
+
+body {
+  margin: 0;
+  background:
+    radial-gradient(circle at 50% -10%, rgba(70, 214, 242, 0.22), transparent 38%),
+    linear-gradient(180deg, #052638 0%, #020e18 50%, #01070d 100%);
+  color: var(--ink);
+}
+
+body::before {
+  content: "";
+  position: fixed;
+  inset: -20% 0 auto;
+  height: 70vh;
+  pointer-events: none;
+  background: repeating-conic-gradient(
+    from 250deg at 50% 0%,
+    rgba(205, 249, 255, 0.09) 0deg 4deg,
+    transparent 4deg 15deg
+  );
+  filter: blur(5px);
+  opacity: 0.55;
+}
+
+a { color: inherit; }
+
+.shell {
+  position: relative;
+  z-index: 1;
+  min-height: 100svh;
+  display: flex;
+  flex-direction: column;
+}
+
+.brand {
+  min-height: 78px;
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+  padding: 0.7rem clamp(1rem, 4vw, 2.4rem);
+  border-bottom: 1px solid rgba(47, 210, 237, 0.28);
+  background: rgba(1, 12, 21, 0.94);
+  box-shadow: 0 10px 35px rgba(0, 0, 0, 0.36);
+}
+
+.brand img {
+  width: 56px;
+  height: 56px;
+  object-fit: cover;
+  border: 1px solid rgba(76, 221, 241, 0.5);
+  border-radius: 50%;
+  box-shadow: 0 0 24px rgba(39, 203, 231, 0.16);
+}
+
+.brand-text {
+  display: flex;
+  flex-direction: column;
+  line-height: 1;
+}
+
+.brand-name {
+  font-family: "Trebuchet MS", system-ui, sans-serif;
+  font-size: clamp(1.25rem, 4vw, 1.75rem);
+  font-weight: 800;
+  letter-spacing: 0.08em;
+}
+
+.brand-tagline {
+  margin-top: 0.35rem;
+  color: #72cbd9;
+  font-size: 0.92rem;
+  letter-spacing: 0.04em;
+}
+
+main {
+  width: 100%;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.scene {
+  width: 100%;
+  min-height: clamp(300px, 56.25vw, 760px);
+  background-color: #03141f;
+  background-image:
+    linear-gradient(180deg, rgba(0, 17, 28, 0.02) 0%, rgba(0, 12, 21, 0.08) 48%, rgba(0, 8, 14, 0.92) 100%),
+    var(--scene);
+  background-position: center top;
+  background-repeat: no-repeat;
+  background-size: cover;
+}
+
+.content {
+  width: min(820px, calc(100% - 1.5rem));
+  margin: clamp(-5rem, -7vw, -2rem) auto 0;
+  padding: clamp(1.1rem, 3vw, 1.75rem);
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  background:
+    linear-gradient(180deg, rgba(8, 28, 38, 0.95), rgba(1, 11, 19, 0.97)),
+    var(--panel);
+  box-shadow:
+    inset 0 0 0 3px rgba(0, 7, 12, 0.55),
+    0 24px 65px rgba(0, 0, 0, 0.62);
+  text-align: center;
+  backdrop-filter: blur(8px);
+}
+
+.eyebrow {
+  display: inline-block;
+  margin: 0 0 0.85rem;
+  padding: 0.38rem 0.85rem;
+  border: 1px solid color-mix(in srgb, var(--cyan) 55%, transparent);
+  border-radius: 999px;
+  color: var(--orange);
+  background: rgba(0, 12, 20, 0.74);
+  font-family: "Trebuchet MS", system-ui, sans-serif;
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+h1 {
+  margin: 0;
+  font-family: "Trebuchet MS", system-ui, sans-serif;
+  font-size: clamp(2rem, 7vw, 4.2rem);
+  line-height: 1.04;
+  text-shadow: 0 3px 10px rgba(0, 0, 0, 0.85);
+}
+
+.message {
+  max-width: 650px;
+  margin: 0.8rem auto 0;
+  color: var(--muted);
+  font-size: clamp(1.12rem, 3.3vw, 1.55rem);
+  line-height: 1.35;
+}
+
+.actions {
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 0.85rem;
+  margin-top: 1.2rem;
+}
+
+.action {
+  min-width: min(240px, 100%);
+  padding: 0.8rem 1.25rem;
+  border: 1px solid var(--cyan);
+  border-radius: 999px;
+  background: rgba(0, 12, 20, 0.84);
+  color: var(--ink);
+  font-family: "Trebuchet MS", system-ui, sans-serif;
+  font-size: 1rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-decoration: none;
+  text-transform: uppercase;
+  box-shadow: 0 0 24px rgba(38, 205, 232, 0.1);
+}
+
+.action--retry { border-color: var(--orange); }
+
+.action:focus-visible {
+  outline: 3px solid #fff;
+  outline-offset: 3px;
+}
+
+footer {
+  padding: 1.2rem 1rem 1.6rem;
+  color: rgba(189, 224, 231, 0.72);
+  text-align: center;
+  font-size: 0.9rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+@media (max-width: 700px) {
+  .brand { min-height: 70px; }
+  .brand img { width: 50px; height: 50px; }
+
+  .scene {
+    min-height: 56.25vw;
+    background-size: 100% auto;
+  }
+
+  .content {
+    width: calc(100% - 1rem);
+    margin-top: 0.65rem;
+    border-radius: 13px;
+  }
+
+  .actions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .action {
+    min-width: 0;
+    padding-inline: 0.6rem;
+    font-size: 0.88rem;
+  }
+}
+
+@media (max-width: 420px) {
+  .actions { grid-template-columns: 1fr; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    scroll-behavior: auto !important;
+  }
+}
