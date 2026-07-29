@@ -12,7 +12,7 @@ Archive source: [`archive/course-projects-2026-07-28`](https://github.com/Phishy
 |---|---|---|
 | `app-brewery-server` | No active import or router dependency remained. | Removed the entire compatibility and course-project tree from `main`; the archive branch retains it. |
 | `/static` | No active route existed, but the retired course-progress tree remained in `views/app-brewery-static`. | Preserved its manifest and screenshots through the archive branch, removed the tree from `main`, and retained the public-prefix block. |
-| `/projectXX` | Page routes were retired, but project-number views and some directly servable assets remained. | Removed the retired view trees and the remaining root `public/project34` tree; known retired prefixes continue to return 404. |
+| `/projectXX` | Page routes were retired, but project-number views and some directly servable assets remained. | Removed the retired view trees and the remaining root `public/project34` tree; known retired prefixes now return 410 Gone. |
 | `project34` | Server-side YouList paths were canonical, but the browser fallback still used `/project34/images/placeholder.png`. | Changed the fallback to `/images/youlist-placeholder.jpg`, removed the old view and asset tree, and added regression assertions. |
 | `player-int` | EchoTrace still rendered and loaded files named after the old alias. | Moved the live template and assets to canonical EchoTrace paths and removed the old files. |
 | Course-progress stylesheet | `/styles/app-brewery.css` served only the retired manifest. | Removed it with the retired course-progress tree. |
@@ -49,5 +49,5 @@ The bare `player-int` string remains temporarily as an internal CSS body-class n
 
 ## Regression coverage
 
-- `test/runtime-boundaries.test.js` checks the active source boundary, canonical YouList and EchoTrace paths, archive preservation, rendered pages, canonical feature assets, and 404 behavior for retired public paths.
+- `test/runtime-boundaries.test.js` checks the active source boundary, canonical YouList and EchoTrace paths, archive preservation, rendered pages, canonical feature assets, and 410 behavior for retired public paths.
 - `test/course-project-removal.test.js` checks that the retired source trees and standalone files are absent from the working repository while archive links continue to target the preserved branch.

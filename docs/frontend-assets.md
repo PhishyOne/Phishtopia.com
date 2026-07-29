@@ -20,7 +20,7 @@ Routes and controllers call `pageLocals(pageName, values)` when rendering an EJS
 
 Add a new page definition before mounting a new rendered route. Do not recreate `extraStyles` or `extraScripts` arrays inside a controller or template.
 
-The shared branded error template is rendered through `src/middleware/errorResponses.js`. It uses the normal header and footer, while API and static-asset failures keep lightweight non-HTML responses. Supported cinematic pages receive their scene URL in the initial server-rendered HTML; `/js/error-scenes.js` remains only as a fallback.
+The shared branded error template is rendered through `src/middleware/errorResponses.js`. It uses the normal header and footer, while API and static-asset failures keep lightweight non-HTML responses. Supported cinematic pages receive their scene URL in the initial server-rendered HTML; `/js/error-scenes.js` remains only as a fallback. Express currently has dedicated cinematic definitions for `400`, `403`, `404`, `405`, `410`, `429`, and `500`.
 
 Nginx upstream failures use the static files in `public/__system-errors/` plus the matching `/images/errors/502.webp`, `/images/errors/503.webp`, and `/images/errors/504.webp`. Their reviewed include lives at `ops/nginx/phishtopia-upstream-errors.conf`. These pages must not depend on Express, EJS, JavaScript, remote fonts, or third-party assets.
 
@@ -49,8 +49,11 @@ Nginx upstream failures use the static files in `public/__system-errors/` plus t
 ### Images
 
 - `/images/discord.svg`
+- `/images/errors/400.webp`
 - `/images/errors/403.webp`
 - `/images/errors/404.webp`
+- `/images/errors/405.webp`
+- `/images/errors/410.webp`
 - `/images/errors/429.webp`
 - `/images/errors/500.webp`
 - `/images/errors/502.webp`

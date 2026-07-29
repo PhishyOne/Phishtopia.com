@@ -1,7 +1,7 @@
 <%- include("../partials/header") %>
 
 <%
-    const cinematicStatus = [403, 404, 429, 500].includes(errorPage.status);
+    const cinematicStatus = [400, 403, 404, 405, 410, 429, 500].includes(errorPage.status);
     const scenePath = cinematicStatus ? `/images/errors/${errorPage.status}.webp` : null;
 %>
 
@@ -45,6 +45,13 @@
                         <path d="M15 35c12-12 24-12 36 0s24 12 34 0"></path>
                         <path d="M15 51c12-12 24-12 36 0s24 12 34 0"></path>
                         <path d="M15 67c12-12 24-12 36 0s24 12 34 0"></path>
+                    </svg>
+                <% } else if (errorPage.icon === "anchor") { %>
+                    <svg viewBox="0 0 100 100" focusable="false">
+                        <circle cx="50" cy="19" r="9"></circle>
+                        <path d="M50 28v49M32 42h36"></path>
+                        <path d="M20 61c4 18 15 27 30 27s26-9 30-27"></path>
+                        <path d="m20 61 2 17 14-9M80 61l-2 17-14-9"></path>
                     </svg>
                 <% } else { %>
                     <svg viewBox="0 0 100 100" focusable="false">

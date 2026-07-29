@@ -77,6 +77,16 @@ export function sendErrorResponse(req, res, status) {
     return renderHtmlError(req, res, errorPage);
 }
 
+export function methodNotAllowed(allowedMethods = ["GET", "HEAD"]) {
+    const methods = [...new Set(allowedMethods.map(method => String(method).toUpperCase()))];
+    const allowHeader = methods.join(", ");
+
+    return function methodNotAllowedHandler(req, res) {
+        res.set("Allow", allowHeader);
+        return sendErrorResponse(req, res, 405);
+    };
+}
+
 export function rateLimitHandler(req, res) {
     return sendErrorResponse(req, res, 429);
 }
