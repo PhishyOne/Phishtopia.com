@@ -81,7 +81,7 @@ after(async () => {
 
 test("error-page definitions are immutable and preserve supported statuses", () => {
     assert.ok(Object.isFrozen(ERROR_PAGES));
-    assert.deepEqual(Object.keys(ERROR_PAGES), ["403", "404", "429", "500"]);
+    assert.deepEqual(Object.keys(ERROR_PAGES), ["400", "403", "404", "405", "410", "429", "500"]);
 
     for (const page of Object.values(ERROR_PAGES)) {
         assert.ok(Object.isFrozen(page));
@@ -117,15 +117,110 @@ test("unknown browser routes render the branded 404 without leaking internals", 
     assert.doesNotMatch(html, /Error:\s|node_modules|DATABASE_URL|internal-db/);
 });
 
-test("retired browser routes remain blocked but use the branded 404", async () => {
-    const response = await fetch(`${appBaseUrl}/project25`, {
+test("malformed request bodies use the cinematic 400 for browsers and JSON for APIs", async () => {
+    const browserResponse = await fetch(`${appBaseUrl}/contact`, {
+        method: "POST",
+        headers: {
+            accept: "text/html",
+            "content-type": "application/json"
+        },
+        body: "{",
+        redirect: "manual"
+    });
+
+    assert.equal(browserResponse.status, 400);
+    assert.match(browserResponse.headers.get("content-type") || "", /^text\/html\b/);
+    const html = await browserResponse.text();
+    assert.match(html, /This request drifted off course\./);
+    assert.match(html, /\/images\/errors\/400\.webp/);
+    assert.match(html, /error-stage--scene-ready/);
+    assert.doesNotMatch(html, /SyntaxError|Unexpected end|node_modules/);
+
+    const apiResponse = await fetch(`${appBaseUrl}/internal/not-a-real-endpoint`, {
+        method: "POST",
+        headers: {
+            accept: "application/json",
+            "content-type": "application/json"
+        },
+        body: "{",
+        redirect: "manual"
+    });
+
+    assert.equal(apiResponse.status, 400);
+    assert.deepEqual(await apiResponse.json(), {
+        success: false,
+        status: 400,
+        error: "Bad request"
+    });
+});
+
+test("known GET-only pages return 405 with an Allow header", async () => {
+    const browserResponse = await fetch(`${appBaseUrl}/contact`, {
+        method: "POST",
+        headers: {
+            accept: "text/html",
+            "content-type": "application/x-www-form-urlencoded"
+        },
+        body: "preview=true",
+        redirect: "manual"
+    });
+
+    assert.equal(browserResponse.status, 405);
+    assert.equal(browserResponse.headers.get("allow"), "GET, HEAD");
+    assert.match(browserResponse.headers.get("content-type") || "", /^text\/html\b/);
+    const html = await browserResponse.text();
+    assert.match(html, /You can’t swim that direction\./);
+    assert.match(html, /\/images\/errors\/405\.webp/);
+    assert.match(html, /error-stage--scene-ready/);
+
+    const apiResponse = await fetch(`${appBaseUrl}/archive`, {
+        method: "DELETE",
+        headers: { accept: "application/json" },
+        redirect: "manual"
+    });
+
+    assert.equal(apiResponse.status, 405);
+    assert.equal(apiResponse.headers.get("allow"), "GET, HEAD");
+    assert.deepEqual(await apiResponse.json(), {
+        success: false,
+        status: 405,
+        error: "Method not allowed"
+    });
+});
+
+test("retired routes return cinematic 410 while retired assets stay lightweight", async () => {
+    const browserResponse = await fetch(`${appBaseUrl}/project25`, {
         headers: { accept: "text/html" },
         redirect: "manual"
     });
 
-    assert.equal(response.status, 404);
-    assert.match(response.headers.get("content-type") || "", /^text\/html\b/);
-    assert.match(await response.text(), /This page is off the map\./);
+    assert.equal(browserResponse.status, 410);
+    assert.match(browserResponse.headers.get("content-type") || "", /^text\/html\b/);
+    const html = await browserResponse.text();
+    assert.match(html, /This page has sunk for good\./);
+    assert.match(html, /permanently removed/);
+    assert.match(html, /\/images\/errors\/410\.webp/);
+    assert.match(html, /error-stage--scene-ready/);
+
+    const apiResponse = await fetch(`${appBaseUrl}/project29`, {
+        headers: { accept: "application/json" },
+        redirect: "manual"
+    });
+
+    assert.equal(apiResponse.status, 410);
+    assert.deepEqual(await apiResponse.json(), {
+        success: false,
+        status: 410,
+        error: "Gone"
+    });
+
+    const assetResponse = await fetch(`${appBaseUrl}/project34/images/placeholder.png`, {
+        redirect: "manual"
+    });
+
+    assert.equal(assetResponse.status, 410);
+    assert.match(assetResponse.headers.get("content-type") || "", /^text\/plain\b/);
+    assert.equal(await assetResponse.text(), "Gone");
 });
 
 test("missing API routes return structured JSON instead of an HTML page", async () => {
