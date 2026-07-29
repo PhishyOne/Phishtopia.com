@@ -30,8 +30,8 @@ const EXPECTED_PAGES = {
     error: {
         title: "Error | Phishtopia",
         bodyClass: "error-page",
-        styles: ["/styles/errors.css"],
-        scripts: []
+        styles: ["/styles/errors.css", "/styles/errors-cinematic.css"],
+        scripts: ["/js/error-scenes.js"]
     },
     login: {
         title: "Login",
