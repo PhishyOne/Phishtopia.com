@@ -1,6 +1,6 @@
 (() => {
   const stage = document.querySelector('.error-stage');
-  if (!stage) return;
+  if (!stage || stage.classList.contains('error-stage--scene-ready')) return;
 
   const match = stage.className.match(/error-stage--(403|404|429|500)/);
   if (!match) return;
