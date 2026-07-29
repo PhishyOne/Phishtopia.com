@@ -83,6 +83,7 @@ test("active server source has no retired course-work dependencies", async () =>
     const staticAssets = await readFile(join(rootDir, "src/middleware/staticAssets.js"), "utf8");
     assert.match(staticAssets, /RETIRED_PUBLIC_PATH/);
     assert.match(staticAssets, /project\(\?:25\|28\|29\|30\|33-1\|33-2\|33-3\|34\)/);
+    assert.match(staticAssets, /error\.status\s*=\s*410/);
     assert.doesNotMatch(staticAssets, /projectAssetsDir/);
 
     const archiveMetadata = await readFile(join(rootDir, archiveMetadataPath), "utf8");
@@ -179,7 +180,7 @@ test("active public pages do not emit retired local URLs", async () => {
     }
 });
 
-test("EchoTrace serves canonical assets and retired public paths are blocked", async () => {
+test("EchoTrace serves canonical assets while retired paths use 404 or 410 correctly", async () => {
     const canonicalAssets = [
         ["/styles/echotrace.css", /text\/css/],
         ["/js/echotrace.js", /javascript/],
@@ -195,13 +196,20 @@ test("EchoTrace serves canonical assets and retired public paths are blocked", a
     for (const path of [
         "/styles/player-int.css",
         "/js/player-int.js",
-        "/js/little-logo.js",
-        "/project34/images/placeholder.png",
-        "/project29/images/preview.png",
-        "/static/20-Simon/",
-        "/projects/assets"
+        "/js/little-logo.js"
     ]) {
         const response = await request(path);
         assert.equal(response.status, 404, `${path} should return 404`);
+    }
+
+    for (const path of [
+        "/project34/images/placeholder.png",
+        "/project29/images/preview.png",
+        "/static/20-Simon/",
+        "/projects/assets",
+        "/player-int"
+    ]) {
+        const response = await request(path);
+        assert.equal(response.status, 410, `${path} should return 410`);
     }
 });
