@@ -27,6 +27,12 @@ const EXPECTED_PAGES = {
         styles: ["/styles/archive.css"],
         scripts: ["/js/canvas.js"]
     },
+    error: {
+        title: "Error | Phishtopia",
+        bodyClass: "error-page",
+        styles: ["/styles/errors.css"],
+        scripts: []
+    },
     login: {
         title: "Login",
         bodyClass: "auth",
@@ -90,13 +96,14 @@ test("page definitions are complete, immutable, and return isolated locals", () 
     assert.throws(() => pageLocals("missing-page"), /Unknown page definition/);
 });
 
-test("routes and controllers use page definitions instead of scattered asset arrays", async () => {
+test("routes, controllers, and error middleware use page definitions instead of scattered asset arrays", async () => {
     const renderSources = [
         "src/routes/pages.routes.js",
         "src/controllers/auth.controller.js",
         "src/controllers/youlist.controller.js",
         "src/routes/echotrace.routes.js",
-        "src/controllers/storecalc.controller.js"
+        "src/controllers/storecalc.controller.js",
+        "src/middleware/errorResponses.js"
     ];
 
     for (const relativePath of renderSources) {
@@ -118,7 +125,8 @@ test("active templates do not override page metadata or asset declarations", asy
         "views/check-email.ejs",
         "views/youlist/index.ejs",
         "views/echotrace/index.ejs",
-        "views/storecalc/index.ejs"
+        "views/storecalc/index.ejs",
+        "views/errors/error.ejs"
     ];
 
     for (const relativePath of templates) {
@@ -161,10 +169,13 @@ function escapeRegex(value) {
     return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
-async function assertRenderedPage(path, pageName) {
+async function assertRenderedPage(path, pageName, expectedStatus = 200) {
     const definition = EXPECTED_PAGES[pageName];
-    const response = await fetch(`${baseUrl}${path}`, { redirect: "manual" });
-    assert.equal(response.status, 200, `${path} should return 200`);
+    const response = await fetch(`${baseUrl}${path}`, {
+        redirect: "manual",
+        headers: { accept: "text/html" }
+    });
+    assert.equal(response.status, expectedStatus, `${path} should return ${expectedStatus}`);
     const html = await response.text();
 
     assert.match(html, new RegExp(`<title>${escapeRegex(definition.title)}</title>`));
@@ -188,4 +199,5 @@ test("public routes render the titles, body classes, and assets from page defini
     await assertRenderedPage("/auth/resend-verification", "resendVerification");
     await assertRenderedPage("/echotrace", "echotrace");
     await assertRenderedPage("/storecalc", "storecalc");
+    await assertRenderedPage("/definitely-not-a-real-page", "error", 404);
 });
