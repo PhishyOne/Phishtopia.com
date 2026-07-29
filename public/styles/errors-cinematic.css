@@ -86,16 +86,29 @@
   text-shadow: 0 2px 5px rgba(0, 0, 0, 0.9);
 }
 
+.error-page .footer {
+  opacity: 1;
+}
+
+.error-page .footer-links {
+  box-sizing: border-box;
+  border: 1px solid rgba(43, 217, 247, 0.22);
+  background: rgba(1, 12, 20, 0.96);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.32);
+}
+
 @media (max-width: 700px) {
   .error-stage--scene-ready {
-    padding-top: 0;
-    padding-bottom: 1rem;
+    display: block;
+    min-height: auto;
+    padding: 0 0.75rem 1rem;
     background-color: #010b13;
     background-position: center top;
     background-size: 100% auto;
   }
 
   .error-stage--scene-ready .error-card {
+    width: 100%;
     min-height: auto;
     padding-top: calc(56.25vw + 0.75rem);
   }
@@ -105,12 +118,17 @@
   }
 
   .error-stage--scene-ready .error-plaque {
+    box-sizing: border-box;
     width: 100%;
     border-radius: 13px;
   }
 
   .error-stage--scene-ready .error-actions {
     gap: 0.65rem;
+  }
+
+  .error-page .footer-links {
+    width: calc(100% - 1.5rem);
   }
 }
 
