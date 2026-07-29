@@ -10,13 +10,16 @@ import {
     showResendVerification,
     verifyEmail
 } from "../controllers/auth.controller.js";
+import { rateLimitHandler } from "../middleware/errorResponses.js";
 
 const router = express.Router();
 
 const loginLimiter = rateLimit({
     windowMs: 15 * 60 * 1000,
     max: 10,
-    message: "Too many login attempts. Try again later."
+    standardHeaders: true,
+    legacyHeaders: false,
+    handler: rateLimitHandler
 });
 
 const registerLimiter = rateLimit({
@@ -24,7 +27,7 @@ const registerLimiter = rateLimit({
     max: 5,
     standardHeaders: true,
     legacyHeaders: false,
-    message: "Too many registration attempts. Try again later."
+    handler: rateLimitHandler
 });
 
 const resendVerificationLimiter = rateLimit({
@@ -32,7 +35,7 @@ const resendVerificationLimiter = rateLimit({
     max: 3,
     standardHeaders: true,
     legacyHeaders: false,
-    message: "Too many verification email requests. Try again later."
+    handler: rateLimitHandler
 });
 
 const verifyEmailLimiter = rateLimit({
@@ -40,7 +43,7 @@ const verifyEmailLimiter = rateLimit({
     max: 30,
     standardHeaders: true,
     legacyHeaders: false,
-    message: "Too many verification attempts. Try again later."
+    handler: rateLimitHandler
 });
 
 router.get("/register", showRegister);
