@@ -19,11 +19,15 @@ Routes and controllers call `pageLocals(pageName, values)` when rendering an EJS
 
 Add a new page definition before mounting a new rendered route. Do not recreate `extraStyles` or `extraScripts` arrays inside a controller or template.
 
+The shared branded error template is rendered through `src/middleware/errorResponses.js`. It uses the normal header and footer, while API and static-asset failures keep lightweight non-HTML responses.
+
 ## Current active inventory
 
 ### Styles
 
 - `/styles/main.css`
+- `/styles/archive.css`
+- `/styles/errors.css`
 - `/styles/youlist.css`
 - `/styles/youlist-mobile.css`
 - `/styles/echotrace.css`
