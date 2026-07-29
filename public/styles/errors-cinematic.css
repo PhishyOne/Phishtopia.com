@@ -88,14 +88,16 @@
 
 @media (max-width: 700px) {
   .error-stage--scene-ready {
+    padding-top: 0;
+    padding-bottom: 1rem;
     background-color: #010b13;
     background-position: center top;
     background-size: 100% auto;
   }
 
   .error-stage--scene-ready .error-card {
-    min-height: calc(100svh - 142px);
-    padding-top: clamp(14rem, 64vw, 26rem);
+    min-height: auto;
+    padding-top: calc(56.25vw + 0.75rem);
   }
 
   .error-stage--scene-ready .error-kicker {
@@ -113,10 +115,6 @@
 }
 
 @media (max-width: 420px) {
-  .error-stage--scene-ready .error-card {
-    padding-top: clamp(13rem, 62vw, 18rem);
-  }
-
   .error-stage--scene-ready .error-plaque h1 {
     font-size: clamp(2rem, 11vw, 2.8rem);
   }
