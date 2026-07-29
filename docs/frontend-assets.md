@@ -19,7 +19,7 @@ Routes and controllers call `pageLocals(pageName, values)` when rendering an EJS
 
 Add a new page definition before mounting a new rendered route. Do not recreate `extraStyles` or `extraScripts` arrays inside a controller or template.
 
-The shared branded error template is rendered through `src/middleware/errorResponses.js`. It uses the normal header and footer, while API and static-asset failures keep lightweight non-HTML responses.
+The shared branded error template is rendered through `src/middleware/errorResponses.js`. It uses the normal header and footer, while API and static-asset failures keep lightweight non-HTML responses. The cinematic scene sprite is embedded in `/js/error-scenes.js`; it is decoded only on error pages and layered over the CSS-only fallback through `/styles/errors-cinematic.css`.
 
 ## Current active inventory
 
@@ -28,6 +28,7 @@ The shared branded error template is rendered through `src/middleware/errorRespo
 - `/styles/main.css`
 - `/styles/archive.css`
 - `/styles/errors.css`
+- `/styles/errors-cinematic.css`
 - `/styles/youlist.css`
 - `/styles/youlist-mobile.css`
 - `/styles/echotrace.css`
@@ -38,6 +39,7 @@ The shared branded error template is rendered through `src/middleware/errorRespo
 - `/js/canvas.js`
 - `/js/echotrace-logo.js`
 - `/js/echotrace.js`
+- `/js/error-scenes.js`
 - `/js/register.js`
 - `/js/youlist.js`
 
