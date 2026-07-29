@@ -1,6 +1,11 @@
 <%- include("../partials/header") %>
 
-<main class="error-stage error-stage--<%= errorPage.status %>" aria-labelledby="error-title">
+<%
+    const cinematicStatus = [403, 404, 429, 500].includes(errorPage.status);
+    const scenePath = cinematicStatus ? `/images/errors/${errorPage.status}.webp` : null;
+%>
+
+<main class="error-stage error-stage--<%= errorPage.status %><%= cinematicStatus ? " error-stage--scene-ready" : "" %>"<% if (scenePath) { %> style="--error-scene: url('<%= scenePath %>');"<% } %> aria-labelledby="error-title">
     <div class="error-bubbles" aria-hidden="true">
         <span class="error-bubble" style="--x: 5%; --size: 10px; --duration: 15s; --delay: -4s;"></span>
         <span class="error-bubble" style="--x: 13%; --size: 20px; --duration: 19s; --delay: -12s;"></span>
