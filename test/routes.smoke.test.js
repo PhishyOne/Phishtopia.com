@@ -155,7 +155,14 @@ test("YouList APIs require authentication without becoming page return targets",
     }
 });
 
-test("retired course and legacy routes return 404", async () => {
+test("unknown legacy aliases remain 404", async () => {
+    for (const route of ["/simon", "/intm-logo"]) {
+        const response = await request(route);
+        assert.equal(response.status, 404, `${route} should return 404`);
+    }
+});
+
+test("deliberately retired course routes return 410", async () => {
     const retiredRoutes = [
         "/player-int",
         "/playerint",
@@ -167,15 +174,13 @@ test("retired course and legacy routes return 404", async () => {
         "/project33-1",
         "/project33-2",
         "/project33-3",
-        "/simon",
-        "/intm-logo",
         "/static",
         "/static/20-Simon/"
     ];
 
     for (const route of retiredRoutes) {
         const response = await request(route);
-        assert.equal(response.status, 404, `${route} should return 404`);
+        assert.equal(response.status, 410, `${route} should return 410`);
     }
 });
 
