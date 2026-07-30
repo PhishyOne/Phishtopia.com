@@ -7,7 +7,7 @@ on:
 permissions:
   contents: read
   id-token: write
-  issues: write
+  issues: read
 
 concurrency:
   group: phishtopia-ops-controller-${{ github.repository_id }}
@@ -23,7 +23,6 @@ jobs:
         working-directory: ops/phishtopia-ops-mcp
     env:
       QUEUE_ISSUE: '43'
-      GH_TOKEN: ${{ github.token }}
     steps:
       - uses: actions/checkout@v4
       - name: Validate issue command
@@ -45,35 +44,31 @@ jobs:
         id: transport
         continue-on-error: true
         run: python3 -m controller.github_transport --request-file /tmp/ops-request.json --response-file /tmp/ops-response.json --comment-file /tmp/ops-comment.md
-      - name: Post sanitized result
+      - name: Record sanitized result
         id: post_success
         if: steps.prepare.outputs.decision == 'accepted' && steps.transport.outcome == 'success'
-        env:
-          ISSUE: ${{ github.event.issue.number }}
         run: |
-          python3 - <<'PY'
-          import json
-          from pathlib import Path
-          Path('/tmp/comment.json').write_text(json.dumps({'body': Path('/tmp/ops-comment.md').read_text()}))
-          PY
-          gh api "repos/$GITHUB_REPOSITORY/issues/$ISSUE/comments" --method POST --input /tmp/comment.json >/dev/null
-      - name: Report sanitized controller failure
+          cat /tmp/ops-comment.md
+          cat /tmp/ops-comment.md >> "$GITHUB_STEP_SUMMARY"
+      - name: Record sanitized controller failure
         if: always() && steps.prepare.outputs.decision == 'accepted' && steps.post_success.outcome != 'success'
         env:
-          ISSUE: ${{ github.event.issue.number }}
           RUN_ID: ${{ github.run_id }}
         run: |
           python3 - <<'PY'
-          import json
           import os
+          from pathlib import Path
           body = (
               "### Phishtopia Ops\n\n"
               "Controller setup or transport failed before a validated result was returned. "
               f"GitHub Actions run `{os.environ['RUN_ID']}` contains the bounded diagnostic. "
               "No raw provider output, credentials, commands, logs, or secret values are included here."
           )
-          with open('/tmp/comment.json', 'w', encoding='utf-8') as handle:
-              json.dump({'body': body}, handle)
+          print(body)
+          with Path(os.environ["GITHUB_STEP_SUMMARY"]).open(
+              "a",
+              encoding="utf-8",
+          ) as handle:
+              handle.write(body + "\n")
           PY
-          gh api "repos/$GITHUB_REPOSITORY/issues/$ISSUE/comments" --method POST --input /tmp/comment.json >/dev/null
           exit 1

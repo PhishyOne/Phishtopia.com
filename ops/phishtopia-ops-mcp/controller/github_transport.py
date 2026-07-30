@@ -10,7 +10,6 @@ from .policy import (
     REQUEST_TOPIC,
     RESPONSE_SUBSCRIPTION,
     decode_pubsub_message,
-    encode_pubsub_message,
     validate_controller_response,
 )
 from .pubsub import GcloudPubSub, wait_for_response
@@ -55,7 +54,7 @@ def main() -> None:
     request = json.loads(args.request_file.read_text(encoding="utf-8"))
     request_id = request["requestId"]
     client = GcloudPubSub()
-    client.publish(REQUEST_TOPIC, encode_pubsub_message(request), request_id)
+    client.publish(REQUEST_TOPIC, request, request_id)
     encoded = wait_for_response(client, RESPONSE_SUBSCRIPTION, request_id)
     response = validate_controller_response(decode_pubsub_message(encoded, 65_536), request_id)
     args.response_file.write_text(

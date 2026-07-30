@@ -24,6 +24,17 @@ class ExternalControllerActivationTests(unittest.TestCase):
         self.assertIn("phishtopia-ops-controller@project-43a8be4b-69a7-4d52-805.iam.gserviceaccount.com", value)
         self.assertNotIn("vars.PHISHTOPIA_OPS_", value)
 
+    def test_locked_queue_records_results_without_bot_comments(self) -> None:
+        if not WORKFLOW.is_file():
+            self.skipTest(
+                "repository-level workflow is intentionally outside the packaged Ops release"
+            )
+        value = WORKFLOW.read_text(encoding="utf-8")
+        self.assertIn("GITHUB_STEP_SUMMARY", value)
+        self.assertIn("issues: read", value)
+        self.assertNotIn("issues: write", value)
+        self.assertNotIn('issues/$ISSUE/comments', value)
+
     def test_controller_installer_snapshots_and_verifies_rollback_state(self) -> None:
         value = self.read("scripts/install-bootstrap-with-controller.sh")
         for required in (

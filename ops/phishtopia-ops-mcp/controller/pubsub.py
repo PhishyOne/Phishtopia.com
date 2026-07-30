@@ -6,9 +6,15 @@ import subprocess
 import time
 import uuid
 from dataclasses import dataclass
-from typing import Callable
+from typing import Any, Callable
 
-from .policy import ControllerError, PROJECT_ID, REQUEST_TOPIC, RESPONSE_SUBSCRIPTION
+from .policy import (
+    ControllerError,
+    MAX_REQUEST_BYTES,
+    PROJECT_ID,
+    REQUEST_TOPIC,
+    RESPONSE_SUBSCRIPTION,
+)
 
 Run = Callable[..., subprocess.CompletedProcess[str]]
 
@@ -34,10 +40,25 @@ class GcloudPubSub:
             raise ControllerError("pubsub_response_too_large")
         return result.stdout
 
-    def publish(self, topic: str, data: str, request_id: str) -> None:
+    def publish(
+        self,
+        topic: str,
+        message: dict[str, Any],
+        request_id: str,
+    ) -> None:
         if topic != REQUEST_TOPIC:
             raise ControllerError("invalid_topic")
-        if not data or len(data) > 90_000 or any(c not in "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=" for c in data):
+        if not isinstance(message, dict):
+            raise ControllerError("invalid_message")
+        try:
+            data = json.dumps(
+                message,
+                separators=(",", ":"),
+                sort_keys=True,
+            )
+        except (TypeError, ValueError) as exc:
+            raise ControllerError("invalid_message") from exc
+        if not data or len(data.encode("utf-8")) > MAX_REQUEST_BYTES:
             raise ControllerError("invalid_message")
         try:
             request_id = str(uuid.UUID(request_id))

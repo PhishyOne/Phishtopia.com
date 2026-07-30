@@ -1,12 +1,15 @@
 from __future__ import annotations
+import base64
 import json
+import subprocess
 import unittest
 import urllib.error
 import uuid
 from unittest.mock import patch
-from controller.policy import COMMAND_PREFIX, ControllerError, REQUEST_SUBSCRIPTION, decode_pubsub_message, encode_pubsub_message, parse_issue_comment_event, validate_request_envelope, validate_worker_response
-from controller.pubsub import PulledMessage
+from controller.policy import COMMAND_PREFIX, ControllerError, REQUEST_SUBSCRIPTION, REQUEST_TOPIC, decode_pubsub_message, encode_pubsub_message, parse_issue_comment_event, validate_request_envelope, validate_worker_response
+from controller.pubsub import GcloudPubSub, PulledMessage
 from controller.pubsub_rest import RestPubSub
+from controller.relay import process_message
 
 QUEUE = 41
 JOB_ID = '123e4567-e89b-42d3-a456-426614174000'
@@ -91,6 +94,33 @@ class PolicyTests(unittest.TestCase):
             validate_worker_response(value)
 
 class RelayTests(unittest.TestCase):
+    def test_gcloud_publish_to_rest_pull_has_one_encoding_layer(self):
+        prepared = parse_issue_comment_event(event(), QUEUE)
+        captured = []
+
+        def runner(command, **_kwargs):
+            captured.append(command)
+            return subprocess.CompletedProcess(command, 0, "[]", "")
+
+        GcloudPubSub(runner=runner).publish(
+            REQUEST_TOPIC,
+            prepared.envelope,
+            prepared.request_id,
+        )
+
+        message = next(
+            argument.removeprefix("--message=")
+            for argument in captured[0]
+            if argument.startswith("--message=")
+        )
+        wire_data = base64.b64encode(message.encode("utf-8")).decode("ascii")
+
+        with patch("controller.relay.exchange_worker", return_value=job_response()):
+            response = process_message(wire_data, QUEUE)
+
+        self.assertEqual(response["status"], "ok")
+        self.assertEqual(response["requestId"], prepared.request_id)
+
     def test_publish_happens_before_ack(self):
         from controller.relay_daemon import run_once
         prepared = parse_issue_comment_event(event(), QUEUE)
