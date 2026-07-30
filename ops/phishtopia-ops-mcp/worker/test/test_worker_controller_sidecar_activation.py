@@ -25,8 +25,62 @@ class WorkerControllerSidecarActivationTests(unittest.TestCase):
         self.assertIn('systemctl enable --now phishtopia-ops-controller.service', value)
         self.assertIn('"operation": "get_contract"', value)
         self.assertIn('controller_error=', value)
-        self.assertIn('NRestarts --value', value)
+        self.assertIn('restarts=$(service_property "$stable_unit" NRestarts)', value)
         self.assertIn('worker_controller_failed_stage=', value)
+
+    def test_installer_fails_fast_with_bounded_service_diagnostics(self):
+        value = INSTALL.read_text(encoding="utf8")
+        for required in (
+            "wait_for_worker_socket",
+            "wait_for_controller_ready",
+            "worker_readiness=service_failed",
+            "worker_readiness=socket_timeout",
+            "controller_readiness=transport_failed",
+            "controller_readiness=transport_timeout",
+            "controller_error_code=",
+            "ActiveState",
+            "SubState",
+            "Result",
+            "ExecMainCode",
+            "ExecMainStatus",
+            "NRestarts",
+            "_SYSTEMD_INVOCATION_ID=",
+        ):
+            self.assertIn(required, value)
+        self.assertIn('stage=wait_worker_socket', value)
+        self.assertIn('stage=verify_worker_contract', value)
+        self.assertIn('stage=wait_controller_transport', value)
+        self.assertIn('while [ "$attempts" -le 15 ]', value)
+        self.assertIn('while [ "$attempts" -le 30 ]', value)
+        self.assertNotIn("sleep 23", value)
+        self.assertNotIn("journalctl -u", value)
+
+    def test_installer_rechecks_stability_before_commit(self):
+        value = INSTALL.read_text(encoding="utf8")
+        self.assertIn("verify_service_stable()", value)
+        self.assertEqual(
+            value.count(
+                'verify_service_stable worker phishtopia-ops-worker.service "$worker_invocation"'
+            ),
+            2,
+        )
+        self.assertIn(
+            'verify_service_stable controller phishtopia-ops-controller.service "$controller_invocation"',
+            value,
+        )
+        final = value.index("stage=final_verification")
+        commit = value.index("stage=commit")
+        final_block = value[final:commit]
+        self.assertIn("controller_error=", final_block)
+        helper = value[value.index("verify_service_stable()"):value.index("invocation_log_has()")]
+        self.assertIn("InvocationID", helper)
+        self.assertIn('"$restarts" != 0', helper)
+
+    def test_daemons_emit_only_fixed_startup_readiness_markers(self):
+        worker = (ROOT / "worker/daemon.py").read_text(encoding="utf8")
+        controller = (ROOT / "controller/relay_daemon.py").read_text(encoding="utf8")
+        self.assertIn('print(f"worker_error_stage={stage}"', worker)
+        self.assertIn('"controller_ready=1"', controller)
 
     def test_worker_unit_uses_standalone_immutable_path(self):
         value = WORKER_UNIT.read_text(encoding="utf8")
