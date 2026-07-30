@@ -16,7 +16,7 @@ and already contains the required tests and readiness checks.
 Worker readiness is checked once per second for up to 15 seconds. It fails
 immediately if systemd reports a stopped, failed, restarting, or restarted
 service. Success requires the correctly owned Unix socket and an exact worker
-contract response. Controller readiness is checked once per second for up to 25
+contract response. Controller readiness is checked once per second for up to 30
 seconds and succeeds only after the relay completes a Pub/Sub request cycle. A
 service failure, restart, or `controller_error` is terminal.
 

@@ -51,6 +51,22 @@ service_diagnostic() {
   printf '%s_restarts=%s\n' "$diagnostic_name" "$(service_property "$diagnostic_unit" NRestarts)" >&2
 }
 
+verify_service_stable() {
+  stable_name=$1
+  stable_unit=$2
+  expected_invocation=$3
+  active=$(service_property "$stable_unit" ActiveState)
+  sub=$(service_property "$stable_unit" SubState)
+  restarts=$(service_property "$stable_unit" NRestarts)
+  current_invocation=$(service_property "$stable_unit" InvocationID)
+  if [ "$active" != active ] || [ "$sub" != running ] || [ "$restarts" != 0 ] ||
+    [ "$expected_invocation" = unknown ] || [ "$current_invocation" != "$expected_invocation" ]; then
+    printf '%s_readiness=stability_failed\n' "$stable_name" >&2
+    service_diagnostic "$stable_name" "$stable_unit"
+    return 1
+  fi
+}
+
 invocation_log_has() {
   invocation=$1
   marker=$2
@@ -92,7 +108,7 @@ controller_error_code() {
 wait_for_worker_socket() {
   worker_invocation=$1
   attempts=0
-  while [ "$attempts" -lt 15 ]; do
+  while [ "$attempts" -le 15 ]; do
     if [ "$worker_invocation" = unknown ]; then
       worker_invocation=$(service_property phishtopia-ops-worker.service InvocationID)
     fi
@@ -113,6 +129,7 @@ wait_for_worker_socket() {
       }
       return 0
     fi
+    [ "$attempts" -lt 15 ] || break
     attempts=$((attempts + 1))
     sleep 1
   done
@@ -125,7 +142,7 @@ wait_for_worker_socket() {
 wait_for_controller_ready() {
   controller_invocation=$1
   attempts=0
-  while [ "$attempts" -lt 25 ]; do
+  while [ "$attempts" -le 30 ]; do
     if [ "$controller_invocation" = unknown ]; then
       controller_invocation=$(service_property phishtopia-ops-controller.service InvocationID)
     fi
@@ -146,6 +163,7 @@ wait_for_controller_ready() {
     if invocation_log_has "$controller_invocation" 'controller_ready=1'; then
       return 0
     fi
+    [ "$attempts" -lt 30 ] || break
     attempts=$((attempts + 1))
     sleep 1
   done
@@ -280,6 +298,7 @@ worker_invocation=$(service_property phishtopia-ops-worker.service InvocationID)
 stage=wait_worker_socket
 wait_for_worker_socket "$worker_invocation"
 
+stage=verify_worker_contract
 /usr/bin/setpriv --reuid=phishtopia-mcp --regid=phishtopia-mcp --init-groups --no-new-privs -- \
   /usr/bin/python3 -B - "$worker_socket" <<'PY'
 import json
@@ -302,8 +321,7 @@ expected = ["canary_and_promote", "deploy_verified_release", "restart_phishtopia
 if value != {"ok": True, "contract": {"version": "issue15-v1", "actions": expected, "singleFlight": "production_mutation"}}:
     raise SystemExit("worker contract rejected")
 PY
-systemctl is-active --quiet phishtopia-ops-worker.service
-[ "$(service_property phishtopia-ops-worker.service NRestarts)" = 0 ]
+verify_service_stable worker phishtopia-ops-worker.service "$worker_invocation"
 
 stage=start_controller
 systemctl enable --now phishtopia-ops-controller.service
@@ -312,6 +330,14 @@ stage=wait_controller_transport
 wait_for_controller_ready "$controller_invocation"
 
 stage=final_verification
+verify_service_stable worker phishtopia-ops-worker.service "$worker_invocation"
+verify_service_stable controller phishtopia-ops-controller.service "$controller_invocation"
+if invocation_log_has "$controller_invocation" 'controller_error='; then
+  printf 'controller_readiness=transport_failed\n' >&2
+  controller_error_code "$controller_invocation"
+  service_diagnostic controller phishtopia-ops-controller.service
+  exit 1
+fi
 [ "$(readlink -f "$worker_current")" = "$candidate" ]
 [ "$(readlink -f "$controller_current")" = "$candidate" ]
 [ "$(stat -c '%U:%G:%a' "$worker_unit")" = "root:root:644" ]
