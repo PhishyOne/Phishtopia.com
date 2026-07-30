@@ -33,6 +33,127 @@ mcp_current=/opt/phishtopia-ops-mcp
 tunnel_unit=/etc/systemd/system/phishtopia-ops-mcp-tunnel.service
 tunnel_launcher=/usr/local/libexec/phishtopia-ops-mcp-tunnel-launch
 
+service_property() {
+  value=$(/usr/bin/systemctl show "$1" "--property=$2" --value 2>/dev/null || true)
+  value=$(printf '%s' "$value" | tr -cd 'A-Za-z0-9_.:-' | cut -c1-64)
+  [ -n "$value" ] || value=unknown
+  printf '%s' "$value"
+}
+
+service_diagnostic() {
+  diagnostic_name=$1
+  diagnostic_unit=$2
+  printf '%s_active_state=%s\n' "$diagnostic_name" "$(service_property "$diagnostic_unit" ActiveState)" >&2
+  printf '%s_sub_state=%s\n' "$diagnostic_name" "$(service_property "$diagnostic_unit" SubState)" >&2
+  printf '%s_result=%s\n' "$diagnostic_name" "$(service_property "$diagnostic_unit" Result)" >&2
+  printf '%s_exit_code=%s\n' "$diagnostic_name" "$(service_property "$diagnostic_unit" ExecMainCode)" >&2
+  printf '%s_exit_status=%s\n' "$diagnostic_name" "$(service_property "$diagnostic_unit" ExecMainStatus)" >&2
+  printf '%s_restarts=%s\n' "$diagnostic_name" "$(service_property "$diagnostic_unit" NRestarts)" >&2
+}
+
+invocation_log_has() {
+  invocation=$1
+  marker=$2
+  [ "$invocation" != unknown ] || return 1
+  /usr/bin/journalctl "_SYSTEMD_INVOCATION_ID=$invocation" --no-pager -o cat -n 64 2>/dev/null |
+    /usr/bin/grep -Fq "$marker"
+}
+
+worker_error_stage() {
+  invocation=$1
+  [ "$invocation" != unknown ] || return 0
+  value=$(
+      /usr/bin/journalctl "_SYSTEMD_INVOCATION_ID=$invocation" --no-pager -o cat -n 64 2>/dev/null |
+      /usr/bin/sed -n 's/^worker_error_stage=\([a-z_][a-z_]*\)$/\1/p' |
+      /usr/bin/tail -n 1 |
+      cut -c1-64
+  )
+  if [ -n "$value" ]; then
+    printf 'worker_error_stage=%s\n' "$value" >&2
+  fi
+  return 0
+}
+
+controller_error_code() {
+  invocation=$1
+  [ "$invocation" != unknown ] || return 0
+  value=$(
+    /usr/bin/journalctl "_SYSTEMD_INVOCATION_ID=$invocation" --no-pager -o cat -n 64 2>/dev/null |
+      /usr/bin/sed -n 's/^controller_error=\([a-z_][a-z_]*\)$/\1/p' |
+      /usr/bin/tail -n 1 |
+      cut -c1-64
+  )
+  if [ -n "$value" ]; then
+    printf 'controller_error_code=%s\n' "$value" >&2
+  fi
+  return 0
+}
+
+wait_for_worker_socket() {
+  worker_invocation=$1
+  attempts=0
+  while [ "$attempts" -lt 15 ]; do
+    if [ "$worker_invocation" = unknown ]; then
+      worker_invocation=$(service_property phishtopia-ops-worker.service InvocationID)
+    fi
+    active=$(service_property phishtopia-ops-worker.service ActiveState)
+    sub=$(service_property phishtopia-ops-worker.service SubState)
+    restarts=$(service_property phishtopia-ops-worker.service NRestarts)
+    if [ "$active" = failed ] || [ "$active" = inactive ] || [ "$sub" = auto-restart ] || [ "$restarts" != 0 ]; then
+      printf 'worker_readiness=service_failed\n' >&2
+      worker_error_stage "$worker_invocation"
+      service_diagnostic worker phishtopia-ops-worker.service
+      return 1
+    fi
+    if [ -S "$worker_socket" ]; then
+      [ "$(stat -c '%U:%G:%a' "$worker_socket")" = "root:phishtopia-mcp:660" ] || {
+        printf 'worker_readiness=socket_contract_mismatch\n' >&2
+        service_diagnostic worker phishtopia-ops-worker.service
+        return 1
+      }
+      return 0
+    fi
+    attempts=$((attempts + 1))
+    sleep 1
+  done
+  printf 'worker_readiness=socket_timeout\n' >&2
+  worker_error_stage "$worker_invocation"
+  service_diagnostic worker phishtopia-ops-worker.service
+  return 1
+}
+
+wait_for_controller_ready() {
+  controller_invocation=$1
+  attempts=0
+  while [ "$attempts" -lt 25 ]; do
+    if [ "$controller_invocation" = unknown ]; then
+      controller_invocation=$(service_property phishtopia-ops-controller.service InvocationID)
+    fi
+    active=$(service_property phishtopia-ops-controller.service ActiveState)
+    sub=$(service_property phishtopia-ops-controller.service SubState)
+    restarts=$(service_property phishtopia-ops-controller.service NRestarts)
+    if invocation_log_has "$controller_invocation" 'controller_error='; then
+      printf 'controller_readiness=transport_failed\n' >&2
+      controller_error_code "$controller_invocation"
+      service_diagnostic controller phishtopia-ops-controller.service
+      return 1
+    fi
+    if [ "$active" = failed ] || [ "$active" = inactive ] || [ "$sub" = auto-restart ] || [ "$restarts" != 0 ]; then
+      printf 'controller_readiness=service_failed\n' >&2
+      service_diagnostic controller phishtopia-ops-controller.service
+      return 1
+    fi
+    if invocation_log_has "$controller_invocation" 'controller_ready=1'; then
+      return 0
+    fi
+    attempts=$((attempts + 1))
+    sleep 1
+  done
+  printf 'controller_readiness=transport_timeout\n' >&2
+  service_diagnostic controller phishtopia-ops-controller.service
+  return 1
+}
+
 [ -d "$source_dir/controller" ] && [ -d "$source_dir/worker" ] || { echo "worker/controller package source missing" >&2; exit 1; }
 [ -f "$source_dir/systemd/phishtopia-ops-worker-standalone.service" ] || { echo "worker service source missing" >&2; exit 1; }
 [ -f "$source_dir/systemd/phishtopia-ops-controller-standalone.service" ] || { echo "controller service source missing" >&2; exit 1; }
@@ -155,9 +276,9 @@ stage=start_worker
 systemctl daemon-reload
 systemctl reset-failed phishtopia-ops-worker.service phishtopia-ops-controller.service 2>/dev/null || true
 systemctl enable --now phishtopia-ops-worker.service
-systemctl is-active --quiet phishtopia-ops-worker.service
-[ "$(systemctl show phishtopia-ops-worker.service -p NRestarts --value)" = 0 ]
-[ "$(stat -c '%U:%G:%a' "$worker_socket")" = "root:phishtopia-mcp:660" ]
+worker_invocation=$(service_property phishtopia-ops-worker.service InvocationID)
+stage=wait_worker_socket
+wait_for_worker_socket "$worker_invocation"
 
 /usr/bin/setpriv --reuid=phishtopia-mcp --regid=phishtopia-mcp --init-groups --no-new-privs -- \
   /usr/bin/python3 -B - "$worker_socket" <<'PY'
@@ -181,18 +302,14 @@ expected = ["canary_and_promote", "deploy_verified_release", "restart_phishtopia
 if value != {"ok": True, "contract": {"version": "issue15-v1", "actions": expected, "singleFlight": "production_mutation"}}:
     raise SystemExit("worker contract rejected")
 PY
+systemctl is-active --quiet phishtopia-ops-worker.service
+[ "$(service_property phishtopia-ops-worker.service NRestarts)" = 0 ]
 
 stage=start_controller
-started_at=$(date -u '+%Y-%m-%d %H:%M:%S UTC')
 systemctl enable --now phishtopia-ops-controller.service
-systemctl is-active --quiet phishtopia-ops-controller.service
-sleep 23
-systemctl is-active --quiet phishtopia-ops-controller.service
-[ "$(systemctl show phishtopia-ops-controller.service -p NRestarts --value)" = 0 ]
-if journalctl -u phishtopia-ops-controller.service --since "$started_at" --no-pager -o cat | grep -Fq 'controller_error='; then
-  echo "controller relay transport verification failed" >&2
-  exit 1
-fi
+controller_invocation=$(service_property phishtopia-ops-controller.service InvocationID)
+stage=wait_controller_transport
+wait_for_controller_ready "$controller_invocation"
 
 stage=final_verification
 [ "$(readlink -f "$worker_current")" = "$candidate" ]

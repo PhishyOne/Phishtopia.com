@@ -1,5 +1,32 @@
 # Operations runbook
 
+## Recovered-baseline sidecar activation
+
+When the recovered read-only tunnel is already healthy, install the worker and
+external controller beside it from a merged immutable commit:
+
+```sh
+./scripts/activate-worker-controller-sidecar-cloud-shell.sh MERGED_COMMIT
+```
+
+Run this command directly in Google Cloud Shell. Do not wrap it in the Codex CLI
+or an automatic retry loop. The installer is a single transaction with rollback
+and already contains the required tests and readiness checks.
+
+Worker readiness is checked once per second for up to 15 seconds. It fails
+immediately if systemd reports a stopped, failed, restarting, or restarted
+service. Success requires the correctly owned Unix socket and an exact worker
+contract response. Controller readiness is checked once per second for up to 25
+seconds and succeeds only after the relay completes a Pub/Sub request cycle. A
+service failure, restart, or `controller_error` is terminal.
+
+Failure output is deliberately bounded. It reports the install stage, a fixed
+worker startup stage or controller error code when available, and only these
+systemd fields: active state, substate, result, exit code, exit status, and
+restart count. Raw journals and exception text are not returned. Let rollback
+finish, preserve that diagnostic block, and diagnose it before making one new
+attempt.
+
 ## Before bootstrap
 
 1. Record source hashes, unit/launcher/tunnel/credential fingerprints, service properties, IAM bindings, Cloud Run traffic, app commit/PM2 state, Nginx hashes, PostgreSQL schema/data hashes, DNS answers, TLS certificate, health results, and memory/disk headroom.

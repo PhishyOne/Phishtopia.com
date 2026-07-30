@@ -24,9 +24,14 @@ def main() -> None:
     parser.add_argument("--queue-issue", type=int, required=True)
     args = parser.parse_args()
     client = RestPubSub()
+    ready = False
     while True:
         try:
-            if not run_once(client, args.queue_issue):
+            handled = run_once(client, args.queue_issue)
+            if not ready:
+                print("controller_ready=1", flush=True)
+                ready = True
+            if not handled:
                 time.sleep(1)
         except ControllerError as exc:
             print(f"controller_error={exc}", file=sys.stderr, flush=True)

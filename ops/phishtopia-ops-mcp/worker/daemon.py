@@ -8,6 +8,7 @@ import signal
 import socket
 import socketserver
 import struct
+import sys
 import threading
 import time
 from collections import deque
@@ -159,56 +160,70 @@ def reexec_selected_worker() -> None:
 
 
 def main() -> None:
-    os.umask(0o077)
-    if os.geteuid() != 0:
-        raise SystemExit("worker must run as root")
-    # A flag present at process start means systemd already restarted us after
-    # the symlink switch. Consume it so only the old process requests reexec.
-    WORKER_REEXEC_FLAG.unlink(missing_ok=True)
-    STATE_ROOT.mkdir(mode=0o700, parents=True, exist_ok=True)
-    store = JobStore(STATE_ROOT / "jobs.sqlite3", STATE_ROOT / "audit.jsonl")
-    platform = RealPlatform()
-    for action, baseline in store.completed_recovery_material():
-        platform.cleanup(action, baseline)
-    application = WorkerApplication(store, JobExecutor(store, platform))
-    SOCKET_PATH.parent.mkdir(mode=0o750, parents=True, exist_ok=True)
-    SOCKET_PATH.unlink(missing_ok=True)
-    server = Server(str(SOCKET_PATH), RequestHandler, application)
-    os.chown(SOCKET_PATH, 0, grp.getgrnam("phishtopia-mcp").gr_gid)
-    os.chmod(SOCKET_PATH, 0o660)
-
-    def stop(_signum: int, _frame: Any) -> None:
-        application.stop_event.set()
-        threading.Thread(target=server.shutdown, daemon=True).start()
-
-    signal.signal(signal.SIGTERM, stop)
-    signal.signal(signal.SIGINT, stop)
-    worker_failed = threading.Event()
-
-    def run_worker() -> None:
-        try:
-            application.run_jobs()
-        except BaseException:
-            worker_failed.set()
-            application.stop_event.set()
-            server.shutdown()
-        else:
-            server.shutdown()
-
-    worker = threading.Thread(target=run_worker, daemon=False)
-    worker.start()
+    stage = "privilege_check"
     try:
-        server.serve_forever(poll_interval=0.25)
-    finally:
-        application.stop_event.set()
-        worker.join(timeout=30)
-        server.server_close()
+        os.umask(0o077)
+        if os.geteuid() != 0:
+            raise RuntimeError("worker privilege contract rejected")
+        # A flag present at process start means systemd already restarted us
+        # after the symlink switch. Consume it so only the old process requests
+        # reexec.
+        WORKER_REEXEC_FLAG.unlink(missing_ok=True)
+
+        stage = "state_initialization"
+        STATE_ROOT.mkdir(mode=0o700, parents=True, exist_ok=True)
+        store = JobStore(STATE_ROOT / "jobs.sqlite3", STATE_ROOT / "audit.jsonl")
+        platform = RealPlatform()
+
+        stage = "recovery_cleanup"
+        for action, baseline in store.completed_recovery_material():
+            platform.cleanup(action, baseline)
+        application = WorkerApplication(store, JobExecutor(store, platform))
+
+        stage = "socket_setup"
+        SOCKET_PATH.parent.mkdir(mode=0o750, parents=True, exist_ok=True)
         SOCKET_PATH.unlink(missing_ok=True)
-    if worker_failed.is_set():
-        raise RuntimeError("job worker failed; requesting systemd restart")
-    if WORKER_REEXEC_FLAG.exists():
-        WORKER_REEXEC_FLAG.unlink()
-        reexec_selected_worker()
+        server = Server(str(SOCKET_PATH), RequestHandler, application)
+        os.chown(SOCKET_PATH, 0, grp.getgrnam("phishtopia-mcp").gr_gid)
+        os.chmod(SOCKET_PATH, 0o660)
+
+        def stop(_signum: int, _frame: Any) -> None:
+            application.stop_event.set()
+            threading.Thread(target=server.shutdown, daemon=True).start()
+
+        signal.signal(signal.SIGTERM, stop)
+        signal.signal(signal.SIGINT, stop)
+        worker_failed = threading.Event()
+
+        def run_worker() -> None:
+            try:
+                application.run_jobs()
+            except BaseException:
+                worker_failed.set()
+                application.stop_event.set()
+                server.shutdown()
+            else:
+                server.shutdown()
+
+        stage = "job_worker"
+        worker = threading.Thread(target=run_worker, daemon=False)
+        worker.start()
+        try:
+            server.serve_forever(poll_interval=0.25)
+        finally:
+            application.stop_event.set()
+            worker.join(timeout=30)
+            server.server_close()
+            SOCKET_PATH.unlink(missing_ok=True)
+        if worker_failed.is_set():
+            raise RuntimeError("job worker failed; requesting systemd restart")
+        if WORKER_REEXEC_FLAG.exists():
+            stage = "worker_reexec"
+            WORKER_REEXEC_FLAG.unlink()
+            reexec_selected_worker()
+    except Exception:
+        print(f"worker_error_stage={stage}", file=sys.stderr, flush=True)
+        raise
 
 
 if __name__ == "__main__":
