@@ -74,7 +74,11 @@ The controller-aware bootstrap:
 - The relay publishes the response before acknowledging the request.
 - Failed response publication leaves the request unacknowledged for safe redelivery.
 - GitHub workflows are serialized; stale responses are discarded by request ID.
-- Provider errors, subprocess output, credentials, headers, secrets, raw logs, and database rows never enter issue comments.
+- The locked command queue remains locked. Sanitized results are written only to
+  the authenticated Actions run log and summary; the workflow does not attempt
+  to create bot comments on the locked issue.
+- Raw provider errors, subprocess output, credentials, headers, secrets, raw
+  logs, and database rows never enter the command issue or Actions output.
 - Controller-aware installation uses one bounded attempt and the existing exact recovery helper.
 
 ## Controlled activation
