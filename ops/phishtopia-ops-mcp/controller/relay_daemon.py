@@ -27,12 +27,13 @@ def main() -> None:
     ready = False
     while True:
         try:
-            handled = run_once(client, args.queue_issue)
             if not ready:
+                client.verify_transport()
                 print("controller_ready=1", flush=True)
                 ready = True
+            handled = run_once(client, args.queue_issue)
             if not handled:
-                time.sleep(1)
+                time.sleep(5)
         except ControllerError as exc:
             print(f"controller_error={exc}", file=sys.stderr, flush=True)
             time.sleep(5)

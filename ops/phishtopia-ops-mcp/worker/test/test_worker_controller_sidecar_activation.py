@@ -81,6 +81,15 @@ class WorkerControllerSidecarActivationTests(unittest.TestCase):
         controller = (ROOT / "controller/relay_daemon.py").read_text(encoding="utf8")
         self.assertIn('print(f"worker_error_stage={stage}"', worker)
         self.assertIn('"controller_ready=1"', controller)
+        main = controller[controller.index("def main()"):]
+        self.assertLess(
+            main.index("client.verify_transport()"),
+            main.index('print("controller_ready=1"'),
+        )
+        self.assertLess(
+            main.index('print("controller_ready=1"'),
+            main.index("handled = run_once"),
+        )
 
     def test_worker_unit_uses_standalone_immutable_path(self):
         value = WORKER_UNIT.read_text(encoding="utf8")

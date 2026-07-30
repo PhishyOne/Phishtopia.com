@@ -48,6 +48,15 @@ The queue issue, WIF provider, and controller service-account identifiers are fi
 
 `phishtopia-ops-controller.service` runs as unprivileged `phishtopia-mcp`. It uses the VM metadata server for a short-lived token and calls only the fixed Pub/Sub REST endpoints. It forwards only canonical worker protocol requests to the root-owned Unix socket. The worker remains the only component that performs mutations or accesses rollback material.
 
+At startup, the relay uses `testIamPermissions` against only the fixed request
+subscription and response topic. Readiness requires the exact consume and
+publish permissions but does not pull, acknowledge, or publish a message.
+Runtime uses bounded non-waiting pulls on a five-second idle cadence. This is
+an intentional, low-rate use of Pub/Sub's documented but deprecated
+`returnImmediately` field: an empty subscription must not turn Pub/Sub's
+bounded unary wait into a false transport failure. If Google removes that field,
+the fixed HTTP error mapping fails closed rather than reporting readiness.
+
 The controller-aware bootstrap:
 
 - reuses the existing verified Ops release installer;
