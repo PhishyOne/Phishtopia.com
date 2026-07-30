@@ -17,8 +17,11 @@ Worker readiness is checked once per second for up to 15 seconds. It fails
 immediately if systemd reports a stopped, failed, restarting, or restarted
 service. Success requires the correctly owned Unix socket and an exact worker
 contract response. Controller readiness is checked once per second for up to 30
-seconds and succeeds only after the relay completes a Pub/Sub request cycle. A
-service failure, restart, or `controller_error` is terminal.
+seconds. The relay must obtain its VM metadata token and verify its exact
+subscription-consume and response-topic-publish permissions without consuming a
+queued request. Runtime pulls are bounded non-waiting requests on a five-second
+idle cadence, so a healthy empty queue cannot be misclassified as a transport
+failure. A service failure, restart, or `controller_error` is terminal.
 
 Failure output is deliberately bounded. It reports the install stage, a fixed
 worker startup stage or controller error code when available, and only these

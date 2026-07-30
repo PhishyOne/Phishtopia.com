@@ -1,10 +1,12 @@
 from __future__ import annotations
 import json
 import unittest
+import urllib.error
 import uuid
 from unittest.mock import patch
-from controller.policy import COMMAND_PREFIX, ControllerError, decode_pubsub_message, encode_pubsub_message, parse_issue_comment_event, validate_request_envelope, validate_worker_response
+from controller.policy import COMMAND_PREFIX, ControllerError, REQUEST_SUBSCRIPTION, decode_pubsub_message, encode_pubsub_message, parse_issue_comment_event, validate_request_envelope, validate_worker_response
 from controller.pubsub import PulledMessage
+from controller.pubsub_rest import RestPubSub
 
 QUEUE = 41
 JOB_ID = '123e4567-e89b-42d3-a456-426614174000'
@@ -15,6 +17,19 @@ def event(command=None):
 
 def job_response():
     return {'ok': True, 'job': {'jobId': JOB_ID, 'action': 'restart_phishtopia_service', 'state': 'queued', 'progress': 0, 'createdAt': '2026-07-24T12:00:00Z', 'updatedAt': '2026-07-24T12:00:00Z', 'deadlineAt': '2026-07-24T12:03:00Z', 'resultCode': 'accepted', 'observations': []}}
+
+class Response:
+    def __init__(self, value):
+        self.body = json.dumps(value, separators=(',', ':')).encode()
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *_args):
+        return False
+
+    def read(self, _maximum):
+        return self.body
 
 class PolicyTests(unittest.TestCase):
     def test_owner_command_is_canonical(self):
@@ -102,6 +117,72 @@ class RelayTests(unittest.TestCase):
             with self.assertRaisesRegex(ControllerError, 'pubsub_unavailable'):
                 run_once(Client(), QUEUE)
         self.assertEqual(calls, [])
+
+class RestPubSubTests(unittest.TestCase):
+    def test_readiness_checks_exact_permissions_before_bounded_empty_pull(self):
+        calls = []
+        responses = iter((
+            {'access_token': 'token', 'expires_in': 3600},
+            {'permissions': ['pubsub.subscriptions.consume']},
+            {'permissions': ['pubsub.topics.publish']},
+            {},
+        ))
+
+        def opener(request, timeout):
+            payload = json.loads(request.data) if request.data else None
+            calls.append((request.full_url, payload, timeout))
+            return Response(next(responses))
+
+        client = RestPubSub(opener=opener, now=lambda: 0)
+        client.verify_transport()
+        self.assertIsNone(client.pull(REQUEST_SUBSCRIPTION))
+
+        self.assertEqual(calls[1][1], {'permissions': ['pubsub.subscriptions.consume']})
+        self.assertTrue(calls[1][0].endswith(
+            '/subscriptions/phishtopia-ops-vm-requests:testIamPermissions'
+        ))
+        self.assertEqual(calls[2][1], {'permissions': ['pubsub.topics.publish']})
+        self.assertTrue(calls[2][0].endswith(
+            '/topics/phishtopia-ops-responses:testIamPermissions'
+        ))
+        self.assertEqual(
+            calls[3][1],
+            {'maxMessages': 1, 'returnImmediately': True},
+        )
+        self.assertLessEqual(calls[3][2], 10)
+
+    def test_readiness_rejects_missing_runtime_permission(self):
+        responses = iter((
+            {'access_token': 'token', 'expires_in': 3600},
+            {},
+        ))
+
+        def opener(_request, timeout):
+            self.assertGreater(timeout, 0)
+            return Response(next(responses))
+
+        client = RestPubSub(opener=opener, now=lambda: 0)
+        with self.assertRaisesRegex(ControllerError, '^pubsub_permission_denied$'):
+            client.verify_transport()
+
+    def test_pubsub_http_denial_has_fixed_non_sensitive_code(self):
+        responses = iter(({'access_token': 'token', 'expires_in': 3600},))
+
+        def opener(request, timeout):
+            self.assertGreater(timeout, 0)
+            if request.full_url.startswith('http://metadata.'):
+                return Response(next(responses))
+            raise urllib.error.HTTPError(
+                request.full_url,
+                403,
+                'raw provider text must not escape',
+                {},
+                None,
+            )
+
+        client = RestPubSub(opener=opener, now=lambda: 0)
+        with self.assertRaisesRegex(ControllerError, '^pubsub_permission_denied$'):
+            client.verify_transport()
 
 if __name__ == '__main__':
     unittest.main()
