@@ -23,7 +23,9 @@ test("privacy page makes clear, bounded statements about current data practices"
     }
 
     assert.match(template, /does not sell your personal information/i);
-    assert.match(template, /Self-service account deletion is not available yet/i);
+    assert.match(template, /delete your account and associated live data from the Danger zone/i);
+    assert.match(template, /backup.*retention/i);
+    assert.doesNotMatch(template, /Self-service account deletion is not available yet/i);
     assert.match(template, /no website or network can promise perfect security/i);
     assert.match(template, /href="\/contact"/);
 });
