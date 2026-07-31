@@ -100,3 +100,10 @@ test("registration renders clear browser-visible password requirements", async (
     assert.match(template, /maxlength="<%= passwordMaxLength %>"/);
     assert.match(template, /aria-describedby="password-requirements"/);
 });
+
+test("registration fields share the same outer width", async () => {
+    const stylesheet = await readFile(join(rootDir, "public/styles/password-policy.css"), "utf8");
+
+    assert.match(stylesheet, /body\.register \.textbox\s*{[^}]*box-sizing:\s*border-box/s);
+    assert.match(stylesheet, /body\.register \.password-field\s*{[^}]*width:\s*100%/s);
+});
