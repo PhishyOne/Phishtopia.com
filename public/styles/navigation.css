@@ -196,14 +196,54 @@
         color: #ffffff;
     }
 
-    .mobile-nav-links form {
-        margin: 0;
+    .mobile-nav-section-label {
+        margin-top: 0.45rem !important;
+        padding: 0.7rem 0.85rem 0.25rem !important;
+        border-top: 1px solid rgba(151, 229, 236, 0.18);
+        color: #82cbd2;
+        font-size: 0.74rem;
+        font-weight: 850;
+        letter-spacing: 0.14em;
+        line-height: 1;
+        text-transform: uppercase;
     }
 
-    .mobile-logout-item {
-        margin-top: 0.35rem !important;
-        padding-top: 0.45rem !important;
-        border-top: 1px solid rgba(151, 229, 236, 0.18);
+    .mobile-nav-section-label:first-child {
+        margin-top: 0 !important;
+        padding-top: 0.25rem !important;
+        border-top: 0;
+    }
+
+    .mobile-project-link {
+        border: 1px solid rgba(78, 224, 235, 0.22) !important;
+        background: linear-gradient(105deg, rgba(15, 173, 188, 0.28), rgba(37, 111, 171, 0.16)) !important;
+        color: #d9fcff !important;
+        box-shadow: inset 3px 0 0 rgba(91, 237, 246, 0.72);
+    }
+
+    .mobile-project-link:hover {
+        border-color: rgba(105, 239, 247, 0.42) !important;
+        background: linear-gradient(105deg, rgba(21, 194, 208, 0.38), rgba(48, 130, 194, 0.24)) !important;
+        color: #ffffff !important;
+    }
+
+    .mobile-auth-item a {
+        border: 1px solid rgba(255, 183, 106, 0.24);
+        background: rgba(255, 183, 106, 0.12);
+        color: #ffe1ba;
+    }
+
+    .mobile-auth-item a:visited {
+        color: #ffe1ba;
+    }
+
+    .mobile-auth-item a:hover {
+        background: rgba(255, 183, 106, 0.22);
+        color: #ffffff;
+    }
+
+    .mobile-nav-links form {
+        margin: 0;
     }
 
     .mobile-logout-item button {
