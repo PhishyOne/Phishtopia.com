@@ -58,15 +58,28 @@ test("dashboard controller renders an app-neutral account home", async () => {
     assert.equal(response.locals.account.username, "PhishyOne");
 });
 
-test("dashboard template links to the three main tools and account management", async () => {
+test("dashboard prioritizes projects and links to feedback and account management", async () => {
     const template = await readFile(join(rootDir, "views/dashboard/index.ejs"), "utf8");
 
-    for (const path of ["/account", "/storecalc", "/echotrace", "/youlist"]) {
+    for (const path of ["/account", "/contact", "/storecalc", "/echotrace", "/youlist"]) {
         assert.ok(template.includes(`href=\"${path}\"`), `dashboard should link to ${path}`);
     }
 
+    assert.match(template, /Explore what’s here, try something new/);
+    assert.ok(
+        template.indexOf("dashboard-tools") < template.indexOf("dashboard-account-card"),
+        "project tools should appear before account management in document order"
+    );
     assert.doesNotMatch(template, /continue where you left off/i);
     assert.doesNotMatch(template, /current facility|saved orders|personal templates/i);
+});
+
+test("dashboard CSS keeps the hero compact and moves account management below projects on narrow screens", async () => {
+    const css = await readFile(join(rootDir, "public/styles/dashboard.css"), "utf8");
+
+    assert.match(css, /min-height:\s*205px/);
+    assert.match(css, /grid-template-areas:\s*\n\s*"welcome"\s*\n\s*"tools"\s*\n\s*"account"/);
+    assert.match(css, /@media \(max-width: 650px\)[\s\S]*min-height:\s*150px/);
 });
 
 let server;
