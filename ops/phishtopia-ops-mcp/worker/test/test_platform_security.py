@@ -24,6 +24,81 @@ from worker.platform import (
 
 
 class PlatformSecurityTests(unittest.TestCase):
+    def test_ops_upgrade_unit_contract_uses_installed_sidecar_unit(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            source = root / "source"
+            systemd = source / "systemd"
+            systemd.mkdir(parents=True)
+            installed = root / "phishtopia-ops-worker.service"
+            expected = b"[Service]\nWorkingDirectory=/opt/phishtopia-ops-worker-code\n"
+            installed.write_bytes(expected)
+            (systemd / "phishtopia-ops-worker-standalone.service").write_bytes(
+                expected
+            )
+            (systemd / "phishtopia-ops-worker.service").write_bytes(
+                b"legacy full-tunnel unit must not be selected\n"
+            )
+
+            with mock.patch.object(
+                platform_module,
+                "WORKER_UNIT_PATH",
+                installed,
+            ):
+                RealPlatform._verify_immutable_unit_contract(source)
+                (
+                    systemd / "phishtopia-ops-worker-standalone.service"
+                ).write_bytes(b"changed\n")
+                with self.assertRaisesRegex(
+                    PlatformError,
+                    "^immutable_unit_contract_changed$",
+                ):
+                    RealPlatform._verify_immutable_unit_contract(source)
+
+    def test_ops_worker_release_path_is_persistent_and_tunnel_is_separate(
+        self,
+    ) -> None:
+        self.assertEqual(
+            platform_module.OPS_WORKER_CURRENT,
+            Path("/opt/phishtopia-ops-worker-code"),
+        )
+        self.assertEqual(
+            platform_module.OPS_WORKER_RELEASES,
+            Path("/opt/phishtopia-ops-worker-controller-releases"),
+        )
+        self.assertNotEqual(
+            platform_module.OPS_WORKER_CURRENT,
+            platform_module.OPS_CURRENT,
+        )
+
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            releases = root / "worker-releases"
+            releases.mkdir()
+            previous = releases / ("a" * 40)
+            candidate = releases / ("b" * 40)
+            previous.mkdir()
+            candidate.mkdir()
+            current = root / "worker-current"
+            current.symlink_to(previous)
+            with (
+                mock.patch.object(
+                    platform_module,
+                    "OPS_WORKER_CURRENT",
+                    current,
+                ),
+                mock.patch.object(
+                    platform_module,
+                    "OPS_WORKER_RELEASES",
+                    releases,
+                ),
+            ):
+                RealPlatform._switch_symlink(current, candidate)
+                self.assertEqual(current.resolve(), candidate)
+                platform = RealPlatform.__new__(RealPlatform)
+                platform._restore_target(current, str(previous))
+                self.assertEqual(current.resolve(), previous)
+
     def _cloudflare_read_platform(
         self,
         *,

@@ -32,9 +32,15 @@
 - Resource uniqueness in SQLite, fixed deadlines, a durable pre-mutation checkpoint, and verified rollback only after mutation may have started.
 - No public worker listener; local peer credential check.
 - Systemd sandboxing, exact transient-unit cancellation, task/fd/memory/output limits, and action-specific memory/disk gates.
+- The worker filesystem remains read-only except for fixed state/release paths,
+  the application error-log directory, and `/var/log/nginx`. The last
+  exception is directory-scoped because `nginx -t` opens configured log files
+  while validating; the `/var/log` parent remains read-only.
 - Count-only post-change error gates; immutable app releases use the fixed external `/var/log/phishtopia` directory and no raw log content enters a job or audit event.
 - General rollback invariants use stable PostgreSQL schema/configuration hashes and exclude mutable database rows and counts; exact data fingerprints remain confined to the tested migration workflow.
 - Ops upgrades disable Python bytecode writes and use a durable reexec checkpoint from the selected release directory so the newly loaded root worker, not the old process, must verify the release before terminal success.
+- Ops upgrades move the persistent worker-sidecar symlink used by systemd and
+  do not repoint the recovered nine-tool MCP tunnel.
 - Audit selection, append, fsync, and database acknowledgement share one lock so concurrent admission and worker transitions cannot duplicate or reorder a flush batch.
 - Production mutations are excluded from tests; fakes and disposable local resources cover the high-impact paths.
 

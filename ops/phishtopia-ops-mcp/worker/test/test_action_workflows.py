@@ -291,6 +291,7 @@ class ReleaseFake(ScriptedPlatform):
             "phishtopia_ops": {},
         }
         self.fail_after_switch = False
+        self.switched_currents: list[Path] = []
 
     def _verify_production_invariants(
         self, baseline: dict[str, Any], *, ignored: frozenset[str] = frozenset()
@@ -316,7 +317,8 @@ class ReleaseFake(ScriptedPlatform):
         destination.mkdir(parents=True)
         self.events.append("release_installed")
 
-    def _switch_symlink(self, _current: Path, target: Path) -> None:
+    def _switch_symlink(self, current: Path, target: Path) -> None:
+        self.switched_currents.append(current)
         self.current = target.name
         self.events.append("release_switched")
 
@@ -503,7 +505,11 @@ class ActionWorkflowFakeTests(unittest.TestCase):
             fake = ReleaseFake(archive)
             with (
                 mock.patch.object(platform_module, "APP_RELEASES", app_releases),
-                mock.patch.object(platform_module, "OPS_RELEASES", ops_releases),
+                mock.patch.object(
+                    platform_module,
+                    "OPS_WORKER_RELEASES",
+                    ops_releases,
+                ),
                 mock.patch.object(platform_module, "APP_CURRENT", current_app),
             ):
                 ops_action = {
@@ -556,6 +562,14 @@ class ActionWorkflowFakeTests(unittest.TestCase):
             self.assertIn("candidate_tested:ops", fake.events)
             self.assertIn("candidate_tested:app", fake.events)
             self.assertGreaterEqual(fake.events.count("release_switched"), 3)
+            self.assertEqual(
+                fake.switched_currents,
+                [
+                    platform_module.OPS_WORKER_CURRENT,
+                    current_app,
+                    platform_module.OPS_WORKER_CURRENT,
+                ],
+            )
 
     def test_failed_release_removes_only_new_destination_and_can_retry(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
@@ -583,7 +597,11 @@ class ActionWorkflowFakeTests(unittest.TestCase):
             }
             fake = ReleaseFake(archive)
             fake.fail_after_switch = True
-            with mock.patch.object(platform_module, "OPS_RELEASES", releases):
+            with mock.patch.object(
+                platform_module,
+                "OPS_WORKER_RELEASES",
+                releases,
+            ):
                 with self.assertRaisesRegex(
                     PlatformError, "injected_post_switch_failure"
                 ):
@@ -606,7 +624,11 @@ class ActionWorkflowFakeTests(unittest.TestCase):
             destination = releases / COMMIT
             destination.mkdir(parents=True)
             fake = ReleaseFake(archive)
-            with mock.patch.object(platform_module, "OPS_RELEASES", releases):
+            with mock.patch.object(
+                platform_module,
+                "OPS_WORKER_RELEASES",
+                releases,
+            ):
                 with self.assertRaisesRegex(PlatformError, "release_destination_exists"):
                     fake._upgrade_ops(
                         {

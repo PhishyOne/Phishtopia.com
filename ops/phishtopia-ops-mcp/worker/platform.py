@@ -47,7 +47,8 @@ GCLOUD_CONFIG_ROOT = STATE_ROOT / "gcloud"
 APP_LOG_ROOT = Path("/var/log/phishtopia")
 APP_ERROR_LOG = APP_LOG_ROOT / "errors.log"
 OPS_CURRENT = Path("/opt/phishtopia-ops-mcp")
-OPS_RELEASES = Path("/opt/phishtopia-ops-releases")
+OPS_WORKER_CURRENT = Path("/opt/phishtopia-ops-worker-code")
+OPS_WORKER_RELEASES = Path("/opt/phishtopia-ops-worker-controller-releases")
 OPS_NPM = Path("/opt/phishtopia-ops-runtime/node/bin/npm")
 OPS_NODE = Path("/opt/phishtopia-ops-runtime/node/bin/node")
 OPS_NPM_CLI = Path("/opt/phishtopia-ops-runtime/node/lib/node_modules/npm/bin/npm-cli.js")
@@ -56,8 +57,6 @@ APP_RELEASES = Path("/opt/phishtopia-app-releases")
 RELEASE_MANIFEST = STATE_ROOT / "releases.json"
 WORKER_REEXEC_FLAG = STATE_ROOT / "worker-reexec-requested"
 WORKER_UNIT_PATH = Path("/etc/systemd/system/phishtopia-ops-worker.service")
-TUNNEL_UNIT_PATH = Path("/etc/systemd/system/phishtopia-ops-mcp-tunnel.service")
-TUNNEL_LAUNCHER_PATH = Path("/usr/local/libexec/phishtopia-ops-mcp-tunnel-launch")
 PUBLIC_HEALTH = "https://phishtopia.com/health"
 PUBLIC_ROOT = "https://phishtopia.com/"
 OPS_UNIT = "phishtopia-ops-mcp-tunnel.service"
@@ -482,7 +481,7 @@ class RealPlatform:
         ):
             baseline.update(
                 {
-                    "current": self._current_target(OPS_CURRENT),
+                    "current": self._current_target(OPS_WORKER_CURRENT),
                     "unit_active": self._systemctl("is-active", OPS_UNIT, timeout=15).decode().strip(),
                 }
             )
@@ -534,7 +533,7 @@ class RealPlatform:
             baseline["release_manifest"] = self._release_manifest()
         if action_type in {"upgrade_ops_release", "deploy_verified_release"}:
             release_root = (
-                OPS_RELEASES
+                OPS_WORKER_RELEASES
                 if action_type == "upgrade_ops_release"
                 else APP_RELEASES
             )
@@ -590,7 +589,7 @@ class RealPlatform:
         if action_type in ("upgrade_ops_release",) or (
             action_type == "rollback_release" and action.get("target") == "phishtopia_ops"
         ):
-            self._restore_target(OPS_CURRENT, baseline.get("current"))
+            self._restore_target(OPS_WORKER_CURRENT, baseline.get("current"))
             self._remove_new_release(action, baseline)
             self._restore_release_manifest(baseline.get("release_manifest"))
             self._systemctl("restart", OPS_UNIT, timeout=45)
@@ -709,7 +708,7 @@ class RealPlatform:
         node_link.symlink_to(OPS_NODE.parent.parent)
         check()
         progress(65, "candidate_tested")
-        destination = OPS_RELEASES / action["commit"]
+        destination = OPS_WORKER_RELEASES / action["commit"]
         if (
             baseline.get("destination_preexisting") is not False
             or baseline.get("release_destination") != str(destination)
@@ -717,7 +716,7 @@ class RealPlatform:
             raise PlatformError("release_destination_exists")
         mutation()
         self._install_release(source, destination)
-        self._switch_symlink(OPS_CURRENT, destination)
+        self._switch_symlink(OPS_WORKER_CURRENT, destination)
         self._systemctl("restart", OPS_UNIT, timeout=45)
         self._verify_ops()
         self._verify_production_invariants(baseline)
@@ -739,8 +738,10 @@ class RealPlatform:
             if action_type == "upgrade_ops_release"
             else action.get("release")
         )
-        destination = OPS_RELEASES / str(release or "")
-        if self._current_target(OPS_CURRENT) != str(destination.resolve(strict=True)):
+        destination = OPS_WORKER_RELEASES / str(release or "")
+        if self._current_target(OPS_WORKER_CURRENT) != str(
+            destination.resolve(strict=True)
+        ):
             raise PlatformError("worker_handoff_target_mismatch")
         self._verify_immutable_unit_contract(destination)
         check()
@@ -756,9 +757,12 @@ class RealPlatform:
     @staticmethod
     def _verify_immutable_unit_contract(source: Path) -> None:
         pairs = (
-            (source / "systemd" / "phishtopia-ops-worker.service", WORKER_UNIT_PATH),
-            (source / "systemd" / "phishtopia-ops-mcp-tunnel.service", TUNNEL_UNIT_PATH),
-            (source / "systemd" / "phishtopia-ops-mcp-tunnel-launch", TUNNEL_LAUNCHER_PATH),
+            (
+                source
+                / "systemd"
+                / "phishtopia-ops-worker-standalone.service",
+                WORKER_UNIT_PATH,
+            ),
         )
         for candidate, installed in pairs:
             try:
@@ -841,7 +845,11 @@ class RealPlatform:
         record = manifest.get(key, {}).get(action["release"])
         if not isinstance(record, dict):
             raise PlatformError("release_not_recorded")
-        root = APP_RELEASES if key == "phishtopia_app" else OPS_RELEASES
+        root = (
+            APP_RELEASES
+            if key == "phishtopia_app"
+            else OPS_WORKER_RELEASES
+        )
         target = root / action["release"]
         if not target.is_dir():
             raise PlatformError("release_missing")
@@ -860,7 +868,7 @@ class RealPlatform:
             self._pm2("reload", PM2_NAME, "--update-env", timeout=45)
             self._public_health(PUBLIC_HEALTH)
         else:
-            self._switch_symlink(OPS_CURRENT, target)
+            self._switch_symlink(OPS_WORKER_CURRENT, target)
             self._systemctl("restart", OPS_UNIT, timeout=45)
             self._verify_ops()
         self._verify_production_invariants(baseline)
@@ -2390,7 +2398,12 @@ class RealPlatform:
         if not isinstance(target_value, str):
             raise PlatformError("rollback_target_missing")
         target = Path(target_value)
-        allowed_root = APP_RELEASES if current == APP_CURRENT else OPS_RELEASES
+        if current == APP_CURRENT:
+            allowed_root = APP_RELEASES
+        elif current == OPS_WORKER_CURRENT:
+            allowed_root = OPS_WORKER_RELEASES
+        else:
+            raise PlatformError("rollback_target_not_allowlisted")
         if target == current and current.is_dir() and not current.is_symlink():
             return
         if target.parent != allowed_root or not target.is_dir():
@@ -2399,7 +2412,13 @@ class RealPlatform:
 
     @staticmethod
     def _switch_symlink(current: Path, target: Path) -> None:
-        allowed = (current == OPS_CURRENT and target.parent == OPS_RELEASES) or (current == APP_CURRENT and target.parent == APP_RELEASES)
+        allowed = (
+            current == OPS_WORKER_CURRENT
+            and target.parent == OPS_WORKER_RELEASES
+        ) or (
+            current == APP_CURRENT
+            and target.parent == APP_RELEASES
+        )
         if not allowed or not target.is_dir():
             raise PlatformError("release_path_not_allowlisted")
         if current.exists() and not current.is_symlink():
@@ -2711,7 +2730,10 @@ class RealPlatform:
     def _install_release(cls, source: Path, destination: Path) -> None:
         if destination.exists() or destination.is_symlink():
             raise PlatformError("release_destination_exists")
-        if destination.parent not in {APP_RELEASES, OPS_RELEASES} or re.fullmatch(
+        if destination.parent not in {
+            APP_RELEASES,
+            OPS_WORKER_RELEASES,
+        } or re.fullmatch(
             r"[0-9a-f]{40}", destination.name
         ) is None:
             raise PlatformError("release_destination_not_allowlisted")
@@ -2753,7 +2775,7 @@ class RealPlatform:
         if baseline.get("destination_preexisting") is not False:
             return
         if action.get("type") == "upgrade_ops_release":
-            release_root = OPS_RELEASES
+            release_root = OPS_WORKER_RELEASES
         elif action.get("type") == "deploy_verified_release":
             release_root = APP_RELEASES
         else:
@@ -3049,7 +3071,11 @@ class RealPlatform:
 
     def _record_release(self, target: str, commit: str, digest: str) -> None:
         manifest = self._release_manifest()
-        release_root = APP_RELEASES if target == "phishtopia_app" else OPS_RELEASES
+        release_root = (
+            APP_RELEASES
+            if target == "phishtopia_app"
+            else OPS_WORKER_RELEASES
+        )
         release = release_root / commit
         if (
             target not in {"phishtopia_app", "phishtopia_ops"}

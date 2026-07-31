@@ -23,7 +23,7 @@ from .allowlist import (
     validate_job_id,
 )
 from .executor import JobExecutor
-from .platform import OPS_CURRENT, RealPlatform, WORKER_REEXEC_FLAG
+from .platform import OPS_WORKER_CURRENT, RealPlatform, WORKER_REEXEC_FLAG
 from .store import JobStore, StoreError
 
 STATE_ROOT = Path("/var/lib/phishtopia-ops-worker")
@@ -155,7 +155,7 @@ class Server(socketserver.ThreadingUnixStreamServer):
 
 
 def reexec_selected_worker() -> None:
-    os.chdir(OPS_CURRENT)
+    os.chdir(OPS_WORKER_CURRENT)
     os.execv("/usr/bin/python3", ["/usr/bin/python3", "-m", "worker.daemon"])
 
 

@@ -6,6 +6,15 @@
 
 `phishtopia-ops-worker.service` runs as root because the allowlisted actions must control one systemd unit, one PM2 app, local PostgreSQL, fixed release directories, and narrowly scoped cloud resources. The service is filesystem-sandboxed, capacity-limited, has a small capability bounding set, and never listens on TCP.
 
+The recovered nine-tool MCP tunnel remains rooted at
+`/opt/phishtopia-ops-mcp`. The independently installed root worker starts
+through `/opt/phishtopia-ops-worker-code`, whose releases are stored under
+`/opt/phishtopia-ops-worker-controller-releases`. An
+`upgrade_ops_release` job advances that persistent worker pointer and reexecs
+the worker from it. It does not repoint the recovered MCP tunnel. This keeps a
+later systemd restart on the same verified worker release instead of silently
+falling back to the activation-time sidecar.
+
 The Node and Python validators are deliberately independent implementations. A compromised MCP process cannot introduce new JSON keys or rely on a Node-side validation bug: the root worker requires exact key sets, formats, enum values, hostnames, release identifiers, and action/resource mappings.
 
 ## State machine
@@ -37,7 +46,7 @@ The model cannot supply a URL, branch, repository, directory, npm command, or te
 
 ## Action rollback summaries
 
-- Ops/app release: capture the exact current target, atomically switch a fixed symlink, health gate, then restore the original target on any failure. Ops changes also perform a durable reexec handoff; Python bytecode writes are disabled during candidate tests and worker runtime so immutable tree digests remain stable. The systemd sandbox contract is immutable within the v1 action schema and differing candidate units are rejected.
+- Ops/app release: capture the exact current target, atomically switch a fixed symlink, health gate, then restore the original target on any failure. Ops changes switch the persistent worker-sidecar pointer and perform a durable reexec handoff; the recovered read-only MCP pointer remains unchanged. Python bytecode writes are disabled during candidate tests and worker runtime so immutable tree digests remain stable. The installed standalone worker unit must match the candidate byte-for-byte, so a release cannot silently broaden its own systemd sandbox.
 - Restart: configuration is unchanged; a failed restart is retried from the captured service baseline and gated on health.
 - Canary: capture the exact Cloud Run traffic array and reconstruct it exactly on failure/cancellation.
 - Migration: require a fresh off-VM verified dump and disposable local restore rehearsal; accept only non-destructive transactional manifest SQL. Production execution is one transaction.
