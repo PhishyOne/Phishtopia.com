@@ -232,10 +232,123 @@ body.account {
     grid-column: 1 / -1;
 }
 
+.account-danger-zone {
+    display: grid;
+    grid-template-columns: minmax(0, 0.9fr) minmax(320px, 1.1fr);
+    gap: 1.5rem;
+    align-items: start;
+    margin-top: 1.25rem;
+    padding: clamp(1.25rem, 3vw, 1.8rem);
+    border: 1px solid rgba(255, 111, 111, 0.42);
+    border-radius: 20px;
+    background: rgba(54, 12, 18, 0.72);
+    box-shadow: 0 18px 55px rgba(0, 0, 0, 0.24);
+}
+
+.account-danger-zone.account-card-active {
+    border-color: rgba(255, 168, 168, 0.78);
+}
+
+.account-danger-copy .account-eyebrow {
+    color: #ff9b9b;
+}
+
+.account-danger-copy h2 {
+    margin: 0 0 0.5rem;
+    color: #ffffff;
+    font-size: 1.7rem;
+}
+
+.account-danger-copy > p:last-child {
+    margin: 0;
+    color: #efc9cd;
+    line-height: 1.6;
+}
+
+.account-delete-form {
+    padding: 1rem;
+    border: 1px solid rgba(255, 139, 139, 0.24);
+    border-radius: 15px;
+    background: rgba(0, 0, 0, 0.2);
+}
+
+.account-delete-submit {
+    min-height: 46px;
+    margin-top: 0.65rem;
+    padding: 0.75rem 1.15rem;
+    border: 1px solid rgba(255, 170, 170, 0.35);
+    border-radius: 11px;
+    background: #a52d3a;
+    color: #ffffff;
+    font: inherit;
+    font-weight: 850;
+    cursor: pointer;
+}
+
+.account-delete-submit:hover {
+    background: #bd3544;
+}
+
+.account-delete-submit:focus-visible {
+    outline: 3px solid rgba(255, 168, 168, 0.5);
+    outline-offset: 3px;
+}
+
+.account-deleted-page {
+    width: min(760px, calc(100% - 2rem));
+    margin: 0 auto;
+    padding: clamp(3rem, 10vw, 7rem) 0 6rem;
+}
+
+.account-deleted-card {
+    padding: clamp(1.5rem, 5vw, 3rem);
+    border: 1px solid rgba(102, 227, 238, 0.24);
+    border-radius: 24px;
+    background: rgba(5, 28, 38, 0.9);
+    box-shadow: 0 24px 70px rgba(0, 0, 0, 0.28);
+    text-align: center;
+}
+
+.account-deleted-card h1 {
+    margin: 0;
+    font-size: clamp(2rem, 7vw, 3.8rem);
+    line-height: 1.02;
+}
+
+.account-deleted-card > p:not(.account-eyebrow) {
+    margin: 1.1rem auto 0;
+    color: #b8d5da;
+    line-height: 1.65;
+}
+
+.account-deleted-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.8rem;
+    justify-content: center;
+    margin-top: 1.5rem;
+}
+
+.account-deleted-actions a {
+    min-height: 44px;
+    padding: 0.7rem 1rem;
+    border: 1px solid rgba(102, 227, 238, 0.26);
+    border-radius: 11px;
+    background: rgba(21, 185, 199, 0.18);
+    color: #eaffff;
+    font-weight: 800;
+    text-decoration: none;
+}
+
+.account-deleted-actions a:hover {
+    background: rgba(21, 185, 199, 0.28);
+}
+
 @media (max-width: 820px) {
     .account-hero,
     .account-grid,
-    .account-password-form {
+    .account-password-form,
+    .account-danger-zone {
         grid-template-columns: 1fr;
     }
 
@@ -251,11 +364,27 @@ body.account {
     }
 
     .account-hero,
-    .account-card {
+    .account-card,
+    .account-danger-zone,
+    .account-deleted-card {
         border-radius: 16px;
     }
 
-    .account-submit {
+    .account-submit,
+    .account-delete-submit {
         width: 100%;
+    }
+
+    .account-delete-form {
+        padding: 0.85rem;
+    }
+
+    .account-deleted-page {
+        width: min(100% - 1rem, 760px);
+        padding-top: 2rem;
+    }
+
+    .account-deleted-actions {
+        display: grid;
     }
 }
