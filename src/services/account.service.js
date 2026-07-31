@@ -2,10 +2,13 @@ import bcrypt from "bcryptjs";
 
 import db from "../db/pool.js";
 import {
+    deleteUserRecord,
     deleteUserSessions,
+    deleteUserYouListData,
     findOtherUserByEmail,
     findOtherUserByUsername,
     findUserAccountById,
+    findUserAccountForDeletion,
     setPendingEmailChange,
     updatePasswordHash,
     updateUsername,
@@ -21,6 +24,7 @@ import { sendEmailChangeVerificationEmail } from "./email.service.js";
 const SALT_ROUNDS = 10;
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const MAX_USERNAME_LENGTH = 50;
+const ACCOUNT_DELETE_CONFIRMATION = "DELETE";
 
 function publicAccount(user) {
     if (!user) return null;
@@ -224,6 +228,55 @@ export async function changeAccountPassword(input, dependencies = {}) {
         await removeSessions(userId, client);
         await client.query("COMMIT");
         return { ok: true, account: publicAccount(updated) };
+    } catch (error) {
+        await client.query("ROLLBACK").catch(() => null);
+        throw error;
+    } finally {
+        client.release();
+    }
+}
+
+export async function deleteAccount(input, dependencies = {}) {
+    const userId = input?.userId;
+    const currentPassword = input?.currentPassword || "";
+    const confirmation = input?.confirmation?.trim() || "";
+
+    if (confirmation !== ACCOUNT_DELETE_CONFIRMATION) {
+        return {
+            ok: false,
+            status: 400,
+            error: `Type ${ACCOUNT_DELETE_CONFIRMATION} exactly to confirm account deletion.`
+        };
+    }
+
+    const connectDb = dependencies.connectDb || (() => db.connect());
+    const findAccount = dependencies.findAccountForDeletion || findUserAccountForDeletion;
+    const removeSessions = dependencies.deleteSessions || deleteUserSessions;
+    const removeYouListData = dependencies.deleteYouListData || deleteUserYouListData;
+    const removeUser = dependencies.deleteUserRecord || deleteUserRecord;
+    const client = await connectDb();
+
+    try {
+        await client.query("BEGIN");
+        const user = await findAccount(userId, client);
+
+        if (!user) {
+            await client.query("ROLLBACK");
+            return { ok: false, status: 404, error: "Account not found." };
+        }
+
+        if (!(await currentPasswordMatches(user, currentPassword, dependencies))) {
+            await client.query("ROLLBACK");
+            return { ok: false, status: 400, error: "Current password is incorrect." };
+        }
+
+        await removeSessions(userId, client);
+        await removeYouListData(userId, client);
+        const deleted = await removeUser(userId, client);
+        if (!deleted) throw new Error("Account disappeared during deletion.");
+
+        await client.query("COMMIT");
+        return { ok: true, deletedUserId: userId };
     } catch (error) {
         await client.query("ROLLBACK").catch(() => null);
         throw error;
