@@ -1,0 +1,63 @@
+<%- include('partials/header') %>
+
+<main class="privacy-page">
+    <header class="privacy-hero">
+        <p class="privacy-eyebrow">No fine-print aquarium</p>
+        <h1>Privacy at Phishtopia</h1>
+        <p class="privacy-intro">This page explains what Phishtopia collects, why it is needed, and where your information goes. The goal is to be honest and understandable, not to bury you in legal language.</p>
+        <p class="privacy-updated">Last updated: July 31, 2026</p>
+    </header>
+
+    <section class="privacy-grid" aria-label="Privacy details">
+        <article class="privacy-card">
+            <h2>What the site collects</h2>
+            <p>Creating an account requires a username, email address, and password. Phishtopia also stores the information you deliberately create inside its tools, such as YouList entries and comments. Future StoreCalc features may store orders, templates, and facility choices only when those features are actually built and you use them.</p>
+        </article>
+
+        <article class="privacy-card">
+            <h2>Passwords and account security</h2>
+            <p>Passwords are converted into one-way hashes before they are stored. Phishtopia cannot display or email your original password back to you. Email-verification and account-change tokens are used to confirm sensitive actions.</p>
+        </article>
+
+        <article class="privacy-card">
+            <h2>Cookies and sessions</h2>
+            <p>Phishtopia uses a session cookie named <code>sid</code> to keep you signed in and connect requests to your account. In production it is marked secure and HTTP-only, uses SameSite=Lax, and normally expires after two hours. The cookie is functional, not an advertising profile.</p>
+        </article>
+
+        <article class="privacy-card">
+            <h2>Analytics</h2>
+            <p>Public pages may load Google Tag Manager, and Cloudflare processes normal request information to deliver, secure, and measure the site. Authenticated account and dashboard pages currently disable Google Tag Manager. Analytics are used to understand site traffic and reliability, not to build a data-broker profile.</p>
+        </article>
+
+        <article class="privacy-card">
+            <h2>Other services</h2>
+            <p>Some features communicate with outside services. For example, YouList uses The Movie Database for title information, transactional email is sent through the configured email provider, and EchoTrace relies on external public game data. Those providers receive the information needed to answer the request or deliver the message.</p>
+        </article>
+
+        <article class="privacy-card">
+            <h2>Selling and advertising</h2>
+            <p>Phishtopia does not sell your personal information. It does not intentionally give account data or private tool content to advertisers. This site is a personal project, not a data-harvesting business.</p>
+        </article>
+
+        <article class="privacy-card">
+            <h2>Retention and deletion</h2>
+            <p>Account information and saved tool data are generally kept while the account exists so the features continue working. Operational backups and logs may remain for a limited time after live data changes. Self-service account deletion is not available yet; contact me to request review or removal of your information.</p>
+        </article>
+
+        <article class="privacy-card">
+            <h2>Security has limits</h2>
+            <p>Reasonable safeguards are used, but no website or network can promise perfect security. Do not store anything in Phishtopia that would cause serious harm if it were exposed. Security and privacy practices will be updated as the site grows.</p>
+        </article>
+    </section>
+
+    <section class="privacy-contact" aria-labelledby="privacy-contact-heading">
+        <div>
+            <p class="privacy-eyebrow">Questions or concerns?</p>
+            <h2 id="privacy-contact-heading">Talk to a human.</h2>
+            <p>Use the contact page to ask what is stored, report a privacy concern, or request help with your account data.</p>
+        </div>
+        <a href="/contact">Contact me</a>
+    </section>
+</main>
+
+<%- include('partials/footer') %>

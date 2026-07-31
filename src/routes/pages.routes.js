@@ -21,7 +21,13 @@ export function buildPagesRouter() {
         res.render("contact", pageLocals("contact"));
     });
 
-    router.all(["/", "/archive", "/contact"], pageMethodNotAllowed);
+    router.get("/privacy", (req, res) => {
+        res.render("privacy", pageLocals("privacy", {
+            pageDescription: "Learn what Phishtopia collects, why it is used, and how to ask questions about your data."
+        }));
+    });
+
+    router.all(["/", "/archive", "/contact", "/privacy"], pageMethodNotAllowed);
 
     return router;
 }

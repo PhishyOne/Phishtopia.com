@@ -4,6 +4,8 @@
 <head>
     <% const analyticsDisabled = typeof disableAnalytics !== 'undefined' && disableAnalytics; %>
     <% const robots = typeof robotsContent !== 'undefined' ? robotsContent : 'index, follow'; %>
+    <% const description = typeof pageDescription !== 'undefined' ? pageDescription : 'Home of the Improbable.'; %>
+    <% const socialTitle = title || 'Phishtopia'; %>
     <% if (!analyticsDisabled) { %>
         <!-- Google Tag Manager -->
         <script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
@@ -17,13 +19,13 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><%= title || "Phishtopia" %></title>
-    <meta name="description" content="Home of the Improbable.">
+    <meta name="description" content="<%= description %>">
     <meta name="author" content="PhishyOne">
     <meta name="theme-color" content="#05899E">
     <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#000000">
 
-    <meta property="og:title" content="Phishtopia">
-    <meta property="og:description" content="Home of the Improbable.">
+    <meta property="og:title" content="<%= socialTitle %>">
+    <meta property="og:description" content="<%= description %>">
     <meta property="og:image" content="https://phishtopia.com/images/share-card.png">
     <meta property="og:image:type" content="image/png">
     <meta property="og:image:width" content="1200">
@@ -34,8 +36,8 @@
     <meta property="og:site_name" content="Phishtopia">
 
     <meta name="twitter:card" content="summary_large_image">
-    <meta name="twitter:title" content="Phishtopia">
-    <meta name="twitter:description" content="Home of the Improbable.">
+    <meta name="twitter:title" content="<%= socialTitle %>">
+    <meta name="twitter:description" content="<%= description %>">
     <meta name="twitter:image" content="https://phishtopia.com/images/share-card.png">
     <meta name="twitter:image:alt" content="Phishtopia social card featuring a cyber fish and the words Home of the Improbable.">
     <meta name="twitter:site" content="@PhishyOne">

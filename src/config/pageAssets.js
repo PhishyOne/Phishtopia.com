@@ -17,6 +17,11 @@ export const PAGE_DEFINITIONS = Object.freeze({
         title: "Contact Me",
         bodyClass: "contact"
     }),
+    privacy: definePage({
+        title: "Privacy | Phishtopia",
+        bodyClass: "privacy",
+        styles: ["/styles/privacy.css"]
+    }),
     archive: definePage({
         title: "Course Project Archive",
         bodyClass: "archive-page",
