@@ -37,20 +37,23 @@ test("mobile navigation keeps projects and signed-in account controls available"
 
 test("mobile menu groups projects, site pages, and account actions", async () => {
     const header = await read("views/partials/header.ejs");
+    const menuStart = header.indexOf('<ul class="mobile-nav-links">');
+    const menuEnd = header.indexOf("</details>", menuStart);
+    const mobileMenu = header.slice(menuStart, menuEnd);
 
-    const projectsIndex = header.indexOf(">Projects</li>");
-    const siteIndex = header.indexOf(">Site</li>");
-    const accountIndex = header.indexOf(">Account</li>");
-    const loginIndex = header.indexOf(">Login</a>");
-    const registerIndex = header.indexOf(">Register</a>");
+    const projectsIndex = mobileMenu.indexOf(">Projects</li>");
+    const siteIndex = mobileMenu.indexOf(">Site</li>");
+    const accountIndex = mobileMenu.indexOf(">Account</li>");
+    const loginIndex = mobileMenu.indexOf(">Login</a>");
+    const registerIndex = mobileMenu.indexOf(">Register</a>");
 
     assert.ok(projectsIndex >= 0);
     assert.ok(siteIndex > projectsIndex);
     assert.ok(accountIndex > siteIndex);
     assert.ok(loginIndex > accountIndex);
     assert.ok(registerIndex > loginIndex);
-    assert.equal((header.match(/class="mobile-project-link"/g) || []).length, 3);
-    assert.equal((header.match(/class="mobile-auth-item"/g) || []).length, 2);
+    assert.equal((mobileMenu.match(/class="mobile-project-link"/g) || []).length, 3);
+    assert.equal((mobileMenu.match(/class="mobile-auth-item"/g) || []).length, 2);
 });
 
 test("mobile navigation replaces crowded desktop links only at narrow widths", async () => {
