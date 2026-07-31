@@ -9,7 +9,6 @@ document.addEventListener("click", event => {
     const isHidden = input.type === "password";
     input.type = isHidden ? "text" : "password";
 
-    toggle.textContent = isHidden ? "🙈" : "👁";
     toggle.setAttribute(
         "aria-label",
         isHidden ? "Hide password" : "Show password"
