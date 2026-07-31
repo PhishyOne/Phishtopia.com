@@ -94,16 +94,16 @@ test("homepage advertises complete social preview metadata", async () => {
     assert.equal(response.status, 200);
 
     const body = await response.text();
-    assert.match(body, /property="og:image" content="https:\/\/phishtopia\.com\/images\/share-card\.png"/);
-    assert.match(body, /property="og:image:type" content="image\/png"/);
+    assert.match(body, /property="og:image" content="https:\/\/phishtopia\.com\/share\/home\.svg"/);
+    assert.match(body, /property="og:image:type" content="image\/svg\+xml"/);
     assert.match(body, /property="og:image:width" content="1200"/);
     assert.match(body, /property="og:image:height" content="630"/);
     assert.match(body, /property="og:image:alt" content="[^"]+"/);
-    assert.match(body, /name="twitter:image" content="https:\/\/phishtopia\.com\/images\/share-card\.png"/);
+    assert.match(body, /name="twitter:image" content="https:\/\/phishtopia\.com\/share\/home\.svg"/);
     assert.match(body, /name="twitter:image:alt" content="[^"]+"/);
 });
 
-test("social share image is a cacheable 1200x630 PNG", async () => {
+test("fallback social share image is a cacheable 1200x630 PNG", async () => {
     const response = await request("/images/share-card.png");
     assert.equal(response.status, 200);
     assert.match(response.headers.get("content-type") || "", /^image\/png/);
