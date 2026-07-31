@@ -65,6 +65,11 @@ export const PAGE_DEFINITIONS = Object.freeze({
         styles: ["/styles/account.css", "/styles/password-policy.css", "/styles/password-toggle.css"],
         scripts: ["/js/auth.js"]
     }),
+    accountDeleted: definePage({
+        title: "Account deleted | Phishtopia",
+        bodyClass: "account account-deleted",
+        styles: ["/styles/account.css"]
+    }),
     youlist: definePage({
         title: "YouList - Movies",
         bodyClass: "youlist",
