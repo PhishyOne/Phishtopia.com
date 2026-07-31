@@ -3,6 +3,7 @@ import express from "express";
 import accountRoutes from "./account.routes.js";
 import analyticsRoutes from "./analytics.routes.js";
 import authRoutes from "./auth.routes.js";
+import dashboardRoutes from "./dashboard.routes.js";
 import echoTraceRoutes from "./echotrace.routes.js";
 import storecalcRoutes from "./storecalc.routes.js";
 import youListRoutes from "./youlist.routes.js";
@@ -19,6 +20,7 @@ export function buildAppRouter() {
 
     router.use("/auth", authRoutes);
     router.use("/account", accountRoutes);
+    router.use("/dashboard", dashboardRoutes);
     router.use("/internal/analytics", analyticsRoutes);
 
     for (const [routePath, featureRouter] of FEATURE_ROUTES.entries()) {
