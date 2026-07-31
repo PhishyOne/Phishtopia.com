@@ -3,11 +3,15 @@ import { passwordPolicyLocals } from "../security/passwordPolicy.js";
 import {
     changeAccountPassword,
     changeAccountUsername,
+    deleteAccount as deletePhishtopiaAccount,
     getAccountDetails,
     requestAccountEmailChange,
     verifyAccountEmailChange
 } from "../services/account.service.js";
-import { establishAuthenticatedSession } from "../services/session.service.js";
+import {
+    destroySession,
+    establishAuthenticatedSession
+} from "../services/session.service.js";
 
 const LOCAL_DB_MESSAGE = "Account management is unavailable in the local preview because no database is configured.";
 
@@ -56,6 +60,15 @@ async function renderCurrentAccount(req, res, options = {}) {
     });
 }
 
+function clearSessionCookie(res) {
+    res.clearCookie("sid", {
+        path: "/",
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "lax"
+    });
+}
+
 export async function showAccount(req, res) {
     try {
         return await renderCurrentAccount(req, res, {
@@ -68,6 +81,13 @@ export async function showAccount(req, res) {
         }
         return res.status(500).type("text/plain").send("Server error");
     }
+}
+
+export function showAccountDeleted(req, res) {
+    return res.render("account/deleted", pageLocals("accountDeleted", {
+        disableAnalytics: true,
+        robotsContent: "noindex, nofollow"
+    }));
 }
 
 export async function changeUsername(req, res) {
@@ -158,6 +178,39 @@ export async function changePassword(req, res) {
         });
 
         return res.redirect("/account?updated=password");
+    } catch (error) {
+        console.error(error);
+        if (isLocalDatabaseUnavailable(error)) {
+            return res.status(503).type("text/plain").send(LOCAL_DB_MESSAGE);
+        }
+        return res.status(500).type("text/plain").send("Server error");
+    }
+}
+
+export async function deleteAccount(req, res) {
+    try {
+        const result = await deletePhishtopiaAccount({
+            userId: req.session.user.id,
+            currentPassword: req.body.currentPassword,
+            confirmation: req.body.confirmation
+        });
+
+        if (!result.ok) {
+            return await renderCurrentAccount(req, res, {
+                status: result.status || 400,
+                error: result.error,
+                section: "delete"
+            });
+        }
+
+        try {
+            await destroySession(req);
+        } catch (error) {
+            console.error("Failed to destroy the deleted account session.");
+        }
+
+        clearSessionCookie(res);
+        return res.redirect("/account/deleted");
     } catch (error) {
         console.error(error);
         if (isLocalDatabaseUnavailable(error)) {
