@@ -28,6 +28,7 @@ const activeAssetFiles = [
     "public/styles/main.css",
     "public/styles/account.css",
     "public/styles/dashboard.css",
+    "public/styles/password-policy.css",
     "public/styles/archive.css",
     "public/styles/youlist.css",
     "public/styles/youlist-mobile.css",

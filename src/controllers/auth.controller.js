@@ -1,4 +1,5 @@
 import { pageLocals } from "../config/pageAssets.js";
+import { passwordPolicyLocals } from "../security/passwordPolicy.js";
 import {
     authenticateUser,
     registerUser,
@@ -29,6 +30,7 @@ function renderRegister(res, {
     status = 200
 } = {}) {
     return res.status(status).render("register", pageLocals("register", {
+        ...passwordPolicyLocals(),
         error,
         username,
         email,

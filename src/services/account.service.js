@@ -15,12 +15,12 @@ import {
     createEmailVerificationToken,
     inspectEmailVerificationToken
 } from "../security/emailVerificationToken.js";
+import { passwordLengthError } from "../security/passwordPolicy.js";
 import { sendEmailChangeVerificationEmail } from "./email.service.js";
 
 const SALT_ROUNDS = 10;
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const MAX_USERNAME_LENGTH = 50;
-const MAX_PASSWORD_LENGTH = 128;
 
 function publicAccount(user) {
     if (!user) return null;
@@ -189,12 +189,9 @@ export async function changeAccountPassword(input, dependencies = {}) {
     const newPassword = input?.newPassword || "";
     const confirmPassword = input?.confirmPassword || "";
 
-    if (newPassword.length < 8 || newPassword.length > MAX_PASSWORD_LENGTH) {
-        return {
-            ok: false,
-            status: 400,
-            error: `New password must be between 8 and ${MAX_PASSWORD_LENGTH} characters.`
-        };
+    const lengthError = passwordLengthError(newPassword, { label: "New password" });
+    if (lengthError) {
+        return { ok: false, status: 400, error: lengthError };
     }
 
     if (newPassword !== confirmPassword) {

@@ -1,4 +1,5 @@
 import { pageLocals } from "../config/pageAssets.js";
+import { passwordPolicyLocals } from "../security/passwordPolicy.js";
 import {
     changeAccountPassword,
     changeAccountUsername,
@@ -33,6 +34,7 @@ function renderAccount(res, {
     status = 200
 }) {
     return res.status(status).render("account/index", pageLocals("account", {
+        ...passwordPolicyLocals(),
         disableAnalytics: true,
         account,
         error,
