@@ -54,8 +54,8 @@ const verifyEmailChangeLimiter = rateLimit({
 router.get("/verify-email", verifyEmailChangeLimiter, verifyEmailChange);
 router.get("/deleted", showAccountDeleted);
 
-router.use(requireLogin);
-router.get("/", provideCsrfToken, showAccount);
+router.use(requireLogin, provideCsrfToken);
+router.get("/", showAccount);
 router.post("/username", accountUpdateLimiter, requireFormCsrfToken, changeUsername);
 router.post("/email", accountUpdateLimiter, requireFormCsrfToken, requestEmailChange);
 router.post("/password", passwordUpdateLimiter, requireFormCsrfToken, changePassword);
