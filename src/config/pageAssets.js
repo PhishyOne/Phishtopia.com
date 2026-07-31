@@ -61,7 +61,9 @@ export const PAGE_DEFINITIONS = Object.freeze({
     }),
     storecalc: definePage({
         title: "StoreCalc Online",
-        bodyClass: "storecalc"
+        bodyClass: "storecalc",
+        styles: ["/styles/storecalc.css"],
+        scripts: ["/js/storecalc.js"]
     })
 });
 
