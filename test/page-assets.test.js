@@ -21,6 +21,12 @@ const EXPECTED_PAGES = {
         styles: [],
         scripts: []
     },
+    privacy: {
+        title: "Privacy | Phishtopia",
+        bodyClass: "privacy",
+        styles: ["/styles/privacy.css"],
+        scripts: []
+    },
     archive: {
         title: "Course Project Archive",
         bodyClass: "archive-page",
@@ -133,6 +139,7 @@ test("active templates do not override page metadata or asset declarations", asy
         "views/index.ejs",
         "views/archive.ejs",
         "views/contact.ejs",
+        "views/privacy.ejs",
         "views/login.ejs",
         "views/register.ejs",
         "views/resend-verification.ejs",
@@ -204,12 +211,18 @@ async function assertRenderedPage(path, pageName, expectedStatus = 200) {
     for (const script of definition.scripts) {
         assert.match(html, new RegExp(`src="${escapeRegex(script)}"`));
     }
+
+    return html;
 }
 
 test("public routes render the titles, body classes, and assets from page definitions", async () => {
     await assertRenderedPage("/", "home");
     await assertRenderedPage("/archive", "archive");
     await assertRenderedPage("/contact", "contact");
+    const privacyHtml = await assertRenderedPage("/privacy", "privacy");
+    assert.match(privacyHtml, /<link rel="canonical" href="https:\/\/phishtopia\.com\/privacy">/);
+    assert.match(privacyHtml, /<meta name="description" content="Learn what Phishtopia collects/);
+    assert.match(privacyHtml, /<meta property="og:title" content="Privacy \| Phishtopia">/);
     await assertRenderedPage("/auth/login", "login");
     await assertRenderedPage("/auth/register", "register");
     await assertRenderedPage("/auth/resend-verification", "resendVerification");
