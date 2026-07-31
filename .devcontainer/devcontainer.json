@@ -13,5 +13,5 @@
     }
   },
   "forwardPorts": [3000, 3001, 3002],
-  "postCreateCommand": "npm install && npm install --global nodemon@3.1.14"
+  "postCreateCommand": "npm ci && npm install --global nodemon@3.1.14"
 }
