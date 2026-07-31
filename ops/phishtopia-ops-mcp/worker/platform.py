@@ -78,7 +78,14 @@ OPS_PYTHON_TEST_COMMAND = (
 
 
 class PlatformError(RuntimeError):
-    pass
+    def __init__(
+        self,
+        code: str,
+        *,
+        failure_stage: str | None = None,
+    ):
+        super().__init__(code)
+        self.failure_stage = failure_stage
 
 
 class Cancelled(PlatformError):
@@ -362,6 +369,19 @@ class RealPlatform:
     def bind_guard(self, guard: Callable[[], None] | None) -> None:
         self._guard = guard
 
+    @staticmethod
+    def _at_failure_stage(stage: str, operation: Callable[[], Any]) -> Any:
+        try:
+            return operation()
+        except (Cancelled, DeadlineExceeded, WorkerHandoffRequested):
+            raise
+        except PlatformError as error:
+            if error.failure_stage is not None:
+                raise
+            raise PlatformError(str(error), failure_stage=stage) from error
+        except Exception as error:
+            raise PlatformError("internal_error", failure_stage=stage) from error
+
     def runtime_preflight_contract(self) -> dict[str, str]:
         self._pm2_status()
         self._database_size_bytes()
@@ -483,7 +503,11 @@ class RealPlatform:
             )
         elif action_type == "restart_phishtopia_service":
             baseline["service"] = action["service"]
-            baseline["pm2"] = self._pm2_status() if action["service"] == "phishtopia_app" else None
+            baseline["pm2"] = (
+                self._at_failure_stage("baseline_pm2_status", self._pm2_status)
+                if action["service"] == "phishtopia_app"
+                else None
+            )
         elif action_type == "canary_and_promote":
             traffic = self._cloud_run_service().get("status", {}).get("traffic", [])
             self._validate_canary_baseline(traffic)
@@ -529,7 +553,10 @@ class RealPlatform:
             "rotate_session_secret",
             "update_dns_with_rollback",
         }:
-            baseline["production_invariants"] = self._production_invariants()
+            baseline["production_invariants"] = self._at_failure_stage(
+                "baseline_production_invariants",
+                self._production_invariants,
+            )
         return baseline
 
     def perform(
@@ -1561,8 +1588,7 @@ class RealPlatform:
             timeout=180,
         )
 
-    def _production_invariants(self) -> dict[str, Any]:
-        self._run(["/usr/sbin/nginx", "-t"], timeout=20)
+    def _nginx_configuration_hash(self) -> str:
         nginx = hashlib.sha256()
         for path in sorted(Path("/etc/nginx").rglob("*")):
             if path.is_file():
@@ -1570,6 +1596,10 @@ class RealPlatform:
                 nginx.update(b"\x00")
                 nginx.update(path.read_bytes())
                 nginx.update(b"\x00")
+        return nginx.hexdigest()
+
+    @staticmethod
+    def _dns_snapshot() -> dict[str, list[str]]:
         dns: dict[str, list[str]] = {}
         for hostname in ("phishtopia.com", "www.phishtopia.com"):
             dns[hostname] = sorted(
@@ -1582,17 +1612,50 @@ class RealPlatform:
             )
             if not dns[hostname]:
                 raise PlatformError("dns_status_unavailable")
+        return dns
+
+    def _cloud_run_traffic(self) -> list[Any]:
         traffic = self._cloud_run_service().get("status", {}).get("traffic")
         if not isinstance(traffic, list):
             raise PlatformError("cloud_run_traffic_unavailable")
-        env_hash = hashlib.sha256(self._safe_env_read()).hexdigest()
+        return traffic
+
+    def _production_invariants(self) -> dict[str, Any]:
+        self._at_failure_stage(
+            "baseline_nginx_validation",
+            lambda: self._run(["/usr/sbin/nginx", "-t"], timeout=20),
+        )
+        nginx_hash = self._at_failure_stage(
+            "baseline_nginx_hash",
+            self._nginx_configuration_hash,
+        )
+        dns = self._at_failure_stage(
+            "baseline_dns_resolution",
+            self._dns_snapshot,
+        )
+        traffic = self._at_failure_stage(
+            "baseline_cloud_run_traffic",
+            self._cloud_run_traffic,
+        )
+        env_hash = self._at_failure_stage(
+            "baseline_app_env_hash",
+            lambda: hashlib.sha256(self._safe_env_read()).hexdigest(),
+        )
+        database_schema = self._at_failure_stage(
+            "baseline_database_schema",
+            self._database_schema_hash,
+        )
+        error_signal = self._at_failure_stage(
+            "baseline_error_signal",
+            self._error_signal,
+        )
         return {
-            "database_schema": self._database_schema_hash(),
-            "nginx": nginx.hexdigest(),
+            "database_schema": database_schema,
+            "nginx": nginx_hash,
             "dns": dns,
             "cloud_run_traffic": traffic,
             "app_env": env_hash,
-            "error_signal": self._error_signal(),
+            "error_signal": error_signal,
         }
 
     def _verify_production_invariants(

@@ -89,6 +89,7 @@ class JobExecutor:
     def execute(self, row: Any) -> None:
         context = JobContext(self.store, row)
         action = json.loads(row["action_json"])
+        failure_stage = "preflight"
         baseline = (
             json.loads(row["baseline_json"])
             if row["baseline_json"]
@@ -128,6 +129,7 @@ class JobExecutor:
             context.check()
             self.platform.preflight(action, context.check)
             context.progress(5, "preflight_passed")
+            failure_stage = "baseline_capture"
             baseline = self.platform.capture(action, context.job_id)
             self.store.transition(context.job_id, baseline=baseline)
             context.progress(10, "baseline_captured")
@@ -186,6 +188,10 @@ class JobExecutor:
                     observations=[
                         {"name": "safety", "value": "failed_closed"},
                         {"name": "error_code", "value": failure_code},
+                        {
+                            "name": "failure_stage",
+                            "value": self._failure_stage(error, failure_stage),
+                        },
                     ],
                 )
             else:
@@ -304,6 +310,15 @@ class JobExecutor:
                 return value
             return "platform_error"
         return "internal_error"
+
+    @staticmethod
+    def _failure_stage(error: Exception, fallback: str) -> str:
+        value = getattr(error, "failure_stage", None)
+        if isinstance(value, str) and re.fullmatch(r"[a-z][a-z0-9_]{0,63}", value):
+            return value
+        if re.fullmatch(r"[a-z][a-z0-9_]{0,63}", fallback):
+            return fallback
+        return "unknown"
 
     @staticmethod
     def _sanitize_observations(values: Any) -> list[dict[str, str]]:
