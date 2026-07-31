@@ -30,6 +30,20 @@ restart count. Raw journals and exception text are not returned. Let rollback
 finish, preserve that diagnostic block, and diagnose it before making one new
 attempt.
 
+## Worker-sidecar updates
+
+The recovered nine-tool tunnel remains at `/opt/phishtopia-ops-mcp`.
+`upgrade_ops_release` stages a verified release under
+`/opt/phishtopia-ops-worker-controller-releases`, atomically advances
+`/opt/phishtopia-ops-worker-code`, and reexecs the root worker from that
+persistent path. The tunnel pointer, unit, and launcher are not replaced.
+
+The candidate standalone worker unit must exactly match the installed unit.
+This is intentionally self-locking: an ordinary worker release cannot grant
+itself a broader systemd sandbox. A reviewed unit-contract correction therefore
+requires one controlled bridge installation with an exact backup, rollback,
+unit verification, and health check before normal job-based upgrades resume.
+
 ## Before bootstrap
 
 1. Record source hashes, unit/launcher/tunnel/credential fingerprints, service properties, IAM bindings, Cloud Run traffic, app commit/PM2 state, Nginx hashes, PostgreSQL schema/data hashes, DNS answers, TLS certificate, health results, and memory/disk headroom.

@@ -49,7 +49,7 @@ class DaemonProtocolTests(unittest.TestCase):
         self.assertEqual(
             events,
             [
-                ("chdir", daemon_module.OPS_CURRENT),
+                ("chdir", daemon_module.OPS_WORKER_CURRENT),
                 (
                     "execv",
                     (

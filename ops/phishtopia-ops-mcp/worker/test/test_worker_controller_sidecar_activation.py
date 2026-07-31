@@ -6,6 +6,7 @@ INSTALL = ROOT / "scripts/install-worker-controller-sidecar.sh"
 ACTIVATE = ROOT / "scripts/activate-worker-controller-sidecar-cloud-shell.sh"
 ROLLBACK = ROOT / "scripts/rollback-worker-controller-sidecar.sh"
 WORKER_UNIT = ROOT / "systemd/phishtopia-ops-worker-standalone.service"
+LEGACY_WORKER_UNIT = ROOT / "systemd/phishtopia-ops-worker.service"
 
 
 class WorkerControllerSidecarActivationTests(unittest.TestCase):
@@ -97,6 +98,16 @@ class WorkerControllerSidecarActivationTests(unittest.TestCase):
         self.assertIn('Environment=PYTHONPATH=/opt/phishtopia-ops-worker-code', value)
         self.assertIn('ExecStart=/usr/bin/python3 -m worker.daemon', value)
         self.assertNotIn('WorkingDirectory=/opt/phishtopia-ops-mcp', value)
+
+    def test_worker_units_allow_only_the_nginx_log_subdirectory(self):
+        for unit in (WORKER_UNIT, LEGACY_WORKER_UNIT):
+            value = unit.read_text(encoding="utf8")
+            read_write_paths = next(
+                line for line in value.splitlines()
+                if line.startswith("ReadWritePaths=")
+            )
+            self.assertIn("-/var/log/nginx", read_write_paths.split())
+            self.assertNotIn("/var/log", read_write_paths.split())
 
     def test_cloud_shell_package_is_bounded(self):
         value = ACTIVATE.read_text(encoding="utf8")
