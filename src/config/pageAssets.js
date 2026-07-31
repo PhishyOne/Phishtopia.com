@@ -32,12 +32,13 @@ export const PAGE_DEFINITIONS = Object.freeze({
     login: definePage({
         title: "Login",
         bodyClass: "auth",
+        styles: ["/styles/password-toggle.css"],
         scripts: ["/js/auth.js"]
     }),
     register: definePage({
         title: "Register",
         bodyClass: "register",
-        styles: ["/styles/password-policy.css"],
+        styles: ["/styles/password-policy.css", "/styles/password-toggle.css"],
         scripts: ["/js/register.js", "/js/auth.js"]
     }),
     resendVerification: definePage({
@@ -56,7 +57,7 @@ export const PAGE_DEFINITIONS = Object.freeze({
     account: definePage({
         title: "Account | Phishtopia",
         bodyClass: "account",
-        styles: ["/styles/account.css", "/styles/password-policy.css"],
+        styles: ["/styles/account.css", "/styles/password-policy.css", "/styles/password-toggle.css"],
         scripts: ["/js/auth.js"]
     }),
     youlist: definePage({
