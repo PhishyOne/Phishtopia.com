@@ -47,6 +47,12 @@ export const PAGE_DEFINITIONS = Object.freeze({
         title: "Check your email",
         bodyClass: "auth"
     }),
+    account: definePage({
+        title: "Account | Phishtopia",
+        bodyClass: "account",
+        styles: ["/styles/account.css"],
+        scripts: ["/js/auth.js"]
+    }),
     youlist: definePage({
         title: "YouList - Movies",
         bodyClass: "youlist",
@@ -61,7 +67,9 @@ export const PAGE_DEFINITIONS = Object.freeze({
     }),
     storecalc: definePage({
         title: "StoreCalc Online",
-        bodyClass: "storecalc"
+        bodyClass: "storecalc",
+        styles: ["/styles/storecalc.css"],
+        scripts: ["/js/storecalc.js"]
     })
 });
 

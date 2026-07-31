@@ -118,6 +118,39 @@ export async function sendVerificationEmail({ email, verificationToken, expiresA
     return { sent: true, verifyUrl };
 }
 
+export async function sendEmailChangeVerificationEmail({ email, verificationToken, expiresAt }) {
+    const verifyUrl = `${getAppBaseUrl()}/account/verify-email?token=${verificationToken}`;
+    const expiryText = verificationExpiryText(expiresAt);
+
+    if (process.env.SEND_EMAIL === "false") {
+        console.log("Email sending disabled. Email-change link:", verifyUrl);
+        return { sent: false, verifyUrl };
+    }
+
+    requireEmailConfiguration();
+    const transporter = createTransporter();
+
+    await transporter.sendMail({
+        from: `"Phishtopia" <${process.env.EMAIL_USER}>`,
+        to: email,
+        subject: "Confirm your new Phishtopia email",
+        text: [
+            "Confirm this as your new Phishtopia email address by opening this link:",
+            verifyUrl,
+            expiryText,
+            "Your existing email remains active until this link is used."
+        ].filter(Boolean).join("\n\n"),
+        html: [
+            "<p>Confirm this as your new Phishtopia email address:</p>",
+            `<p><a href="${verifyUrl}">${verifyUrl}</a></p>`,
+            expiryText ? `<p>${expiryText}</p>` : "",
+            "<p>Your existing email remains active until this link is used.</p>"
+        ].join("")
+    });
+
+    return { sent: true, verifyUrl };
+}
+
 export async function sendCloudflareAnalyticsEmail({ email, report }) {
     if (process.env.SEND_EMAIL === "false") {
         console.log("Email sending disabled. Cloudflare report:", JSON.stringify(report));

@@ -9,6 +9,7 @@ import { COURSE_ARCHIVE } from "../src/data/courseArchive.js";
 const rootDir = fileURLToPath(new URL("../", import.meta.url));
 const activeViewRoots = [
     "views/partials",
+    "views/account",
     "views/youlist",
     "views/echotrace",
     "views/storecalc"
@@ -24,6 +25,7 @@ const activeViewFiles = [
 ];
 const activeAssetFiles = [
     "public/styles/main.css",
+    "public/styles/account.css",
     "public/styles/archive.css",
     "public/styles/youlist.css",
     "public/styles/youlist-mobile.css",

@@ -57,6 +57,12 @@ const EXPECTED_PAGES = {
         styles: [],
         scripts: []
     },
+    account: {
+        title: "Account | Phishtopia",
+        bodyClass: "account",
+        styles: ["/styles/account.css"],
+        scripts: ["/js/auth.js"]
+    },
     youlist: {
         title: "YouList - Movies",
         bodyClass: "youlist",
@@ -72,8 +78,8 @@ const EXPECTED_PAGES = {
     storecalc: {
         title: "StoreCalc Online",
         bodyClass: "storecalc",
-        styles: [],
-        scripts: []
+        styles: ["/styles/storecalc.css"],
+        scripts: ["/js/storecalc.js"]
     }
 };
 
@@ -100,6 +106,7 @@ test("routes, controllers, and error middleware use page definitions instead of 
     const renderSources = [
         "src/routes/pages.routes.js",
         "src/controllers/auth.controller.js",
+        "src/controllers/account.controller.js",
         "src/controllers/youlist.controller.js",
         "src/routes/echotrace.routes.js",
         "src/controllers/storecalc.controller.js",
@@ -123,6 +130,7 @@ test("active templates do not override page metadata or asset declarations", asy
         "views/register.ejs",
         "views/resend-verification.ejs",
         "views/check-email.ejs",
+        "views/account/index.ejs",
         "views/youlist/index.ejs",
         "views/echotrace/index.ejs",
         "views/storecalc/index.ejs",

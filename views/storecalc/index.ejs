@@ -3,8 +3,37 @@
     <main class="storecalc-page">
         <section class="storecalc-card">
             <h1>StoreCalc Online</h1>
-            <p>Commissary/order calculator coming soon.</p>
         </section>
+        <div class="totals">
+            <p>Starting Funds: <input type="number" id="starting-funds" name="starting-funds" value="0" min="0" max="80" step="1" oninput="updateTotals()">
+            </p>
+            <p>Total: $<span id="total">0.00</span></p>
+            <p>____________________</p>
+            <p>Remaining: $<span id="remaining">0.00</span></p>
+        </div>
+        <div class="items">
+            <div class="item">
+                <div class="item-name">
+                    <label for="Soup">Soup:</label>
+                </div>
+                <input type="number" id="Soup" name="Soup" value="0" min="0" step="1" oninput="updateTotals()">
+                <label for="Soup">x $0.90 = $<span id="soup-total">0.00</span></label>
+            </div>
+            <div class="item">
+                <div class="item-name">
+                    <label for="Soda">Soda:</label>
+                </div>
+                <input type="number" id="Soda" name="Soda" value="0" min="0" step="1" oninput="updateTotals()">
+                <label for="Soda">x $1.95 = $<span id="soda-total">0.00</span></label>
+            </div>
+            <div class="item">
+                <div class="item-name">
+                    <label for="Sausage">Sausage:</label>
+                </div>
+                <input type="number" id="Sausage" name="Sausage" value="0" min="0" step="1" oninput="updateTotals()">
+                <label for="Sausage">x $3.00 = $<span id="sausage-total">0.00</span></label>
+            </div>
+        </div>
     </main>
 
     <%- include("../partials/footer") %>
