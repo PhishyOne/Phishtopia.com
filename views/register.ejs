@@ -11,13 +11,15 @@
                     <div>
                         <label for="username-tb" class="form-label">Username</label>
                         <input type="text" autocomplete="username" id="username-tb" class="textbox" name="username"
-                            required>
+                            minlength="3" maxlength="50" value="<%= username || '' %>" required>
                     </div>
                     <div>
                         <label for="password" class="form-label">Password</label>
+                        <small id="password-requirements" class="password-requirements"><%= passwordRequirements %></small>
                         <div class="password-field">
                             <input type="password" autocomplete="new-password" id="password" class="textbox" name="password"
-                                required>
+                                minlength="<%= passwordMinLength %>" maxlength="<%= passwordMaxLength %>"
+                                aria-describedby="password-requirements" required>
                             <button
                                 type="button"
                                 class="password-toggle"
@@ -27,12 +29,13 @@
                             >👁</button>
                         </div>
                     </div>
-                    <div id="password-match" style="font-size: 0.9em;"></div>
+                    <div id="password-match" style="font-size: 0.9em;" aria-live="polite"></div>
                     <div>
                         <label for="confirm-password" class="form-label">Confirm Password</label>
                         <div class="password-field">
                             <input type="password" autocomplete="new-password" id="confirm-password" class="textbox" name="confirm_password"
-                                required>
+                                minlength="<%= passwordMinLength %>" maxlength="<%= passwordMaxLength %>"
+                                aria-describedby="password-requirements" required>
                             <button
                                 type="button"
                                 class="password-toggle"
@@ -44,7 +47,8 @@
                     </div>
                     <div>
                         <label for="email" class="form-label">Email</label>
-                        <input type="email" autocomplete="email" id="email" class="textbox" name="email" required>
+                        <input type="email" autocomplete="email" id="email" class="textbox" name="email"
+                            value="<%= email || '' %>" required>
                     </div>
                     <button class="btn" id="register-btn">Register</button>
                 </form>
