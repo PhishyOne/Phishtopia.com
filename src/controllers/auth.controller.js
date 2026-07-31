@@ -191,7 +191,7 @@ export async function login(req, res) {
             });
         }
 
-        const redirectTo = returnTo || "/";
+        const redirectTo = returnTo || "/dashboard";
         await establishAuthenticatedSession(req, result.user);
 
         return res.redirect(redirectTo);
