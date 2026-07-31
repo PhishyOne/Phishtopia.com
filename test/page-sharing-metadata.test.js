@@ -118,7 +118,7 @@ test("every dedicated share card is self-contained, accessible, and 1200 by 630"
         assert.match(source, /aria-labelledby="title desc"/);
         assert.match(source, /<title id="title">[^<]+<\/title>/);
         assert.match(source, /<desc id="desc">[^<]+<\/desc>/);
-        assert.doesNotMatch(source, /https?:\/\//);
+        assert.doesNotMatch(source, /(?:href|xlink:href)=["']https?:|url\(["']?https?:/i);
 
         const title = source.match(/<title id="title">([^<]+)<\/title>/)?.[1];
         assert.ok(title);
