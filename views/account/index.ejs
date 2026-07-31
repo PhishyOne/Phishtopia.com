@@ -52,6 +52,8 @@
             </div>
 
             <form action="/account/username" method="POST" class="account-form">
+                <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+
                 <label for="account-username">New username</label>
                 <input
                     id="account-username"
@@ -93,6 +95,8 @@
             </div>
 
             <form action="/account/email" method="POST" class="account-form">
+                <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+
                 <label for="account-email">New email</label>
                 <input
                     id="account-email"
@@ -133,6 +137,8 @@
             </div>
 
             <form action="/account/password" method="POST" class="account-form account-password-form">
+                <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+
                 <div>
                     <label for="password-current">Current password</label>
                     <div class="account-password-field">
@@ -202,6 +208,54 @@
                 <button type="submit" class="account-submit">Change password</button>
             </form>
         </article>
+    </section>
+
+    <section class="account-danger-zone <%= section === 'delete' ? 'account-card-active' : '' %>" aria-labelledby="account-delete-heading">
+        <div class="account-danger-copy">
+            <p class="account-eyebrow">Danger zone</p>
+            <h2 id="account-delete-heading">Delete this account</h2>
+            <p>This permanently removes your account, every signed-in session, and your live YouList data. This cannot be undone through Phishtopia. Temporary backup copies may remain until normal backup retention expires.</p>
+        </div>
+
+        <form action="/account/delete" method="POST" class="account-form account-delete-form">
+            <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+
+            <div>
+                <label for="delete-current-password">Current password</label>
+                <div class="account-password-field">
+                    <input
+                        id="delete-current-password"
+                        name="currentPassword"
+                        type="password"
+                        autocomplete="current-password"
+                        required
+                    >
+                    <button
+                        type="button"
+                        class="account-password-toggle"
+                        data-password-toggle="delete-current-password"
+                        aria-label="Show password"
+                        aria-pressed="false"
+                    >👁</button>
+                </div>
+            </div>
+
+            <div>
+                <label for="delete-confirmation">Type DELETE to confirm</label>
+                <input
+                    id="delete-confirmation"
+                    name="confirmation"
+                    type="text"
+                    autocomplete="off"
+                    autocapitalize="characters"
+                    spellcheck="false"
+                    pattern="DELETE"
+                    required
+                >
+            </div>
+
+            <button type="submit" class="account-delete-submit">Permanently delete account</button>
+        </form>
     </section>
 </main>
 

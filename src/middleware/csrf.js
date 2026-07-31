@@ -1,10 +1,21 @@
 import { randomBytes, timingSafeEqual } from "node:crypto";
 
+import { sendErrorResponse } from "./errorResponses.js";
+
 const TOKEN_BYTES = 32;
 const TOKEN_PATTERN = /^[A-Za-z0-9_-]{43}$/;
 
 function isValidToken(value) {
     return typeof value === "string" && TOKEN_PATTERN.test(value);
+}
+
+function tokensMatch(expected, provided) {
+    if (!isValidToken(expected) || !isValidToken(provided)) return false;
+
+    const expectedBuffer = Buffer.from(expected);
+    const providedBuffer = Buffer.from(provided);
+    return expectedBuffer.length === providedBuffer.length
+        && timingSafeEqual(expectedBuffer, providedBuffer);
 }
 
 export function ensureCsrfToken(req) {
@@ -29,20 +40,16 @@ export function provideCsrfToken(req, res, next) {
 }
 
 export function requireCsrfToken(req, res, next) {
-    const expected = req.session?.csrfToken;
-    const provided = req.get("x-csrf-token");
-
-    if (!isValidToken(expected) || !isValidToken(provided)) {
+    if (!tokensMatch(req.session?.csrfToken, req.get("x-csrf-token"))) {
         return res.status(403).json({ success: false, error: "Invalid request token" });
     }
 
-    const expectedBuffer = Buffer.from(expected);
-    const providedBuffer = Buffer.from(provided);
-    if (
-        expectedBuffer.length !== providedBuffer.length ||
-        !timingSafeEqual(expectedBuffer, providedBuffer)
-    ) {
-        return res.status(403).json({ success: false, error: "Invalid request token" });
+    next();
+}
+
+export function requireFormCsrfToken(req, res, next) {
+    if (!tokensMatch(req.session?.csrfToken, req.body?._csrf)) {
+        return sendErrorResponse(req, res, 403);
     }
 
     next();

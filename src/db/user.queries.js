@@ -72,6 +72,28 @@ export async function findUserAccountById(userId, executor = db) {
     return result.rows[0] || null;
 }
 
+export async function findUserAccountForDeletion(userId, executor = db) {
+    const result = await executor.query(
+        `
+        SELECT
+            id,
+            username,
+            email,
+            email_verified,
+            role,
+            pending_email,
+            password_hash
+        FROM public.users
+        WHERE id = $1
+        LIMIT 1
+        FOR UPDATE
+        `,
+        [userId]
+    );
+
+    return result.rows[0] || null;
+}
+
 export async function findOtherUserByUsername({ userId, username }, executor = db) {
     const result = await executor.query(
         `
@@ -182,6 +204,29 @@ export async function deleteUserSessions(userId, executor = db) {
         `,
         [userId]
     );
+}
+
+export async function deleteUserYouListData(userId, executor = db) {
+    await executor.query(
+        `
+        DELETE FROM fullstack.youlist_movies
+        WHERE user_id = $1
+        `,
+        [userId]
+    );
+}
+
+export async function deleteUserRecord(userId, executor = db) {
+    const result = await executor.query(
+        `
+        DELETE FROM public.users
+        WHERE id = $1
+        RETURNING id
+        `,
+        [userId]
+    );
+
+    return result.rows[0] || null;
 }
 
 export async function updateUserVerificationToken({ userId, verificationToken }, executor = db) {
