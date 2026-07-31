@@ -57,6 +57,7 @@
         rel="stylesheet">
 
     <link rel="stylesheet" href="/styles/main.css">
+    <link rel="stylesheet" href="/styles/navigation.css">
 
     <% if (extraStyles) { %>
         <% const styles = Array.isArray(extraStyles) ? extraStyles : [extraStyles]; %>
@@ -80,7 +81,7 @@
                 <img src="/images/phishLogo.png" alt="Phishtopia" class="logo">
             </a>
 
-            <ul class="nav-links">
+            <ul class="nav-links desktop-primary-links">
                 <li class="nav-item"><a class="nav-link" href="/youlist">YouList</a></li>
                 <li class="nav-item"><a class="nav-link" href="/echotrace">EchoTrace</a></li>
                 <li class="nav-item"><a class="nav-link" href="/storecalc">StoreCalc</a></li>
@@ -89,7 +90,7 @@
             </ul>
         </div>
 
-        <ul class="nav-right nav-links">
+        <ul class="nav-right nav-links desktop-account-links">
             <% if (user) { %>
                 <li class="nav-item"><a id="username" class="nav-link" href="/dashboard">Hi, <%= user.username %></a></li>
                 <li class="nav-item">
@@ -104,4 +105,46 @@
                 <li class="nav-item"><a class="login-register" href="/auth/register">Register</a></li>
             <% } %>
         </ul>
+
+        <div class="mobile-nav-actions">
+            <% if (user) { %>
+                <a
+                    class="mobile-dashboard-link"
+                    href="/dashboard"
+                    aria-label="Open dashboard for <%= user.username %>"
+                ><%= user.username %></a>
+            <% } %>
+
+            <details class="mobile-nav-menu">
+                <summary aria-label="Open navigation menu">
+                    <span aria-hidden="true" class="mobile-menu-icon"></span>
+                    <span>Menu</span>
+                </summary>
+
+                <ul class="mobile-nav-links">
+                    <% if (user) { %>
+                        <li><a href="/dashboard">Dashboard</a></li>
+                    <% } %>
+                    <li><a href="/storecalc">StoreCalc</a></li>
+                    <li><a href="/echotrace">EchoTrace</a></li>
+                    <li><a href="/youlist">YouList</a></li>
+                    <li><a href="/archive">Archive</a></li>
+                    <% if (user) { %>
+                        <li><a href="/account">Account</a></li>
+                    <% } %>
+                    <li><a href="/contact">Contact</a></li>
+                    <li><a href="/privacy">Privacy</a></li>
+                    <% if (user) { %>
+                        <li class="mobile-logout-item">
+                            <form action="/auth/logout" method="POST">
+                                <button type="submit">Logout</button>
+                            </form>
+                        </li>
+                    <% } else { %>
+                        <li><a href="/auth/login?returnTo=<%= encodeURIComponent(currentUrl || '/') %>">Login</a></li>
+                        <li><a href="/auth/register">Register</a></li>
+                    <% } %>
+                </ul>
+            </details>
+        </div>
     </nav>
