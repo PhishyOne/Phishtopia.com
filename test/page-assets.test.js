@@ -72,8 +72,8 @@ const EXPECTED_PAGES = {
     storecalc: {
         title: "StoreCalc Online",
         bodyClass: "storecalc",
-        styles: [],
-        scripts: []
+        styles: ["/styles/storecalc.css"],
+        scripts: ["/js/storecalc.js"]
     }
 };
 
