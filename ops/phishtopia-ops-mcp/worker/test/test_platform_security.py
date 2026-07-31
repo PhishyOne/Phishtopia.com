@@ -160,6 +160,70 @@ class PlatformSecurityTests(unittest.TestCase):
         with self.assertRaisesRegex(PlatformError, "unsafe_command_argument"):
             runner.run(["/usr/bin/gcloud", "projects\nlist"], timeout=1)
 
+    def test_restart_capture_labels_pm2_failure_without_changing_error_code(self) -> None:
+        platform = RealPlatform.__new__(RealPlatform)
+        platform._guard = None
+        platform._pm2_status = mock.Mock(  # type: ignore[method-assign]
+            side_effect=PlatformError("command_failed")
+        )
+        with self.assertRaises(PlatformError) as raised:
+            platform.capture(
+                {
+                    "type": "restart_phishtopia_service",
+                    "service": "phishtopia_app",
+                },
+                "11111111-1111-4111-8111-111111111111",
+            )
+        self.assertEqual(str(raised.exception), "command_failed")
+        self.assertEqual(
+            raised.exception.failure_stage,
+            "baseline_pm2_status",
+        )
+
+    def test_production_baseline_labels_each_read_boundary(self) -> None:
+        operations = {
+            "_run": "baseline_nginx_validation",
+            "_nginx_configuration_hash": "baseline_nginx_hash",
+            "_dns_snapshot": "baseline_dns_resolution",
+            "_cloud_run_traffic": "baseline_cloud_run_traffic",
+            "_safe_env_read": "baseline_app_env_hash",
+            "_database_schema_hash": "baseline_database_schema",
+            "_error_signal": "baseline_error_signal",
+        }
+        defaults = {
+            "_run": lambda *_args, **_kwargs: b"",
+            "_nginx_configuration_hash": lambda: "nginx",
+            "_dns_snapshot": lambda: {"phishtopia.com": ["127.0.0.1"]},
+            "_cloud_run_traffic": lambda: [],
+            "_safe_env_read": lambda: b"SESSION_SECRET=redacted\n",
+            "_database_schema_hash": lambda: "schema",
+            "_error_signal": lambda: {
+                "present": False,
+                "device": 0,
+                "inode": 0,
+                "size": 0,
+                "markers": 0,
+            },
+        }
+        for operation, expected_stage in operations.items():
+            with self.subTest(operation=operation):
+                platform = RealPlatform.__new__(RealPlatform)
+                platform._guard = None
+                for name, implementation in defaults.items():
+                    setattr(platform, name, implementation)
+                setattr(
+                    platform,
+                    operation,
+                    mock.Mock(side_effect=PlatformError("command_failed")),
+                )
+                with self.assertRaises(PlatformError) as raised:
+                    platform._production_invariants()
+                self.assertEqual(str(raised.exception), "command_failed")
+                self.assertEqual(
+                    raised.exception.failure_stage,
+                    expected_stage,
+                )
+
     def test_command_runner_terminates_output_flood_at_fixed_quota(self) -> None:
         runner = CommandRunner()
         with (

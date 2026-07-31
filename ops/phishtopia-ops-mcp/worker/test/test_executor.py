@@ -38,6 +38,11 @@ class FakePlatform:
 
     def capture(self, action: dict[str, Any], job_id: str) -> dict[str, Any]:
         self.calls.append("capture")
+        if self.fail == "capture":
+            raise PlatformError(
+                "command_failed",
+                failure_stage="baseline_database_schema",
+            )
         return {"fixed": "baseline"}
 
     def perform(self, action: dict[str, Any], job_id: str, baseline: dict[str, Any], check: Callable[[], None], progress: Callable[[int, str], None], mutation: Callable[[], None]) -> list[dict[str, str]]:
@@ -117,6 +122,27 @@ class ExecutorTests(unittest.TestCase):
         status = self.store.get(row["job_id"])
         self.assertEqual(status["resultCode"], "preflight_rejected")
         self.assertEqual(fake.calls, ["preflight"])
+        self.assertIn(
+            {"name": "failure_stage", "value": "preflight"},
+            status["observations"],
+        )
+
+    def test_baseline_failure_reports_exact_fixed_stage_without_mutation(self) -> None:
+        fake = FakePlatform(self.store, fail="capture")
+        row = self._row()
+        JobExecutor(self.store, fake).execute(row)  # type: ignore[arg-type]
+        status = self.store.get(row["job_id"])
+        self.assertEqual(status["resultCode"], "preflight_rejected")
+        self.assertEqual(fake.calls, ["preflight", "capture"])
+        self.assertIn(
+            {"name": "error_code", "value": "command_failed"},
+            status["observations"],
+        )
+        self.assertIn(
+            {"name": "failure_stage", "value": "baseline_database_schema"},
+            status["observations"],
+        )
+        self.assertNotIn("perform", fake.calls)
 
     def test_rollback_failure_is_not_misreported(self) -> None:
         fake = FakePlatform(self.store, fail="perform", rollback_fails=True)
