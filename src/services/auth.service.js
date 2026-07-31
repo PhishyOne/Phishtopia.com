@@ -205,7 +205,8 @@ export async function authenticateUser({ username, password }) {
         ok: true,
         user: {
             id: user.id,
-            username: user.username
+            username: user.username,
+            role: user.role || "user"
         }
     };
 }
