@@ -8,16 +8,15 @@ body.dashboard {
 }
 
 .dashboard-page {
-    width: min(1160px, calc(100% - 2rem));
-    margin: 0 auto;
-    padding: 3rem 0 5rem;
-}
-
-.dashboard-hero {
     display: grid;
     grid-template-columns: minmax(0, 1.35fr) minmax(290px, 0.65fr);
+    grid-template-areas:
+        "welcome account"
+        "tools tools";
     gap: 1.35rem;
-    align-items: stretch;
+    width: min(1160px, calc(100% - 2rem));
+    margin: 0 auto;
+    padding: 2.25rem 0 5rem;
 }
 
 .dashboard-welcome,
@@ -30,11 +29,12 @@ body.dashboard {
 }
 
 .dashboard-welcome {
+    grid-area: welcome;
     display: flex;
     flex-direction: column;
     justify-content: center;
-    min-height: 280px;
-    padding: clamp(1.6rem, 5vw, 3.2rem);
+    min-height: 205px;
+    padding: clamp(1.4rem, 4vw, 2.35rem);
     border-radius: 26px;
 }
 
@@ -51,22 +51,32 @@ body.dashboard {
 .dashboard-welcome h1 {
     max-width: 760px;
     margin: 0;
-    font-size: clamp(2.25rem, 6vw, 4.9rem);
+    font-size: clamp(2.2rem, 5.5vw, 4.35rem);
     line-height: 0.98;
 }
 
 .dashboard-welcome > p:last-child {
     max-width: 670px;
-    margin: 1.1rem 0 0;
+    margin: 0.9rem 0 0;
     color: #b7d5da;
-    font-size: clamp(1rem, 2vw, 1.14rem);
-    line-height: 1.65;
+    font-size: clamp(1rem, 2vw, 1.12rem);
+    line-height: 1.58;
+}
+
+.dashboard-welcome > p:last-child a {
+    color: #8cf5fb;
+    font-weight: 750;
+}
+
+.dashboard-welcome > p:last-child a:hover {
+    color: #ffffff;
 }
 
 .dashboard-account-card {
+    grid-area: account;
     display: flex;
     flex-direction: column;
-    padding: 1.5rem;
+    padding: 1.35rem;
     border-radius: 24px;
 }
 
@@ -81,7 +91,7 @@ body.dashboard {
     margin: 0;
     overflow-wrap: anywhere;
     color: #ffffff;
-    font-size: 1.8rem;
+    font-size: 1.65rem;
 }
 
 .dashboard-badge {
@@ -99,21 +109,21 @@ body.dashboard {
 
 .dashboard-account-details {
     display: grid;
-    gap: 0.75rem;
-    margin: 1.35rem 0;
+    gap: 0.65rem;
+    margin: 1rem 0;
 }
 
 .dashboard-account-details div {
-    padding: 0.9rem 1rem;
+    padding: 0.75rem 0.85rem;
     border: 1px solid rgba(130, 225, 234, 0.14);
-    border-radius: 14px;
+    border-radius: 12px;
     background: rgba(0, 0, 0, 0.2);
 }
 
 .dashboard-account-details dt {
-    margin-bottom: 0.25rem;
+    margin-bottom: 0.2rem;
     color: #7fb9c0;
-    font-size: 0.72rem;
+    font-size: 0.7rem;
     font-weight: 800;
     letter-spacing: 0.09em;
     text-transform: uppercase;
@@ -165,7 +175,7 @@ body.dashboard {
 }
 
 .dashboard-tools {
-    margin-top: 1.35rem;
+    grid-area: tools;
     padding: clamp(1.4rem, 4vw, 2.25rem);
     border-radius: 26px;
 }
@@ -273,20 +283,28 @@ body.dashboard {
 }
 
 @media (max-width: 900px) {
-    .dashboard-hero,
+    .dashboard-page {
+        grid-template-columns: 1fr;
+        grid-template-areas:
+            "welcome"
+            "tools"
+            "account";
+    }
+
     .dashboard-tool-grid {
         grid-template-columns: 1fr;
     }
 
     .dashboard-tool-card {
-        min-height: 270px;
+        min-height: 255px;
     }
 }
 
 @media (max-width: 650px) {
     .dashboard-page {
         width: min(100% - 1rem, 1160px);
-        padding-top: 1.25rem;
+        gap: 0.8rem;
+        padding: 1rem 0 3.5rem;
     }
 
     .dashboard-welcome,
@@ -295,21 +313,68 @@ body.dashboard {
         border-radius: 17px;
     }
 
+    .dashboard-welcome {
+        min-height: 150px;
+        padding: 1.2rem;
+    }
+
+    .dashboard-welcome h1 {
+        font-size: clamp(2rem, 11vw, 3.2rem);
+    }
+
+    .dashboard-welcome > p:last-child {
+        margin-top: 0.7rem;
+        line-height: 1.5;
+    }
+
+    .dashboard-tools {
+        padding: 1rem;
+    }
+
     .dashboard-section-heading {
         display: block;
+        margin-bottom: 1rem;
     }
 
     .dashboard-section-heading > p {
-        margin-top: 0.75rem;
+        margin-top: 0.55rem;
         text-align: left;
     }
 
+    .dashboard-account-card {
+        padding: 1rem;
+    }
+
+    .dashboard-account-heading h2 {
+        font-size: 1.35rem;
+    }
+
+    .dashboard-account-details {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        margin: 0.75rem 0;
+        gap: 0.5rem;
+    }
+
+    .dashboard-account-details div {
+        padding: 0.6rem 0.7rem;
+    }
+
+    .dashboard-badge {
+        font-size: 0.65rem;
+    }
+}
+
+@media (max-width: 430px) {
     .dashboard-account-heading {
         display: block;
     }
 
     .dashboard-badge {
         display: inline-block;
-        margin-top: 0.75rem;
+        margin-top: 0.55rem;
+    }
+
+    .dashboard-account-details {
+        grid-template-columns: 1fr;
     }
 }
