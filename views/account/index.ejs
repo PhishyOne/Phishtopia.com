@@ -129,6 +129,7 @@
             <div class="account-card-heading">
                 <h2>Password</h2>
                 <p>Changing your password closes your other signed-in sessions.</p>
+                <small id="account-password-requirements" class="password-requirements"><%= passwordRequirements %></small>
             </div>
 
             <form action="/account/password" method="POST" class="account-form account-password-form">
@@ -160,8 +161,9 @@
                             name="newPassword"
                             type="password"
                             autocomplete="new-password"
-                            minlength="8"
-                            maxlength="128"
+                            minlength="<%= passwordMinLength %>"
+                            maxlength="<%= passwordMaxLength %>"
+                            aria-describedby="account-password-requirements"
                             required
                         >
                         <button
@@ -182,8 +184,9 @@
                             name="confirmPassword"
                             type="password"
                             autocomplete="new-password"
-                            minlength="8"
-                            maxlength="128"
+                            minlength="<%= passwordMinLength %>"
+                            maxlength="<%= passwordMaxLength %>"
+                            aria-describedby="account-password-requirements"
                             required
                         >
                         <button
