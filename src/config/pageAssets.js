@@ -47,6 +47,11 @@ export const PAGE_DEFINITIONS = Object.freeze({
         title: "Check your email",
         bodyClass: "auth"
     }),
+    dashboard: definePage({
+        title: "Dashboard | Phishtopia",
+        bodyClass: "dashboard",
+        styles: ["/styles/dashboard.css"]
+    }),
     account: definePage({
         title: "Account | Phishtopia",
         bodyClass: "account",

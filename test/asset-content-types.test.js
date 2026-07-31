@@ -10,6 +10,7 @@ const publicDir = join(rootDir, "public");
 const EXPECTED_ASSETS = new Map([
     ["/styles/main.css", /^text\/css\b/],
     ["/styles/account.css", /^text\/css\b/],
+    ["/styles/dashboard.css", /^text\/css\b/],
     ["/styles/archive.css", /^text\/css\b/],
     ["/styles/errors.css", /^text\/css\b/],
     ["/styles/errors-cinematic.css", /^text\/css\b/],

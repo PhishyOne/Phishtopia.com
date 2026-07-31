@@ -57,6 +57,12 @@ const EXPECTED_PAGES = {
         styles: [],
         scripts: []
     },
+    dashboard: {
+        title: "Dashboard | Phishtopia",
+        bodyClass: "dashboard",
+        styles: ["/styles/dashboard.css"],
+        scripts: []
+    },
     account: {
         title: "Account | Phishtopia",
         bodyClass: "account",
@@ -107,6 +113,7 @@ test("routes, controllers, and error middleware use page definitions instead of 
         "src/routes/pages.routes.js",
         "src/controllers/auth.controller.js",
         "src/controllers/account.controller.js",
+        "src/controllers/dashboard.controller.js",
         "src/controllers/youlist.controller.js",
         "src/routes/echotrace.routes.js",
         "src/controllers/storecalc.controller.js",
@@ -130,6 +137,7 @@ test("active templates do not override page metadata or asset declarations", asy
         "views/register.ejs",
         "views/resend-verification.ejs",
         "views/check-email.ejs",
+        "views/dashboard/index.ejs",
         "views/account/index.ejs",
         "views/youlist/index.ejs",
         "views/echotrace/index.ejs",

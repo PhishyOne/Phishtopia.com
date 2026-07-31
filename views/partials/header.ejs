@@ -3,6 +3,7 @@
 
 <head>
     <% const analyticsDisabled = typeof disableAnalytics !== 'undefined' && disableAnalytics; %>
+    <% const robots = typeof robotsContent !== 'undefined' ? robotsContent : 'index, follow'; %>
     <% if (!analyticsDisabled) { %>
         <!-- Google Tag Manager -->
         <script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
@@ -41,7 +42,7 @@
     <meta name="twitter:creator" content="@PhishyOne">
 
     <link rel="canonical" href="<%= canonicalUrl %>">
-    <meta name="robots" content="index, follow">
+    <meta name="robots" content="<%= robots %>">
     <link rel="alternate" hreflang="en" href="<%= canonicalUrl %>">
 
     <link rel="apple-touch-icon" sizes="180x180" href="https://phishtopia.com/images/phishLogo.png">
@@ -88,7 +89,7 @@
 
         <ul class="nav-right nav-links">
             <% if (user) { %>
-                <li class="nav-item"><a id="username" class="nav-link" href="/account">Hi, <%= user.username %></a></li>
+                <li class="nav-item"><a id="username" class="nav-link" href="/dashboard">Hi, <%= user.username %></a></li>
                 <li class="nav-item">
                     <form action="/auth/logout" method="POST">
                         <button type="submit" class="btn logout-btn">Logout</button>
