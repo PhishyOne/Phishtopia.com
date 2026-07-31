@@ -36,13 +36,13 @@ const EXPECTED_PAGES = {
     login: {
         title: "Login",
         bodyClass: "auth",
-        styles: [],
+        styles: ["/styles/password-toggle.css"],
         scripts: ["/js/auth.js"]
     },
     register: {
         title: "Register",
         bodyClass: "register",
-        styles: ["/styles/password-policy.css"],
+        styles: ["/styles/password-policy.css", "/styles/password-toggle.css"],
         scripts: ["/js/register.js", "/js/auth.js"]
     },
     resendVerification: {
@@ -66,7 +66,7 @@ const EXPECTED_PAGES = {
     account: {
         title: "Account | Phishtopia",
         bodyClass: "account",
-        styles: ["/styles/account.css", "/styles/password-policy.css"],
+        styles: ["/styles/account.css", "/styles/password-policy.css", "/styles/password-toggle.css"],
         scripts: ["/js/auth.js"]
     },
     youlist: {
