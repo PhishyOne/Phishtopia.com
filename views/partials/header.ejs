@@ -122,27 +122,28 @@
                 </summary>
 
                 <ul class="mobile-nav-links">
-                    <% if (user) { %>
-                        <li><a href="/dashboard">Dashboard</a></li>
-                    <% } %>
-                    <li><a href="/storecalc">StoreCalc</a></li>
-                    <li><a href="/echotrace">EchoTrace</a></li>
-                    <li><a href="/youlist">YouList</a></li>
+                    <li class="mobile-nav-section-label" aria-hidden="true">Projects</li>
+                    <li class="mobile-project-item"><a class="mobile-project-link" href="/storecalc">StoreCalc</a></li>
+                    <li class="mobile-project-item"><a class="mobile-project-link" href="/echotrace">EchoTrace</a></li>
+                    <li class="mobile-project-item"><a class="mobile-project-link" href="/youlist">YouList</a></li>
+
+                    <li class="mobile-nav-section-label" aria-hidden="true">Site</li>
                     <li><a href="/archive">Archive</a></li>
-                    <% if (user) { %>
-                        <li><a href="/account">Account</a></li>
-                    <% } %>
                     <li><a href="/contact">Contact</a></li>
                     <li><a href="/privacy">Privacy</a></li>
+
+                    <li class="mobile-nav-section-label" aria-hidden="true">Account</li>
                     <% if (user) { %>
+                        <li><a href="/dashboard">Dashboard</a></li>
+                        <li><a href="/account">Account settings</a></li>
                         <li class="mobile-logout-item">
                             <form action="/auth/logout" method="POST">
                                 <button type="submit">Logout</button>
                             </form>
                         </li>
                     <% } else { %>
-                        <li><a href="/auth/login?returnTo=<%= encodeURIComponent(currentUrl || '/') %>">Login</a></li>
-                        <li><a href="/auth/register">Register</a></li>
+                        <li class="mobile-auth-item"><a href="/auth/login?returnTo=<%= encodeURIComponent(currentUrl || '/') %>">Login</a></li>
+                        <li class="mobile-auth-item"><a href="/auth/register">Register</a></li>
                     <% } %>
                 </ul>
             </details>
