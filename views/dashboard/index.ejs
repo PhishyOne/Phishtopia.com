@@ -1,39 +1,10 @@
 <%- include('../partials/header') %>
 
 <main class="dashboard-page">
-    <section class="dashboard-hero" aria-labelledby="dashboard-heading">
-        <div class="dashboard-welcome">
-            <p class="dashboard-eyebrow">Your Phishtopia</p>
-            <h1 id="dashboard-heading">Welcome back, <%= account.username %>.</h1>
-            <p>Choose where you want to go without turning your account home into any one tool's dashboard.</p>
-        </div>
-
-        <aside class="dashboard-account-card" aria-labelledby="account-summary-heading">
-            <div class="dashboard-account-heading">
-                <div>
-                    <p class="dashboard-card-label">Account summary</p>
-                    <h2 id="account-summary-heading"><%= account.username %></h2>
-                </div>
-                <% if (account.role === 'admin') { %>
-                    <span class="dashboard-badge">Administrator</span>
-                <% } %>
-            </div>
-
-            <dl class="dashboard-account-details">
-                <div>
-                    <dt>Email</dt>
-                    <dd><%= account.email %></dd>
-                </div>
-                <div>
-                    <dt>Status</dt>
-                    <dd class="<%= account.emailVerified ? 'dashboard-status-good' : 'dashboard-status-warning' %>">
-                        <%= account.emailVerified ? 'Verified' : 'Verification needed' %>
-                    </dd>
-                </div>
-            </dl>
-
-            <a class="dashboard-account-link" href="/account">Manage account</a>
-        </aside>
+    <section class="dashboard-welcome" aria-labelledby="dashboard-heading">
+        <p class="dashboard-eyebrow">Your Phishtopia</p>
+        <h1 id="dashboard-heading">Welcome back, <%= account.username %>.</h1>
+        <p>Explore what’s here, try something new, and <a href="/contact">contact me</a> with ideas for what Phishtopia should build next.</p>
     </section>
 
     <section class="dashboard-tools" aria-labelledby="tools-heading">
@@ -77,6 +48,33 @@
             </article>
         </div>
     </section>
+
+    <aside class="dashboard-account-card" aria-labelledby="account-summary-heading">
+        <div class="dashboard-account-heading">
+            <div>
+                <p class="dashboard-card-label">Account summary</p>
+                <h2 id="account-summary-heading"><%= account.username %></h2>
+            </div>
+            <% if (account.role === 'admin') { %>
+                <span class="dashboard-badge">Administrator</span>
+            <% } %>
+        </div>
+
+        <dl class="dashboard-account-details">
+            <div>
+                <dt>Email</dt>
+                <dd><%= account.email %></dd>
+            </div>
+            <div>
+                <dt>Status</dt>
+                <dd class="<%= account.emailVerified ? 'dashboard-status-good' : 'dashboard-status-warning' %>">
+                    <%= account.emailVerified ? 'Verified' : 'Verification needed' %>
+                </dd>
+            </div>
+        </dl>
+
+        <a class="dashboard-account-link" href="/account">Manage account</a>
+    </aside>
 </main>
 
 <%- include('../partials/footer') %>
