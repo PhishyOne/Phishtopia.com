@@ -33,6 +33,7 @@ function renderAccount(res, {
     status = 200
 }) {
     return res.status(status).render("account/index", pageLocals("account", {
+        disableAnalytics: true,
         account,
         error,
         notice,
