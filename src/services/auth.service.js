@@ -12,6 +12,7 @@ import {
     createEmailVerificationToken,
     inspectEmailVerificationToken
 } from "../security/emailVerificationToken.js";
+import { passwordLengthError } from "../security/passwordPolicy.js";
 import { sendVerificationEmail } from "./email.service.js";
 
 const SALT_ROUNDS = 10;
@@ -39,9 +40,8 @@ function buildRegisterValidationError({ username, password, confirmPassword, ema
         return "Enter a valid email address";
     }
 
-    if (password.length < 8) {
-        return "Password must be at least 8 characters";
-    }
+    const passwordError = passwordLengthError(password);
+    if (passwordError) return passwordError;
 
     if (password !== confirmPassword) {
         return "Passwords do not match";
