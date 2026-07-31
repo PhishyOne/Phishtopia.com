@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630" role="img" aria-labelledby="title desc">
+  <title id="title">Phishtopia Project Archive</title>
+  <desc id="desc">Layered project folders and a timeline representing preserved Phishtopia experiments and course work.</desc>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#171008"/><stop offset=".55" stop-color="#69451c"/><stop offset="1" stop-color="#c78939"/></linearGradient>
+    <filter id="shadow"><feDropShadow dx="0" dy="16" stdDeviation="16" flood-color="#100a04" flood-opacity=".55"/></filter>
+  </defs>
+  <rect width="1200" height="630" fill="url(#bg)"/>
+  <g transform="translate(690 105)" filter="url(#shadow)">
+    <path d="M35 90H195L235 45H460Q490 45 490 75V390Q490 420 460 420H35Q5 420 5 390V120Q5 90 35 90Z" fill="#d99b4d" stroke="#ffe0a6" stroke-opacity=".55" stroke-width="5"/>
+    <path d="M35 145H460Q490 145 490 175V390Q490 420 460 420H35Q5 420 5 390V175Q5 145 35 145Z" fill="#f1c173"/>
+    <g fill="#6f471e"><rect x="60" y="190" width="300" height="18" rx="9"/><rect x="60" y="235" width="355" height="12" rx="6" opacity=".55"/><rect x="60" y="275" width="325" height="12" rx="6" opacity=".55"/><rect x="60" y="315" width="280" height="12" rx="6" opacity=".55"/></g>
+    <circle cx="402" cy="197" r="28" fill="#6f471e"/><path d="M390 197L400 207L418 185" fill="none" stroke="#ffe8bd" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/>
+  </g>
+  <g transform="translate(82 430)" stroke="#f4cc8e" stroke-width="5" fill="none"><path d="M0 40H505"/><circle cx="35" cy="40" r="13" fill="#f4cc8e"/><circle cx="190" cy="40" r="13" fill="#f4cc8e"/><circle cx="345" cy="40" r="13" fill="#f4cc8e"/><circle cx="500" cy="40" r="13" fill="#f4cc8e"/></g>
+  <text x="70" y="174" font-family="Arial, Helvetica, sans-serif" font-size="76" font-weight="850" fill="#fff8ea">Project Archive</text>
+  <text x="74" y="240" font-family="Arial, Helvetica, sans-serif" font-size="31" font-weight="750" fill="#ffd391" letter-spacing="4">PRESERVED, NOT FORGOTTEN</text>
+  <text x="74" y="338" font-family="Arial, Helvetica, sans-serif" font-size="29" fill="#fff1d9">Earlier projects, course work,</text>
+  <text x="74" y="380" font-family="Arial, Helvetica, sans-serif" font-size="29" fill="#fff1d9">and the trail that led here.</text>
+  <rect x="72" y="510" width="292" height="58" rx="29" fill="#1d1207" fill-opacity=".78" stroke="#f2c47e" stroke-opacity=".6"/>
+  <text x="218" y="548" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="24" font-weight="700" fill="#fff8eb">phishtopia.com/archive</text>
+</svg>
