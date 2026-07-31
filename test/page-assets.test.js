@@ -229,7 +229,7 @@ test("public routes render the titles, body classes, and assets from page defini
     const privacyHtml = await assertRenderedPage("/privacy", "privacy");
     assert.match(privacyHtml, /<link rel="canonical" href="https:\/\/phishtopia\.com\/privacy">/);
     assert.match(privacyHtml, /<meta name="description" content="Learn what Phishtopia collects/);
-    assert.match(privacyHtml, /<meta property="og:title" content="Privacy \| Phishtopia">/);
+    assert.match(privacyHtml, /<meta property="og:title" content="Privacy at Phishtopia">/);
     const deletedHtml = await assertRenderedPage("/account/deleted", "accountDeleted");
     assert.match(deletedHtml, /Your Phishtopia account has been deleted/);
     assert.match(deletedHtml, /<meta name="robots" content="noindex, nofollow">/);
