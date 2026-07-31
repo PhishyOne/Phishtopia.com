@@ -1,0 +1,82 @@
+<%- include('../partials/header') %>
+
+<main class="dashboard-page">
+    <section class="dashboard-hero" aria-labelledby="dashboard-heading">
+        <div class="dashboard-welcome">
+            <p class="dashboard-eyebrow">Your Phishtopia</p>
+            <h1 id="dashboard-heading">Welcome back, <%= account.username %>.</h1>
+            <p>Choose where you want to go without turning your account home into any one tool's dashboard.</p>
+        </div>
+
+        <aside class="dashboard-account-card" aria-labelledby="account-summary-heading">
+            <div class="dashboard-account-heading">
+                <div>
+                    <p class="dashboard-card-label">Account summary</p>
+                    <h2 id="account-summary-heading"><%= account.username %></h2>
+                </div>
+                <% if (account.role === 'admin') { %>
+                    <span class="dashboard-badge">Administrator</span>
+                <% } %>
+            </div>
+
+            <dl class="dashboard-account-details">
+                <div>
+                    <dt>Email</dt>
+                    <dd><%= account.email %></dd>
+                </div>
+                <div>
+                    <dt>Status</dt>
+                    <dd class="<%= account.emailVerified ? 'dashboard-status-good' : 'dashboard-status-warning' %>">
+                        <%= account.emailVerified ? 'Verified' : 'Verification needed' %>
+                    </dd>
+                </div>
+            </dl>
+
+            <a class="dashboard-account-link" href="/account">Manage account</a>
+        </aside>
+    </section>
+
+    <section class="dashboard-tools" aria-labelledby="tools-heading">
+        <div class="dashboard-section-heading">
+            <div>
+                <p class="dashboard-eyebrow">Popular pages</p>
+                <h2 id="tools-heading">Explore Phishtopia</h2>
+            </div>
+            <p>Each tool keeps its own settings and workflow in its own space.</p>
+        </div>
+
+        <div class="dashboard-tool-grid">
+            <article class="dashboard-tool-card dashboard-tool-storecalc">
+                <div class="dashboard-tool-mark" aria-hidden="true">SC</div>
+                <div>
+                    <p class="dashboard-card-label">Commissary planning</p>
+                    <h3>StoreCalc</h3>
+                    <p>Build and manage commissary orders with facility-specific catalogs, limits, and templates as those features arrive.</p>
+                </div>
+                <a href="/storecalc">Open StoreCalc</a>
+            </article>
+
+            <article class="dashboard-tool-card dashboard-tool-echotrace">
+                <div class="dashboard-tool-mark" aria-hidden="true">ET</div>
+                <div>
+                    <p class="dashboard-card-label">Player intelligence</p>
+                    <h3>EchoTrace</h3>
+                    <p>Analyze public Eve Echoes activity patterns, locations, dates, and combat records.</p>
+                </div>
+                <a href="/echotrace">Open EchoTrace</a>
+            </article>
+
+            <article class="dashboard-tool-card dashboard-tool-youlist">
+                <div class="dashboard-tool-mark" aria-hidden="true">YL</div>
+                <div>
+                    <p class="dashboard-card-label">Movies and television</p>
+                    <h3>YouList</h3>
+                    <p>Search titles, review details, and keep your personal movie and television list organized.</p>
+                </div>
+                <a href="/youlist">Open YouList</a>
+            </article>
+        </div>
+    </section>
+</main>
+
+<%- include('../partials/footer') %>
