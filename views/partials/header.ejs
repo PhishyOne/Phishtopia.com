@@ -4,8 +4,63 @@
 <head>
     <% const analyticsDisabled = typeof disableAnalytics !== 'undefined' && disableAnalytics; %>
     <% const robots = typeof robotsContent !== 'undefined' ? robotsContent : 'index, follow'; %>
-    <% const description = typeof pageDescription !== 'undefined' ? pageDescription : 'Home of the Improbable.'; %>
-    <% const socialTitle = title || 'Phishtopia'; %>
+    <% const sharePages = {
+        'home-page': {
+            title: 'Phishtopia | Home of the Improbable',
+            description: 'Explore practical web tools, unusual experiments, and whatever Phishtopia builds next.',
+            image: 'https://phishtopia.com/share/home.svg',
+            imageType: 'image/svg+xml',
+            imageAlt: 'An underwater technology scene with a glowing fish and the words Home of the Improbable.'
+        },
+        'youlist': {
+            title: 'YouList | Build Your Watchlist',
+            description: 'Find movies and shows, save a personal watchlist, and add your own notes with YouList.',
+            image: 'https://phishtopia.com/share/youlist.svg',
+            imageType: 'image/svg+xml',
+            imageAlt: 'A cinematic watchlist interface with movie cards and the words Build your watchlist.'
+        },
+        'player-int': {
+            title: 'EchoTrace | EVE Player Intelligence',
+            description: 'Explore public EVE Online character signals and connections with EchoTrace.',
+            image: 'https://phishtopia.com/share/echotrace.svg',
+            imageType: 'image/svg+xml',
+            imageAlt: 'A futuristic radar display and connected star map for EVE Online player intelligence.'
+        },
+        'storecalc': {
+            title: 'StoreCalc Online | Commissary Order Calculator',
+            description: 'Calculate commissary totals and organize an order before it is placed with StoreCalc Online.',
+            image: 'https://phishtopia.com/share/storecalc.svg',
+            imageType: 'image/svg+xml',
+            imageAlt: 'A calculator and organized commissary order sheet for StoreCalc Online.'
+        },
+        'archive-page': {
+            title: 'Project Archive | Phishtopia',
+            description: 'Browse preserved course work, earlier projects, and the experiments that led to Phishtopia.',
+            image: 'https://phishtopia.com/share/archive.svg',
+            imageType: 'image/svg+xml',
+            imageAlt: 'Layered project folders and a timeline representing preserved Phishtopia experiments and course work.'
+        },
+        'contact': {
+            title: 'Contact Phishtopia',
+            description: 'Send questions, report a problem, or share an idea for what Phishtopia should build next.',
+            image: 'https://phishtopia.com/share/contact.svg',
+            imageType: 'image/svg+xml',
+            imageAlt: 'A glowing message envelope inviting questions, feedback, and new ideas for Phishtopia.'
+        },
+        'privacy': {
+            title: 'Privacy at Phishtopia',
+            description: 'Learn what Phishtopia collects, why it is needed, where it goes, and how account deletion works.',
+            image: 'https://phishtopia.com/share/privacy.svg',
+            imageType: 'image/svg+xml',
+            imageAlt: 'A shield and lock representing Phishtopia privacy practices.'
+        }
+    }; %>
+    <% const sharePage = sharePages[bodyClass] || {}; %>
+    <% const description = typeof pageDescription !== 'undefined' ? pageDescription : (sharePage.description || 'Home of the Improbable.'); %>
+    <% const socialTitle = sharePage.title || title || 'Phishtopia'; %>
+    <% const socialImage = sharePage.image || 'https://phishtopia.com/images/share-card.png'; %>
+    <% const socialImageType = sharePage.imageType || 'image/png'; %>
+    <% const socialImageAlt = sharePage.imageAlt || 'Phishtopia social card featuring a cyber fish and the words Home of the Improbable.'; %>
     <% if (!analyticsDisabled) { %>
         <!-- Google Tag Manager -->
         <script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
@@ -26,11 +81,12 @@
 
     <meta property="og:title" content="<%= socialTitle %>">
     <meta property="og:description" content="<%= description %>">
-    <meta property="og:image" content="https://phishtopia.com/images/share-card.png">
-    <meta property="og:image:type" content="image/png">
+    <meta property="og:image" content="<%= socialImage %>">
+    <meta property="og:image:secure_url" content="<%= socialImage %>">
+    <meta property="og:image:type" content="<%= socialImageType %>">
     <meta property="og:image:width" content="1200">
     <meta property="og:image:height" content="630">
-    <meta property="og:image:alt" content="Phishtopia social card featuring a cyber fish and the words Home of the Improbable.">
+    <meta property="og:image:alt" content="<%= socialImageAlt %>">
     <meta property="og:url" content="<%= canonicalUrl %>">
     <meta property="og:type" content="website">
     <meta property="og:site_name" content="Phishtopia">
@@ -38,8 +94,8 @@
     <meta name="twitter:card" content="summary_large_image">
     <meta name="twitter:title" content="<%= socialTitle %>">
     <meta name="twitter:description" content="<%= description %>">
-    <meta name="twitter:image" content="https://phishtopia.com/images/share-card.png">
-    <meta name="twitter:image:alt" content="Phishtopia social card featuring a cyber fish and the words Home of the Improbable.">
+    <meta name="twitter:image" content="<%= socialImage %>">
+    <meta name="twitter:image:alt" content="<%= socialImageAlt %>">
     <meta name="twitter:site" content="@PhishyOne">
     <meta name="twitter:creator" content="@PhishyOne">
 
