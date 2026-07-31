@@ -44,6 +44,18 @@ itself a broader systemd sandbox. A reviewed unit-contract correction therefore
 requires one controlled bridge installation with an exact backup, rollback,
 unit verification, and health check before normal job-based upgrades resume.
 
+The one-time bridge is
+`scripts/bridge-worker-sidecar-cloud-shell.sh`. It accepts only a merged
+40-character commit and that commit's verified GitHub archive SHA-256. Before
+changing the worker, it refuses active jobs or a pending reexec, verifies that
+the entire unit delta is the single `-/var/log/nginx` allowance, tests the
+candidate and the corrected Nginx sandbox, and snapshots the installed unit,
+worker symlink, and release manifest. It does not restart or repoint the
+controller or recovered MCP tunnel. Every post-switch gate must pass or the
+snapshot is restored automatically. A successful bridge installs the guarded
+`phishtopia-ops-worker-sidecar-bridge-rollback` helper for the bridged release;
+that helper refuses to run after a later release becomes current.
+
 ## Before bootstrap
 
 1. Record source hashes, unit/launcher/tunnel/credential fingerprints, service properties, IAM bindings, Cloud Run traffic, app commit/PM2 state, Nginx hashes, PostgreSQL schema/data hashes, DNS answers, TLS certificate, health results, and memory/disk headroom.
