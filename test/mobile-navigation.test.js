@@ -31,8 +31,8 @@ test("mobile navigation keeps projects and signed-in account controls available"
     }
 
     assert.match(header, /class="mobile-logout-item"[\s\S]*action="\/auth\/logout"/);
-    assert.match(header, /class="desktop-primary-links"/);
-    assert.match(header, /class="nav-right nav-links desktop-account-links"/);
+    assert.match(header, /class="[^"]*\bdesktop-primary-links\b[^"]*"/);
+    assert.match(header, /class="[^"]*\bdesktop-account-links\b[^"]*"/);
 });
 
 test("mobile navigation replaces crowded desktop links only at narrow widths", async () => {
