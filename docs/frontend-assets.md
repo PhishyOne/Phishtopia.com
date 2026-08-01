@@ -9,6 +9,7 @@ Phishtopia uses Express static files directly. There is no bundler or frontend b
 - `public/js/<feature>.js`: browser behavior owned by an active feature.
 - `public/images/`: shared and active feature images referenced by production templates or browser code.
 - `public/fonts/`: locally hosted font files.
+- `public/.well-known/`: reviewed standards-based static resources such as `security.txt`, served through the dedicated `/.well-known` mount.
 - `public/__system-errors/`: self-contained static HTML and CSS used by Nginx when the Node application cannot answer.
 - `src/config/pageAssets.js`: the canonical title, body class, stylesheet list, and script list for each rendered page.
 
@@ -82,3 +83,4 @@ EchoTrace also loads Shentox from CCP's public webfont host. Its `@font-face` de
 7. Remove an asset from the inventory in the same PR that removes its final production reference.
 8. Keep third-party URLs explicit and feature-scoped. Do not copy external assets into the repository without checking licensing and maintenance cost.
 9. Keep Nginx fallback pages self-contained and validate the include with `nginx -t` before any reload.
+10. Put standards-based static resources only in `public/.well-known/`. Keep the dedicated mount narrowly scoped; never enable generic serving of dotfiles or add filesystem-driven dynamic routing.

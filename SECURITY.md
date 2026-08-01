@@ -63,3 +63,11 @@ Research performed in good faith, within this policy, and with prompt private re
 ## Public disclosure
 
 Please avoid public disclosure until the vulnerability has been investigated and a fix or mitigation is available. The project will work toward coordinated disclosure and will credit reporters who request attribution, provided doing so is safe and appropriate.
+
+## security.txt maintenance
+
+The canonical machine-readable disclosure information is published at:
+
+https://phishtopia.com/.well-known/security.txt
+
+Its repository source is `public/.well-known/security.txt`. Update its contact and policy fields in the same pull request whenever this policy changes. Renew the `Expires` timestamp before it is within 30 days of expiration; the automated test suite enforces that minimum maintenance window so the file cannot silently go stale.
