@@ -18,7 +18,7 @@
 
 Phishtopia is a personal development hub and production Node.js application built around useful tools, original projects, and ongoing computer-science work. It began as a collection of course exercises and experiments, then grew into a PostgreSQL-backed platform with authentication, user accounts, third-party APIs, responsive interfaces, automated deployment, monitoring, backups, and controlled operations tooling.
 
-The current application is built with Node.js, Express, EJS, PostgreSQL, and a deliberately simple server-rendered architecture. The project favors small reviewed changes, mobile-friendly workflows, measurable verification, and preserving working production behavior over rewrites for their own sake.
+The current application uses Node.js, Express, EJS, and PostgreSQL with a deliberately simple server-rendered architecture. The project favors small reviewed changes, mobile-friendly workflows, measurable verification, and preserving known-good production behavior over rewrites for their own sake.
 
 ---
 
@@ -37,7 +37,9 @@ Recent work on `main` includes:
 - a cleaner shared footer and mobile dashboard layout
 - page-specific Open Graph and Twitter/X metadata
 - dedicated opaque 1200×630 social share cards for Home, YouList, EchoTrace, StoreCalc, Archive, Contact, and Privacy
-- automated tests that lock the reviewed share-card files and reject alpha-channel regressions
+- tests that lock the reviewed share-card files and reject alpha-channel regressions
+- a public canonical sitemap
+- crawler-friendly `robots.txt` guidance that excludes private and utility routes
 
 Production runs on a Google Cloud VM and normally auto-deploys updates from `main` through the VM deployment timer. A merge is not considered fully verified until the VM deploy log and public health endpoints confirm the deployed revision.
 
@@ -121,7 +123,7 @@ Phishtopia includes:
 - transactional deletion of owned account data
 - privacy-conscious limits on logging and diagnostics
 
-### Social Sharing
+### Social Sharing and SEO
 
 Public pages publish distinct titles, descriptions, share images, image dimensions, MIME types, and accessible image alt text. Authentication, account, and dashboard pages retain a safe branded fallback and are not intended as public search landing pages.
 
@@ -130,6 +132,15 @@ The dedicated share cards are reproducible through:
 ```text
 scripts/generate-social-cards.py
 ```
+
+The public crawler files are:
+
+```text
+/robots.txt
+/sitemap.xml
+```
+
+The sitemap contains only public canonical pages. Private, authenticated, internal, health, readiness, and query-result routes are omitted. `robots.txt` reinforces those boundaries for cooperative crawlers, but it is not treated as access control.
 
 ---
 
@@ -157,6 +168,8 @@ public/
   js/
   share/
   styles/
+  robots.txt
+  sitemap.xml
 
 test/
   ...Node test suites
@@ -355,13 +368,13 @@ http://localhost:8080/health
 
 ### 1. Finish the bounded SEO follow-up
 
-Most of issue #72 is complete, including distinct page metadata and reviewed share cards. Remaining repository work includes:
+Most of issue #72 is complete, including distinct page metadata, reviewed share cards, a public canonical sitemap, and crawler guidance that excludes private and utility routes. Remaining follow-up includes:
 
-- add a public `sitemap.xml`
-- add a valid `robots.txt` that references the sitemap
 - add homepage `WebSite` structured data
-- verify the deployed pages with social preview tools
-- complete Google Search Console and Bing Webmaster verification/submission
+- verify deployed pages with social preview tools
+- verify `phishtopia.com` in Google Search Console
+- submit the sitemap and request indexing for the main public pages
+- import the verified property into Bing Webmaster Tools
 
 ### 2. Build StoreCalc Online
 
