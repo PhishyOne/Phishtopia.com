@@ -10,43 +10,43 @@ const PUBLIC_SHARE_PAGES = [
     {
         path: "/",
         title: "Phishtopia | Home of the Improbable",
-        image: "https://phishtopia.com/share/home.svg"
+        image: "https://phishtopia.com/share/home.png"
     },
     {
         path: "/archive",
         title: "Project Archive | Phishtopia",
-        image: "https://phishtopia.com/share/archive.svg"
+        image: "https://phishtopia.com/share/archive.png"
     },
     {
         path: "/contact",
         title: "Contact Phishtopia",
-        image: "https://phishtopia.com/share/contact.svg"
+        image: "https://phishtopia.com/share/contact.png"
     },
     {
         path: "/privacy",
         title: "Privacy at Phishtopia",
-        image: "https://phishtopia.com/share/privacy.svg"
+        image: "https://phishtopia.com/share/privacy.png"
     },
     {
         path: "/echotrace",
         title: "EchoTrace | EVE Player Intelligence",
-        image: "https://phishtopia.com/share/echotrace.svg"
+        image: "https://phishtopia.com/share/echotrace.png"
     },
     {
         path: "/storecalc",
         title: "StoreCalc Online | Commissary Order Calculator",
-        image: "https://phishtopia.com/share/storecalc.svg"
+        image: "https://phishtopia.com/share/storecalc.png"
     }
 ];
 
 const SHARE_FILES = [
-    "home.svg",
-    "youlist.svg",
-    "echotrace.svg",
-    "storecalc.svg",
-    "archive.svg",
-    "contact.svg",
-    "privacy.svg"
+    "home.png",
+    "youlist.png",
+    "echotrace.png",
+    "storecalc.png",
+    "archive.png",
+    "contact.png",
+    "privacy.png"
 ];
 
 let server;
@@ -95,7 +95,7 @@ test("public pages publish distinct Open Graph and Twitter sharing information",
         assert.match(html, new RegExp(`<meta property="og:image" content="${escaped(page.image)}">`));
         assert.match(html, new RegExp(`<meta property="og:image:secure_url" content="${escaped(page.image)}">`));
         assert.match(html, new RegExp(`<meta name="twitter:image" content="${escaped(page.image)}">`));
-        assert.match(html, /<meta property="og:image:type" content="image\/svg\+xml">/);
+        assert.match(html, /<meta property="og:image:type" content="image\/png">/);
         assert.match(html, /<meta property="og:image:width" content="1200">/);
         assert.match(html, /<meta property="og:image:height" content="630">/);
         assert.match(html, /<meta property="og:image:alt" content="[^"]+">/);
@@ -108,28 +108,26 @@ test("public pages publish distinct Open Graph and Twitter sharing information",
     assert.equal(observedImages.size, PUBLIC_SHARE_PAGES.length);
 });
 
-test("every dedicated share card is self-contained, accessible, and 1200 by 630", async () => {
-    const titles = new Set();
+test("every dedicated share card is a cacheable 1200 by 630 PNG", async () => {
+    const hashes = new Set();
 
     for (const fileName of SHARE_FILES) {
-        const source = await readFile(join(rootDir, "public/share", fileName), "utf8");
-        assert.match(source, /<svg[^>]+width="1200"[^>]+height="630"[^>]+viewBox="0 0 1200 630"/);
-        assert.match(source, /role="img"/);
-        assert.match(source, /aria-labelledby="title desc"/);
-        assert.match(source, /<title id="title">[^<]+<\/title>/);
-        assert.match(source, /<desc id="desc">[^<]+<\/desc>/);
-        assert.doesNotMatch(source, /(?:href|xlink:href)=["']https?:|url\(["']?https?:/i);
-
-        const title = source.match(/<title id="title">([^<]+)<\/title>/)?.[1];
-        assert.ok(title);
-        titles.add(title);
+        const localImage = await readFile(join(rootDir, "public/share", fileName));
+        assert.deepEqual(
+            [...localImage.subarray(0, 8)],
+            [0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]
+        );
+        assert.equal(localImage.readUInt32BE(16), 1200);
+        assert.equal(localImage.readUInt32BE(20), 630);
+        hashes.add(localImage.toString("base64"));
 
         const response = await fetch(`${baseUrl}/share/${fileName}`, { redirect: "manual" });
         assert.equal(response.status, 200, `/share/${fileName} should return 200`);
-        assert.match(response.headers.get("content-type") || "", /^image\/svg\+xml\b/);
+        assert.match(response.headers.get("content-type") || "", /^image\/png\b/);
+        assert.match(response.headers.get("cache-control") || "", /public/);
     }
 
-    assert.equal(titles.size, SHARE_FILES.length);
+    assert.equal(hashes.size, SHARE_FILES.length);
 });
 
 test("YouList has dedicated sharing content even though the application requires login", async () => {
@@ -137,7 +135,7 @@ test("YouList has dedicated sharing content even though the application requires
 
     assert.match(header, /'youlist':\s*\{/);
     assert.match(header, /title:\s*'YouList \| Build Your Watchlist'/);
-    assert.match(header, /image:\s*'https:\/\/phishtopia\.com\/share\/youlist\.svg'/);
+    assert.match(header, /image:\s*'https:\/\/phishtopia\.com\/share\/youlist\.png'/);
 
     const response = await fetch(`${baseUrl}/youlist`, { redirect: "manual" });
     assert.equal(response.status, 302);
