@@ -1,0 +1,18 @@
+# Welcome to Phishtopia, crawler.
+# Please keep your fins, feelers, and suspiciously efficient regexes inside the aquarium.
+# Friendly indexing bots may explore the public exhibits.
+# Treasure hunters checking private routes will find no treasure, only disappointed fish.
+
+User-agent: *
+Allow: /
+
+Disallow: /account
+Disallow: /auth
+Disallow: /dashboard
+Disallow: /echotrace/submit
+Disallow: /health
+Disallow: /internal
+Disallow: /ready
+Disallow: /youlist
+
+Sitemap: https://phishtopia.com/sitemap.xml
