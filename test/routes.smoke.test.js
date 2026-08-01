@@ -94,12 +94,12 @@ test("homepage advertises complete social preview metadata", async () => {
     assert.equal(response.status, 200);
 
     const body = await response.text();
-    assert.match(body, /property="og:image" content="https:\/\/phishtopia\.com\/share\/home\.svg"/);
-    assert.match(body, /property="og:image:type" content="image\/svg\+xml"/);
+    assert.match(body, /property="og:image" content="https:\/\/phishtopia\.com\/share\/home\.png"/);
+    assert.match(body, /property="og:image:type" content="image\/png"/);
     assert.match(body, /property="og:image:width" content="1200"/);
     assert.match(body, /property="og:image:height" content="630"/);
     assert.match(body, /property="og:image:alt" content="[^"]+"/);
-    assert.match(body, /name="twitter:image" content="https:\/\/phishtopia\.com\/share\/home\.svg"/);
+    assert.match(body, /name="twitter:image" content="https:\/\/phishtopia\.com\/share\/home\.png"/);
     assert.match(body, /name="twitter:image:alt" content="[^"]+"/);
 });
 
