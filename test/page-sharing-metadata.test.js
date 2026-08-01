@@ -29,7 +29,7 @@ const PUBLIC_SHARE_PAGES = [
     },
     {
         path: "/echotrace",
-        title: "EchoTrace | EVE Player Intelligence",
+        title: "EchoTrace | EVE Echoes Player Intelligence",
         image: "https://phishtopia.com/share/echotrace.png"
     },
     {
