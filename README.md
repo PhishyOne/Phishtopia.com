@@ -5,7 +5,7 @@
 <h1 align="center">Phishtopia.com</h1>
 
 <p align="center">
-  A growing full-stack web development hub built with Node.js, Express, EJS, PostgreSQL, and questionable amounts of caffeine.
+  A growing full-stack web application for practical tools, strange experiments, and projects that became more serious than originally intended.
 </p>
 
 <p align="center">
@@ -16,170 +16,157 @@
 
 ## Overview
 
-Phishtopia.com is a personal web development project hub and growing full-stack web application. It began as a place to showcase course projects and experiments, but it has grown into a larger Node.js/Express platform with authentication, PostgreSQL-backed features, third-party API integrations, original tools, and production-style deployment.
+Phishtopia is a personal development hub and production Node.js application built around useful tools, original projects, and ongoing computer-science work. It began as a collection of course exercises and experiments, then grew into a PostgreSQL-backed platform with authentication, user accounts, third-party APIs, responsive interfaces, automated deployment, monitoring, backups, and controlled operations tooling.
 
-The project is actively evolving as I continue learning full-stack development, improving the architecture, and turning individual experiments into more polished applications.
+The current application is built with Node.js, Express, EJS, PostgreSQL, and a deliberately simple server-rendered architecture. The project favors small reviewed changes, mobile-friendly workflows, measurable verification, and preserving working production behavior over rewrites for their own sake.
 
 ---
 
 ## Current Status
 
-**Phishtopia v2.0.0** is live on the production site.
+**Phishtopia v2 is live at `https://phishtopia.com`.**
 
-This release merged the major site-structure refactor into `main`, keeping the live site stable while separating the application into cleaner routes, controllers, services, middleware, and database query modules.
+Recent work on `main` includes:
 
-Current production setup:
+- a general signed-in dashboard that keeps Phishtopia app-neutral
+- responsive mobile navigation grouped by purpose
+- clearer registration and account password guidance
+- modern password visibility controls
+- self-service account deletion with CSRF protection and transactional cleanup
+- a public plain-English privacy page
+- a cleaner shared footer and mobile dashboard layout
+- page-specific Open Graph and Twitter/X metadata
+- dedicated opaque 1200×630 social share cards for Home, YouList, EchoTrace, StoreCalc, Archive, Contact, and Privacy
+- automated tests that lock the reviewed share-card files and reject alpha-channel regressions
 
-- Production URL: `https://phishtopia.com`
-- VM name: `phishtopia-vm`
-- Static IP: `34.73.92.179`
-- Web server: Nginx
-- App runtime: Node.js 22
-- Process manager: PM2
-- Database: local PostgreSQL on the VM
-- HTTPS: Let's Encrypt certificates managed by Certbot
-- Primary domain: `phishtopia.com`
-- `www.phishtopia.com` redirects to `https://phishtopia.com`
+Production runs on a Google Cloud VM and normally auto-deploys updates from `main` through the VM deployment timer. A merge is not considered fully verified until the VM deploy log and public health endpoints confirm the deployed revision.
 
-Production request flow:
+### Production request flow
 
 ```text
-Namecheap DNS
+Namecheap / Cloudflare DNS
   -> GCP static IP
   -> Nginx
-  -> Node / Express app on localhost:3002
-  -> Local PostgreSQL on localhost:5432
+  -> Node / Express on localhost:3002
+  -> local PostgreSQL on localhost:5432
 ```
 
-The database is not exposed directly to the public internet. Users interact with the site through the web app, and the app talks to PostgreSQL locally on the VM.
+The database is not exposed directly to the public internet.
 
 ---
 
-## Latest Release
+## Main Features
 
-### v2.0.0 — Phishtopia v2 Foundation
+### Dashboard
 
-Released after the major refactor and production deployment to `main`.
+Signed-in users land on a general Phishtopia dashboard rather than being pushed into one particular application. It provides a compact mobile-first starting point for projects and account management.
 
-Highlights:
-
-- Refactored the app from a large root server file into a cleaner `src/` architecture.
-- Split authentication, YouList, page routes, services, middleware, and database logic into separate modules.
-- Added email verification support and a development-friendly verification flow.
-- Switched password hashing from native `bcrypt` to `bcryptjs` for better Android/Termux/Codespaces compatibility.
-- Polished the homepage, projects page, auth screens, and YouList card layout.
-- Confirmed production deploy, PM2 restart, and live `/health` check.
-
-Release notes are tracked in [`docs/releases/v2.0.0.md`](docs/releases/v2.0.0.md).
-
----
-
-## Production Management
-
-Most production commands are run on the VM.
-
-SSH into the VM:
-
-```bash
-gcloud compute ssh phishtopia-vm --zone=us-east1-b
-```
-
-The app currently lives at:
-
-```text
-/home/codespace/phishtopia
-```
-
-Sensitive runtime files are stored outside the Git repository:
-
-```text
-/home/codespace/phishtopia/.env
-/home/codespace/phishtopia-secrets/db.env
-/home/codespace/phishtopia-secrets/app.env
-```
-
-Do not commit secrets, `.env` files, SQL dumps, or backup files.
-
-Check the running app:
-
-```bash
-sudo -u codespace env PM2_HOME=/home/codespace/.pm2 pm2 status
-curl -I https://phishtopia.com/health
-curl -I https://www.phishtopia.com/health
-sudo systemctl status pm2-codespace --no-pager
-sudo systemctl status certbot.timer --no-pager
-```
-
-View recent app logs:
-
-```bash
-sudo -u codespace env PM2_HOME=/home/codespace/.pm2 pm2 logs phishtopia --lines 50
-```
-
-View recent deploy output:
-
-```bash
-tail -80 /home/codespace/phishtopia-deploy.log
-```
-
-Production currently auto-deploys updates from `main` through the VM deploy timer. After pushing to `main`, confirm deployment with:
-
-```bash
-tail -80 /home/codespace/phishtopia-deploy.log
-curl -I https://phishtopia.com/health
-```
-
-Manual deploy steps, if needed:
-
-```bash
-cd /home/codespace/phishtopia
-git pull origin main
-npm ci --omit=dev
-sudo -u codespace env PM2_HOME=/home/codespace/.pm2 pm2 restart phishtopia --update-env
-sudo -u codespace env PM2_HOME=/home/codespace/.pm2 pm2 save
-```
-
----
-
-## Current Features
-
-### Project Hub
-
-A collection of web development projects, experiments, and course-inspired builds organized through a central projects page.
+A future issue tracks a small “Continue where you left off” section, but it will not be added until individual features expose trustworthy resumable activity.
 
 ### YouList
 
-YouList is a movie and TV list application using the TMDB API. Users can search for titles, view details, and add personal comments to movies and shows.
+YouList is a personal movie and television watchlist using the TMDB API.
 
-Current features include:
+Current capabilities include:
 
-- TMDB search integration
-- Movie and TV detail views
-- User authentication
-- Email verification support
-- User comments
+- movie and television search
+- title details, cast, crew, posters, genres, and release information
+- authenticated personal lists
+- user comments and notes
 - PostgreSQL-backed storage
-- Pagination
-- API response caching
-- Mobile-friendly layout
-- Desktop two-column card layout
+- pagination and API caching
+- responsive card layouts
 
 ### EchoTrace
 
-EchoTrace is an Eve Echoes player intelligence tool that analyzes public killmail data to identify player activity patterns.
+EchoTrace analyzes public EVE Echoes killmail data to identify character activity patterns and connections.
 
-Current features include:
+Current capabilities include:
 
-- Player search by name or ID
-- Killer and victim filtering
-- Date range filtering
-- Top regions, constellations, and systems
-- Activity-by-hour visualization
-- Legacy `/player-int` route support
+- player search by name or ID
+- killer and victim filtering
+- date-range filtering
+- region, constellation, and system summaries
+- activity-by-hour visualization
+- public page-specific sharing metadata
+
+The canonical public route is `/echotrace`.
+
+### StoreCalc Online
+
+StoreCalc Online is the web successor to an earlier Bash and Android commissary-order calculator originally designed around Hays State Prison commissary ordering.
+
+The current `/storecalc` page establishes the public project location and branding. The next major development phase is to turn it into a clean, tested calculator with plain JavaScript calculation functions, a phone-friendly order workflow, and no unnecessary account or database dependency in the first release.
+
+### Project Archive
+
+The public `/archive` page preserves selected earlier projects and course work without forcing retired implementation details into the active application.
+
+The most recent preserved source snapshot is kept on:
+
+```text
+archive/course-projects-2026-07-28
+```
+
+That branch is historical reference material, not a production deployment branch.
+
+### Privacy and Account Controls
+
+Phishtopia includes:
+
+- a public `/privacy` page written in plain language
+- account settings and password controls
+- browser-form CSRF protection
+- secure self-service account deletion
+- transactional deletion of owned account data
+- privacy-conscious limits on logging and diagnostics
+
+### Social Sharing
+
+Public pages publish distinct titles, descriptions, share images, image dimensions, MIME types, and accessible image alt text. Authentication, account, and dashboard pages retain a safe branded fallback and are not intended as public search landing pages.
+
+The dedicated share cards are reproducible through:
+
+```text
+scripts/generate-social-cards.py
+```
 
 ---
 
-## Tech Stack
+## Architecture
+
+The application entry point is `index.js`, which loads `src/app.js`.
+
+```text
+src/
+  app.js
+  cache/
+  config/
+  controllers/
+  db/
+  middleware/
+  routes/
+  services/
+
+views/
+  partials/
+  ...page templates
+
+public/
+  images/
+  js/
+  share/
+  styles/
+
+test/
+  ...Node test suites
+```
+
+Responsibilities are split across route modules, controllers, database query modules, services, middleware, EJS views, and page-specific assets. Retired course implementations are preserved in archive history instead of being treated as active compatibility architecture.
+
+---
+
+## Technology
 
 ### Application
 
@@ -192,101 +179,97 @@ Current features include:
 - connect-pg-simple
 - express-rate-limit
 - Nodemailer
-- Axios
-- node-fetch
+- Axios and node-fetch
 - TMDB API
 - Echoes.mobi killmail API
 
-### Production Infrastructure
+### Production
 
 - Google Cloud Compute Engine
 - Debian 12
-- Nginx reverse proxy
-- PM2 process manager
-- Local PostgreSQL
-- Certbot / Let's Encrypt HTTPS
-- Namecheap DNS
-- GitHub-based deploy flow
+- Nginx
+- PM2
+- local PostgreSQL
+- Cloudflare and Namecheap DNS management
+- Certbot / Let’s Encrypt
+- GitHub-based deployment from `main`
+- automated PostgreSQL backups and monitoring alerts
 
-### Development / Utility Tooling
+### Development Workflow
 
+- GitHub branches and pull requests
+- GitHub Actions CI
 - GitHub Codespaces
-- Termux / Android development testing
+- Termux and Android testing
 - Google Cloud SDK
-- SSH tunnels for safe remote database access
-- Docker for local testing and one-off utility work
+- SSH tunnels for private database access
+- Docker for local and one-off testing
 
 ---
 
-## Project Structure
+## Production Management
 
-The v2 refactor separates the app into clearer layers:
+The application directory on the VM is:
 
 ```text
-src/
-  app.js
-  cache/
-  config/
-  controllers/
-  db/
-  middleware/
-  routes/
-  services/
+/home/codespace/phishtopia
 ```
 
-Compatibility shims remain for some older App Brewery route paths while mature features continue moving into the newer structure.
+Sensitive runtime configuration is stored outside the repository. Never commit `.env` files, credentials, secret values, SQL dumps, session material, or backup files.
 
----
+### Verify production
 
-## Project Goals
+```bash
+sudo -u codespace env PM2_HOME=/home/codespace/.pm2 pm2 status
+curl -fsS https://phishtopia.com/health
+curl -fsS https://phishtopia.com/ready
+sudo systemctl status pm2-codespace --no-pager
+sudo systemctl status certbot.timer --no-pager
+```
 
-Phishtopia is both a portfolio and a learning platform. My goals are to keep improving it as a real production-style application while practicing:
+### Review deployment activity
 
-- Full-stack application architecture
-- Authentication and session handling
-- API integration
-- PostgreSQL schema design
-- Deployment and cloud migration
-- Linux server administration
-- Nginx reverse proxy configuration
-- Process management with PM2
-- DNS and HTTPS configuration
-- User-focused interface design
-- Performance, caching, and logging
-- Clean project organization
+```bash
+tail -80 /home/codespace/phishtopia-deploy.log
+```
 
----
+After a merge to `main`, confirm that the deploy log identifies the expected commit and that both public health endpoints succeed.
 
-## Planned Improvements
+### View recent application logs
 
-- Add automatic local PostgreSQL backups.
-- Add password reset and account management.
-- Continue moving mature projects out of the old App Brewery structure.
-- Add better analytics and usage tracking.
-- Continue improving EchoTrace and YouList with more polished features.
-- Add new practical tools after the v2 foundation remains stable.
-- Review dependency audit warnings separately from feature work.
+```bash
+sudo -u codespace env PM2_HOME=/home/codespace/.pm2 \
+  pm2 logs phishtopia --lines 50
+```
+
+### Manual deployment fallback
+
+Use only when the normal deployment timer has failed or a controlled manual deployment is explicitly intended.
+
+```bash
+cd /home/codespace/phishtopia
+git pull --ff-only origin main
+npm ci --omit=dev
+sudo -u codespace env PM2_HOME=/home/codespace/.pm2 \
+  pm2 restart phishtopia --update-env
+sudo -u codespace env PM2_HOME=/home/codespace/.pm2 pm2 save
+```
+
+A manual deployment still requires public health verification and log review.
 
 ---
 
 ## Local Development
 
-Clone the repository:
-
 ```bash
 git clone https://github.com/PhishyOne/Phishtopia.com.git
 cd Phishtopia.com
-```
-
-Install dependencies:
-
-```bash
 npm install
 ```
 
-Create a local `.env` file in the project root. Do not commit it.
+Create a local `.env` file in the repository root. Do not commit it.
 
-Important environment variables include:
+Common environment variables include:
 
 ```bash
 PORT=3002
@@ -307,19 +290,19 @@ LOG_UNIQUE_STATIC_IPS=false
 LOG_DB_CONFIG=false
 ```
 
-Start the server:
+Start the application:
 
 ```bash
 npm start
 ```
 
-The app runs locally on:
+Run the tests:
 
-```text
-http://localhost:3002
+```bash
+npm test
 ```
 
-Health check:
+Local health endpoint:
 
 ```text
 http://localhost:3002/health
@@ -327,54 +310,40 @@ http://localhost:3002/health
 
 ---
 
-## Codespaces / Termux Database Access
+## Private Database Access
 
-The production database is local-only on the VM. For development tools outside the VM, use an SSH tunnel instead of exposing PostgreSQL to the internet.
-
-Tunnel pattern:
+Production PostgreSQL listens locally on the VM. Development tools should use an SSH tunnel rather than exposing PostgreSQL publicly.
 
 ```text
 Codespace or Termux
   -> 127.0.0.1:5433
   -> SSH tunnel
-  -> GCP VM 127.0.0.1:5432
+  -> VM 127.0.0.1:5432
   -> PostgreSQL
 ```
 
-Extension or local app connection settings:
+Typical client settings:
 
 ```text
 Host: 127.0.0.1
 Port: 5433
 Database: phishtopia
 Username: phishtopia
-SSL: false / disabled
+SSL: disabled for the local tunnel endpoint
 ```
-
-The production app itself does not need this tunnel because it runs on the same VM as PostgreSQL.
 
 ---
 
 ## Docker
 
-Docker is available for local testing and one-off utility work. The production VM currently runs the app directly with Node.js and PM2 rather than running the app container.
-
-Build locally:
+Production runs directly under Node.js and PM2, but Docker remains useful for local testing and isolated utility work.
 
 ```bash
 docker build -t phishtopia .
+docker run --rm --env-file .env -p 8080:8080 phishtopia
 ```
 
-Run locally with an env file:
-
-```bash
-docker run --rm \
-  --env-file .env \
-  -p 8080:8080 \
-  phishtopia
-```
-
-Then visit:
+Then open:
 
 ```text
 http://localhost:8080/health
@@ -382,61 +351,55 @@ http://localhost:8080/health
 
 ---
 
-## Database Notes
+## Near-Term Roadmap
 
-The application supports a full `DATABASE_URL` connection string. Production currently uses local PostgreSQL on the VM. Sessions are stored in PostgreSQL through `connect-pg-simple`, using the shared configured database pool.
+### 1. Finish the bounded SEO follow-up
 
-Current production database basics:
+Most of issue #72 is complete, including distinct page metadata and reviewed share cards. Remaining repository work includes:
 
-```text
-DB_HOST=127.0.0.1
-DB_PORT=5432
-DB_NAME=phishtopia
-DB_USER=phishtopia
-DB_SSL=false
-```
+- add a public `sitemap.xml`
+- add a valid `robots.txt` that references the sitemap
+- add homepage `WebSite` structured data
+- verify the deployed pages with social preview tools
+- complete Google Search Console and Bing Webmaster verification/submission
 
-To inspect the production database from the VM:
+### 2. Build StoreCalc Online
 
-```bash
-sudo -u codespace bash -lc '
-set -a
-source /home/codespace/phishtopia-secrets/db.env
-set +a
+The next feature-development priority is the StoreCalc MVP:
 
-psql "$DATABASE_URL"
-'
-```
+- confirm the original calculator rules and item model
+- isolate calculation logic into testable plain functions
+- design the phone-first order interface
+- add focused validation and calculation tests
+- avoid accounts, persistence, and facility-specific sensitive data until the core calculator is correct
 
-To create a manual backup from the VM:
+### 3. Resume controlled Ops work when practical
 
-```bash
-sudo -u codespace bash -lc '
-set -a
-source /home/codespace/phishtopia-secrets/db.env
-set +a
+Issue #15 tracks the durable controlled operations and job layer. That work remains valuable, but it is larger and riskier than the bounded SEO cleanup or StoreCalc MVP. It should resume only with enough uninterrupted time to inspect existing branch state, preserve partial work, and verify every safety boundary.
 
-mkdir -p /home/codespace/backups
-pg_dump "$DATABASE_URL" \
-  --format=custom \
-  --no-owner \
-  --no-acl \
-  --file="/home/codespace/backups/phishtopia-prod-$(date +%Y%m%d%H%M%S).dump"
-'
-```
+### 4. Deferred reliability and security work
 
-Do not commit database dumps or backup files to GitHub.
+Later phases include:
+
+- structured production logging with request IDs and strict sensitive-data exclusions
+- `/.well-known/security.txt`
+- transactional-email provider evaluation
+- passkeys and federated sign-in with safe account linking
+- personalized resumable dashboard activity after feature data supports it
 
 ---
 
-## Notes
+## Working Rules
 
-This project is actively under development. Some features are experimental, and parts of the codebase still reflect its origin as a learning/coursework project.
-
-The long-term goal is to continue refactoring Phishtopia into a cleaner, scalable, production-style web application while keeping it useful, creative, and fun to build.
+- Use branches and reviewable pull requests; do not push feature work directly to `main`.
+- Preserve rollback paths and known-good production behavior.
+- Keep secrets and private operational data out of GitHub, logs, comments, and assistant output.
+- Prefer focused tests that prove the failure mode being fixed.
+- Treat a passing structural test as insufficient when the result is visual; inspect the actual rendered asset.
+- Verify automatic deployment instead of assuming a merge reached production.
 
 ---
 
 ## Author
 
-Built by PhishyOne as part of an ongoing web development learning journey.
+Built by PhishyOne as an ongoing computer-science, web-development, and production-operations project.
