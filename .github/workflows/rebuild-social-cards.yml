@@ -1,0 +1,69 @@
+name: Rebuild social preview cards
+
+on:
+  push:
+    branches:
+      - fix/social-preview-cards
+    paths:
+      - .github/workflows/rebuild-social-cards.yml
+
+permissions:
+  contents: write
+
+jobs:
+  rebuild:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Check out review branch
+        uses: actions/checkout@v4
+        with:
+          ref: fix/social-preview-cards
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install image dependency
+        run: python -m pip install --disable-pip-version-check "Pillow==12.2.0"
+
+      - name: Generate complete opaque cards
+        run: python scripts/generate-social-cards.py
+
+      - name: Verify generated PNG structure
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          from PIL import Image
+
+          expected = {
+              "archive.png",
+              "contact.png",
+              "echotrace.png",
+              "home.png",
+              "privacy.png",
+              "storecalc.png",
+              "youlist.png",
+          }
+          directory = Path("public/share")
+          for name in expected:
+              path = directory / name
+              with Image.open(path) as image:
+                  assert image.size == (1200, 630), (name, image.size)
+                  assert image.mode == "RGB", (name, image.mode)
+                  assert image.getbbox() == (0, 0, 1200, 630), (name, image.getbbox())
+          PY
+
+      - name: Commit generated files and remove one-shot workflow
+        run: |
+          rm .github/workflows/rebuild-social-cards.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add public/share .github/workflows/rebuild-social-cards.yml
+          git diff --cached --quiet && {
+            echo "Expected generated image changes were not produced." >&2
+            exit 1
+          }
+          git commit -m "Rebuild opaque social preview cards"
+          git push origin HEAD:fix/social-preview-cards
