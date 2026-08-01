@@ -5,12 +5,15 @@ import { COURSE_ARCHIVE } from "../data/courseArchive.js";
 import { methodNotAllowed } from "../middleware/errorResponses.js";
 
 const pageMethodNotAllowed = methodNotAllowed(["GET", "HEAD"]);
+const HOME_DESCRIPTION = "Phishtopia is an independent collection of practical web tools, unusual experiments, and original projects.";
 
 export function buildPagesRouter() {
     const router = express.Router();
 
     router.get("/", (req, res) => {
-        res.render("index", pageLocals("home"));
+        res.render("index", pageLocals("home", {
+            pageDescription: HOME_DESCRIPTION
+        }));
     });
 
     router.get("/archive", (req, res) => {
