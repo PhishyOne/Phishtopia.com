@@ -61,14 +61,14 @@ test("homepage publishes one valid WebSite structured-data object", async () => 
     });
 });
 
-test("homepage visibly reinforces the exact Phishtopia brand and domain", async () => {
+test("homepage keeps the brand, domain, tagline, and description visually distinct", async () => {
     const html = await render("/");
 
-    assert.match(html, /<h1 class="gradient-text">Phishtopia<\/h1>/);
-    assert.match(html, /<p class="hero-domain">phishtopia\.com<\/p>/);
+    assert.match(html, /<h1 class="gradient-text">Phishtopia\.com<\/h1>/);
+    assert.match(html, /<p class="hero-tagline"><strong>Home of the Improbable\.<\/strong><\/p>/);
+    assert.match(html, new RegExp(`<p class="hero-description">${HOME_DESCRIPTION.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}<\\/p>`));
     assert.match(html, new RegExp(`<meta name="description" content="${HOME_DESCRIPTION.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}">`));
-    assert.match(html, new RegExp(HOME_DESCRIPTION.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
-    assert.doesNotMatch(html, /<h1 class="gradient-text">phishtopia\.com<\/h1>/);
+    assert.doesNotMatch(html, /class="hero-domain"/);
 });
 
 test("non-home public pages do not inherit homepage WebSite structured data", async () => {
