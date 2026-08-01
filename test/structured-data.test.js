@@ -1,6 +1,8 @@
 import assert from "node:assert/strict";
 import { after, before, test } from "node:test";
 
+const HOME_DESCRIPTION = "Phishtopia is an independent collection of practical web tools, unusual experiments, and original projects.";
+
 let server;
 let baseUrl;
 
@@ -54,9 +56,19 @@ test("homepage publishes one valid WebSite structured-data object", async () => 
         url: "https://phishtopia.com/",
         name: "Phishtopia",
         alternateName: "Phishtopia.com",
-        description: "Explore practical web tools, unusual experiments, and whatever Phishtopia builds next.",
+        description: HOME_DESCRIPTION,
         inLanguage: "en"
     });
+});
+
+test("homepage visibly reinforces the exact Phishtopia brand and domain", async () => {
+    const html = await render("/");
+
+    assert.match(html, /<h1 class="gradient-text">Phishtopia<\/h1>/);
+    assert.match(html, /<p class="hero-domain">phishtopia\.com<\/p>/);
+    assert.match(html, new RegExp(`<meta name="description" content="${HOME_DESCRIPTION.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}">`));
+    assert.match(html, new RegExp(HOME_DESCRIPTION.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
+    assert.doesNotMatch(html, /<h1 class="gradient-text">phishtopia\.com<\/h1>/);
 });
 
 test("non-home public pages do not inherit homepage WebSite structured data", async () => {
