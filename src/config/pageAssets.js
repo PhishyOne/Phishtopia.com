@@ -28,6 +28,12 @@ export const PAGE_DEFINITIONS = Object.freeze({
         styles: ["/styles/archive.css"],
         scripts: ["/js/canvas.js"]
     }),
+    spencer: definePage({
+        title: "For Spencer | Phishtopia",
+        bodyClass: "spencer-page",
+        styles: ["/styles/spencer.css"],
+        scripts: ["/js/canvas.js"]
+    }),
     error: definePage({
         title: "Error | Phishtopia",
         bodyClass: "error-page",

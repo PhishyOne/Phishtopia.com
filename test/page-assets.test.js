@@ -33,6 +33,12 @@ const EXPECTED_PAGES = {
         styles: ["/styles/archive.css"],
         scripts: ["/js/canvas.js"]
     },
+    spencer: {
+        title: "For Spencer | Phishtopia",
+        bodyClass: "spencer-page",
+        styles: ["/styles/spencer.css"],
+        scripts: ["/js/canvas.js"]
+    },
     error: {
         title: "Error | Phishtopia",
         bodyClass: "error-page",
@@ -146,6 +152,7 @@ test("active templates do not override page metadata or asset declarations", asy
         "views/archive.ejs",
         "views/contact.ejs",
         "views/privacy.ejs",
+        "views/spencer.ejs",
         "views/login.ejs",
         "views/register.ejs",
         "views/resend-verification.ejs",
@@ -230,6 +237,10 @@ test("public routes render the titles, body classes, and assets from page defini
     assert.match(privacyHtml, /<link rel="canonical" href="https:\/\/phishtopia\.com\/privacy">/);
     assert.match(privacyHtml, /<meta name="description" content="Learn what Phishtopia collects/);
     assert.match(privacyHtml, /<meta property="og:title" content="Privacy at Phishtopia">/);
+    const spencerHtml = await assertRenderedPage("/spencer", "spencer");
+    assert.match(spencerHtml, /Hey, Spencer\./);
+    assert.match(spencerHtml, /This one is for you\./);
+    assert.match(spencerHtml, /<meta name="robots" content="noindex, nofollow">/);
     const deletedHtml = await assertRenderedPage("/account/deleted", "accountDeleted");
     assert.match(deletedHtml, /Your Phishtopia account has been deleted/);
     assert.match(deletedHtml, /<meta name="robots" content="noindex, nofollow">/);
