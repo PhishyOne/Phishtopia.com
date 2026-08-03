@@ -1,0 +1,146 @@
+{
+  "formatVersion": 1,
+  "migrationKey": "0001_schema_foundation",
+  "contractRequirements": [
+    "SC-FND-006",
+    "SC-DAT-001",
+    "SC-DAT-003",
+    "SC-DB-001",
+    "SC-OPS-001",
+    "SC-OPS-003",
+    "SC-OPS-004",
+    "SC-DEF-002"
+  ],
+  "advisoryLockKey": "7356507374803211041",
+  "timeouts": {
+    "lock": "3s",
+    "statement": "30s"
+  },
+  "files": [
+    {
+      "path": "migrations/storecalc/0001_schema_foundation/README.md",
+      "purpose": "scope, lock, rollback, and production-boundary contract",
+      "sha256": "959cfd76e839400b548cb7da542596c9a757e87ffb893a8c62e7722fe3e8253a"
+    },
+    {
+      "path": "migrations/storecalc/0001_schema_foundation/down.sql",
+      "purpose": "fail-closed empty-foundation rollback",
+      "sha256": "ceac3c1aa7b5bde9fe80dd2bb2e4c35347e14f08c851d76d723b977c7b39c238"
+    },
+    {
+      "path": "migrations/storecalc/0001_schema_foundation/up.sql",
+      "purpose": "forward migration",
+      "sha256": "7b840abef60e65a4d5a2d28fb89931395833a146d6f235b2de615cbb9266d509"
+    },
+    {
+      "path": "migrations/storecalc/0001_schema_foundation/verify.sql",
+      "purpose": "exact object, owner, grant, and state verification",
+      "sha256": "0e43344c773d186e56cf3ce89ac8c7db8ec96e44fe3338def52fa18a905fcc6e"
+    }
+  ],
+  "bundleSha256": "5ad9d014fe5b4dae557ae9bb8ddb5c637eb110bc2922a3f14e9413cfdc6ceaa0",
+  "expectedDefinitions": {
+    "schema": "storecalc",
+    "ownerClass": "migration_owner",
+    "relations": [
+      "schema_capabilities:r",
+      "schema_capabilities_capability_key_key:i",
+      "schema_capabilities_id_seq:S",
+      "schema_capabilities_pkey:i"
+    ],
+    "constraints": [
+      "schema_capabilities_available_verified_check:c:CHECK (((NOT is_available) OR (verified_at IS NOT NULL)))",
+      "schema_capabilities_capability_key_format_check:c:CHECK ((((char_length(capability_key) >= 1) AND (char_length(capability_key) <= 64)) AND (octet_length(capability_key) <= 64) AND (capability_key ~ '^[a-z][a-z0-9]*(\\.[a-z][a-z0-9_]*)*$'::text)))",
+      "schema_capabilities_capability_key_key:u:UNIQUE (capability_key)",
+      "schema_capabilities_migration_key_format_check:c:CHECK ((((char_length(migration_key) >= 6) AND (char_length(migration_key) <= 64)) AND (octet_length(migration_key) <= 64) AND (migration_key ~ '^[0-9]{4}_[a-z][a-z0-9_]*$'::text)))",
+      "schema_capabilities_pkey:p:PRIMARY KEY (id)",
+      "schema_capabilities_schema_version_check:c:CHECK ((schema_version >= 0))"
+    ],
+    "indexes": [
+      "schema_capabilities_capability_key_key:CREATE UNIQUE INDEX schema_capabilities_capability_key_key ON storecalc.schema_capabilities USING btree (capability_key)",
+      "schema_capabilities_pkey:CREATE UNIQUE INDEX schema_capabilities_pkey ON storecalc.schema_capabilities USING btree (id)"
+    ],
+    "columns": [
+      "id:integer:NO:BY DEFAULT:",
+      "capability_key:text:NO::",
+      "schema_version:integer:NO::",
+      "is_available:boolean:NO::false",
+      "verified_at:timestamp with time zone:YES::",
+      "migration_key:text:NO::",
+      "updated_at:timestamp with time zone:NO::transaction_timestamp()"
+    ],
+    "sequence": {
+      "name": "storecalc.schema_capabilities_id_seq",
+      "start": 1,
+      "increment": 1,
+      "minimum": 1,
+      "maximum": 2147483647,
+      "cache": 1,
+      "cycle": false,
+      "lastValue": 8,
+      "isCalled": true
+    },
+    "runtimeGrants": {
+      "web": [
+        "SCHEMA USAGE",
+        "TABLE SELECT"
+      ],
+      "worker": [
+        "SCHEMA USAGE",
+        "TABLE SELECT"
+      ],
+      "backup": [
+        "SCHEMA USAGE",
+        "TABLE SELECT",
+        "SEQUENCE SELECT"
+      ],
+      "public": []
+    },
+    "capabilities": {
+      "schema.foundation": {
+        "id": 1,
+        "schemaVersion": 1,
+        "available": true
+      },
+      "public.directory": {
+        "id": 2,
+        "schemaVersion": 0,
+        "available": false
+      },
+      "anonymous.calculation": {
+        "id": 3,
+        "schemaVersion": 0,
+        "available": false
+      },
+      "saved.orders": {
+        "id": 4,
+        "schemaVersion": 0,
+        "available": false
+      },
+      "public.contribution": {
+        "id": 5,
+        "schemaVersion": 0,
+        "available": false
+      },
+      "evidence.upload": {
+        "id": 6,
+        "schemaVersion": 0,
+        "available": false
+      },
+      "owner.support": {
+        "id": 7,
+        "schemaVersion": 0,
+        "available": false
+      },
+      "scoped.profiles": {
+        "id": 8,
+        "schemaVersion": 0,
+        "available": false
+      }
+    }
+  },
+  "productionExecution": {
+    "allowed": false,
+    "reason": "SC-OPS-002 rehearsal and an independently reviewed SC-OPS-004 execution path are still required."
+  }
+}
