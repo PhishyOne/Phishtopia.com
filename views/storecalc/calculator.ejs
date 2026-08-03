@@ -1,0 +1,191 @@
+<section
+    class="storecalc-calculator"
+    aria-labelledby="storecalc-calculator-title"
+    data-storecalc-calculator
+    data-view-schema-version="<%= calculator.viewSchemaVersion %>"
+    data-calculation-endpoint="<%= calculator.endpoint %>"
+    data-request-schema-version="<%= calculator.requestSchemaVersion %>"
+    data-response-schema-version="<%= calculator.responseSchemaVersion %>"
+    data-facility-selection-key="<%= calculator.facilitySelectionKey %>"
+    data-template-selection-key="<%= calculator.templateSelectionKey %>"
+    data-audience-key="<%= calculator.audienceKey %>"
+    data-configuration-hash="<%= calculator.configurationHash %>"
+    data-context-date="<%= calculator.contextDate %>"
+    data-currency-code="<%= calculator.currencyCode %>"
+    data-currency-exponent="<%= calculator.currencyExponent %>"
+    data-maximum-funds-minor="<%= calculator.maximumFundsMinor %>"
+>
+    <header class="storecalc-calculator-header">
+        <div>
+            <p class="storecalc-kicker">Step 3 · Private calculator</p>
+            <h4 id="storecalc-calculator-title"><%= calculator.templateName %></h4>
+            <p>
+                <%= calculator.facilityName %> · <%= calculator.audienceLabel %> ·
+                context date <time datetime="<%= calculator.contextDate %>"><%= calculator.contextDate %></time>
+            </p>
+        </div>
+        <span class="storecalc-status-badge" data-status="calculator-ready">
+            Reviewed calculation
+        </span>
+    </header>
+
+    <div class="storecalc-catalog-notice">
+        <strong>Catalog boundary</strong>
+        <p><%= calculator.catalogNotice %></p>
+        <p>
+            Source checked <time datetime="<%= calculator.source.checkedOn %>"><%= calculator.source.checkedOn %></time>:
+            <a href="<%= calculator.source.url %>" rel="external noopener noreferrer"><%= calculator.source.title %></a>.
+        </p>
+    </div>
+
+    <form class="storecalc-order-form" data-storecalc-order-form novalidate>
+        <div class="storecalc-funds-field">
+            <label for="storecalc-available-funds">
+                Available funds <span>(optional)</span>
+            </label>
+            <div class="storecalc-money-input">
+                <span aria-hidden="true"><%= calculator.currencyCode %></span>
+                <input
+                    id="storecalc-available-funds"
+                    type="text"
+                    inputmode="decimal"
+                    autocomplete="off"
+                    maxlength="24"
+                    placeholder="0.<%= "0".repeat(calculator.currencyExponent) %>"
+                    aria-describedby="storecalc-funds-help"
+                    data-storecalc-funds
+                >
+            </div>
+            <p id="storecalc-funds-help" class="storecalc-field-note">
+                Used only for this calculation response. It is not saved or sent with cookies.
+            </p>
+        </div>
+
+        <fieldset class="storecalc-items-fieldset">
+            <legend>Choose quantities</legend>
+            <p class="storecalc-field-note">
+                Zero means not selected. Item limits and tax treatment come from the sealed catalog.
+            </p>
+
+            <div class="storecalc-item-list" data-storecalc-item-list>
+                <% calculator.items.forEach(item => { %>
+                    <article
+                        class="storecalc-item-row"
+                        data-storecalc-item
+                        data-item-key="<%= item.itemKey %>"
+                        data-item-name="<%= item.displayName %>"
+                        data-minimum-quantity="<%= item.minimumSelectedQuantity %>"
+                        data-maximum-quantity="<%= item.maximumOrderQuantity %>"
+                        data-quantity-step="<%= item.quantityStep %>"
+                        data-selectable="<%= item.selectable ? "true" : "false" %>"
+                    >
+                        <div class="storecalc-item-copy">
+                            <h5><%= item.displayName %></h5>
+                            <p>
+                                <strong><%= item.priceLabel %></strong>
+                                <span><%= item.taxLabel %></span>
+                            </p>
+                            <p id="storecalc-item-help-<%= item.itemKey %>">
+                                <%= item.availabilityLabel %> · Maximum <%= item.maximumOrderQuantity %>
+                            </p>
+                        </div>
+
+                        <div class="storecalc-quantity-control">
+                            <button
+                                type="button"
+                                aria-label="Decrease <%= item.displayName %> quantity"
+                                data-storecalc-decrement
+                                <%= item.selectable ? "" : "disabled" %>
+                            >−</button>
+                            <label class="storecalc-sr-only" for="storecalc-quantity-<%= item.itemKey %>">
+                                <%= item.displayName %> quantity
+                            </label>
+                            <input
+                                id="storecalc-quantity-<%= item.itemKey %>"
+                                type="text"
+                                inputmode="numeric"
+                                pattern="[0-9]*"
+                                maxlength="7"
+                                value="0"
+                                aria-describedby="storecalc-item-help-<%= item.itemKey %>"
+                                data-storecalc-quantity
+                                <%= item.selectable ? "" : "disabled" %>
+                            >
+                            <button
+                                type="button"
+                                aria-label="Increase <%= item.displayName %> quantity"
+                                data-storecalc-increment
+                                <%= item.selectable ? "" : "disabled" %>
+                            >+</button>
+                        </div>
+
+                        <p class="storecalc-line-result">
+                            Line total
+                            <output
+                                for="storecalc-quantity-<%= item.itemKey %>"
+                                data-storecalc-line-total
+                            >—</output>
+                        </p>
+                    </article>
+                <% }); %>
+            </div>
+        </fieldset>
+
+        <div
+            class="storecalc-calculator-error"
+            role="alert"
+            tabindex="-1"
+            data-storecalc-error
+            hidden
+        ></div>
+
+        <div class="storecalc-calculator-actions">
+            <button type="submit" class="storecalc-calculate-button" data-storecalc-calculate>
+                Calculate order
+            </button>
+            <button type="button" class="storecalc-clear-button" data-storecalc-clear>
+                Clear quantities
+            </button>
+        </div>
+
+        <p class="storecalc-calculator-status" role="status" aria-live="polite" aria-atomic="true" data-storecalc-status></p>
+    </form>
+
+    <section class="storecalc-results" aria-labelledby="storecalc-results-title" data-storecalc-results hidden>
+        <header>
+            <p class="storecalc-kicker">Server-calculated result</p>
+            <h5 id="storecalc-results-title">Order summary</h5>
+        </header>
+        <dl class="storecalc-result-totals">
+            <div>
+                <dt>Item subtotal</dt>
+                <dd><output data-storecalc-subtotal>—</output></dd>
+            </div>
+            <div>
+                <dt>Tax</dt>
+                <dd><output data-storecalc-tax>—</output></dd>
+            </div>
+            <div class="storecalc-result-primary">
+                <dt>Final total</dt>
+                <dd><output data-storecalc-final-total>—</output></dd>
+            </div>
+            <div>
+                <dt>Funds remaining</dt>
+                <dd><output data-storecalc-remaining>Not provided</output></dd>
+            </div>
+        </dl>
+        <div class="storecalc-result-messages" data-storecalc-result-messages hidden>
+            <h6>Review before relying on this result</h6>
+            <ul data-storecalc-message-list></ul>
+        </div>
+        <p class="storecalc-result-scope">
+            Totals include supported items and tax only. Facility fees remain unsupported unless a later reviewed capability says otherwise.
+        </p>
+    </section>
+
+    <noscript>
+        <div class="storecalc-noscript-note">
+            JavaScript is required to send quantities to the private, stateless calculation endpoint.
+        </div>
+    </noscript>
+</section>

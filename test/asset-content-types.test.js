@@ -29,6 +29,7 @@ const EXPECTED_ASSETS = new Map([
     ["/js/echotrace.js", /javascript/],
     ["/js/error-scenes.js", /javascript/],
     ["/js/register.js", /javascript/],
+    ["/js/storecalc-calculator.js", /javascript/],
     ["/js/storecalc.js", /javascript/],
     ["/js/youlist.js", /javascript/],
     ["/images/discord.svg", /^image\/svg\+xml\b/],
