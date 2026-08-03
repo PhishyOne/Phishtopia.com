@@ -50,6 +50,16 @@ jobs:
             "https://github.com/$GITHUB_REPOSITORY/archive/$GITHUB_SHA.tar.gz" \
             --output /tmp/phishtopia-source.tar.gz
           tar -xzf /tmp/phishtopia-source.tar.gz -C /tmp/phishtopia-source --strip-components=1
+      - name: Upload exact worker source for bounded patching
+        uses: actions/upload-artifact@v4
+        with:
+          name: ops-worker-source
+          path: |
+            /tmp/phishtopia-source/ops/phishtopia-ops-mcp/worker/platform.py
+            /tmp/phishtopia-source/ops/phishtopia-ops-mcp/worker/test/test_action_workflows.py
+            /tmp/phishtopia-source/ops/phishtopia-ops-mcp/worker/test/test_platform_security.py
+          if-no-files-found: error
+          retention-days: 1
       - name: Verify production release archive digest
         run: |
           curl --fail --location --silent --show-error \
