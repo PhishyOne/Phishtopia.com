@@ -92,7 +92,7 @@ export const PAGE_DEFINITIONS = Object.freeze({
         title: "StoreCalc Online",
         bodyClass: "storecalc",
         styles: ["/styles/storecalc.css"],
-        scripts: ["/js/storecalc.js"]
+        scripts: ["/js/storecalc.js", "/js/storecalc-calculator.js"]
     })
 });
 

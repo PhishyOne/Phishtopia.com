@@ -12,6 +12,7 @@ export function showStoreCalcPage(req, res) {
                 "Preview StoreCalc's private, phone-first facility and commissary-template workflow. Calculation remains unavailable until a reviewed catalog is ready.",
             currentUrl: "/storecalc",
             disableAnalytics: true,
+            publicCalculator: null,
             publicSelectionFacilities: listPublicSelectionFacilities(),
             publicSelectionSchemaVersion: PUBLIC_SELECTION_SCHEMA_VERSION
         })

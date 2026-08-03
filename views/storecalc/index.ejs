@@ -147,6 +147,10 @@
                             <p class="storecalc-field-note">Calculation stays locked instead of guessing.</p>
                         </div>
                     </section>
+
+                    <% if (publicCalculator && publicCalculator.facilitySelectionKey === facility.selectionKey) { %>
+                        <%- include("calculator", { calculator: publicCalculator }) %>
+                    <% } %>
                 </article>
             <% }); %>
 
