@@ -696,7 +696,11 @@ BEGIN
     UPDATE storecalc.schema_capabilities
     SET schema_version = 0,
         migration_key = '0001_schema_foundation',
-        updated_at = transaction_timestamp()
+        updated_at = (
+            SELECT verified_at
+            FROM storecalc.schema_capabilities
+            WHERE capability_key = 'schema.foundation'
+        )
     WHERE capability_key = 'anonymous.calculation'
       AND schema_version = 1
       AND NOT is_available
@@ -779,7 +783,17 @@ BEGIN
         '6:evidence.upload:0:f:0001_schema_foundation',
         '7:owner.support:0:f:0001_schema_foundation',
         '8:scoped.profiles:0:f:0001_schema_foundation'
-    ]::text[] THEN
+    ]::text[]
+       OR NOT EXISTS (
+           SELECT 1
+           FROM storecalc.schema_capabilities
+           WHERE capability_key = 'anonymous.calculation'
+             AND updated_at IS NOT DISTINCT FROM (
+                 SELECT verified_at
+                 FROM storecalc.schema_capabilities
+                 WHERE capability_key = 'schema.foundation'
+             )
+       ) THEN
         RAISE EXCEPTION 'storecalc_template_rollback_capability_mismatch';
     END IF;
 END

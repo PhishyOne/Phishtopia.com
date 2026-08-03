@@ -198,7 +198,8 @@ async function programShape(client) {
         ORDER BY trigger_row.tgname
     `);
     const capabilityResult = await client.query(`
-        SELECT capability_key, schema_version, is_available, verified_at, migration_key
+        SELECT capability_key, schema_version, is_available, verified_at,
+               migration_key, updated_at
         FROM storecalc.schema_capabilities
         ORDER BY capability_key
     `);

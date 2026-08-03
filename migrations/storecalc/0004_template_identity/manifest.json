@@ -33,7 +33,7 @@
     {
       "path": "migrations/storecalc/0004_template_identity/down.sql",
       "purpose": "fail-closed empty-identity rollback to the program baseline",
-      "sha256": "3c2e368c6d54fc6313b736a5c13267c2866d81d03dba73b70878b08a9bcccc36"
+      "sha256": "4a2b2dc9f0214c1193f49f9fbe227c2a1f30f64e3c254a3bc08535701719df7d"
     },
     {
       "path": "migrations/storecalc/0004_template_identity/up.sql",
@@ -46,7 +46,7 @@
       "sha256": "134eb53459e1d401bebda1ec6e8bf4d21d2201d6ffd199bbc146bc8564f9d5cc"
     }
   ],
-  "bundleSha256": "fbb1070d2f6853993be9d4fd2e8637012f641e8ac4e50768c4556dd55a481620",
+  "bundleSha256": "e4803e97b1ab2baac89f70fcc456e864e31b78fc82fc2ddd15492b047e6fab30",
   "expectedDefinitions": {
     "schema": "storecalc",
     "ownerClass": "migration_owner",
