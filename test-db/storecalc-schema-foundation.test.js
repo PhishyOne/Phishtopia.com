@@ -507,13 +507,29 @@ test(
                 async () => {
                     await client.query(`
                         INSERT INTO storecalc.schema_capabilities (
+                            id,
                             capability_key,
                             schema_version,
                             migration_key
                         )
-                        VALUES ('test.rollback_guard', 0, '0001_schema_foundation')
+                        VALUES (
+                            9,
+                            'test.rollback_guard',
+                            0,
+                            '0001_schema_foundation'
+                        )
                     `);
                 }
+            );
+            assert.deepEqual(
+                (
+                    await client.query(`
+                        SELECT last_value::text, is_called
+                        FROM storecalc.schema_capabilities_id_seq
+                    `)
+                ).rows,
+                [{ last_value: "8", is_called: true }],
+                "the row-state mutation must not also mutate the sequence"
             );
             await expectRejected(
                 runMigrationSql(client, downSql),
