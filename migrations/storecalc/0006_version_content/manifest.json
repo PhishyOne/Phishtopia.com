@@ -1,0 +1,134 @@
+{
+  "formatVersion": 1,
+  "migrationKey": "0006_version_content",
+  "baseMigrationKey": "0005_template_versions",
+  "contractRequirements": [
+    "SC-DAT-001",
+    "SC-DAT-002",
+    "SC-DAT-003",
+    "SC-DAT-004",
+    "SC-DAT-005",
+    "SC-DAT-006",
+    "SC-DAT-007",
+    "SC-DB-001",
+    "SC-DB-002",
+    "SC-DB-003",
+    "SC-DB-004",
+    "SC-CAT-004",
+    "SC-CAL-001",
+    "SC-CAL-004",
+    "SC-SEC-001",
+    "SC-STM-001",
+    "SC-STM-002",
+    "SC-STM-003",
+    "SC-OPS-001",
+    "SC-OPS-002",
+    "SC-OPS-003",
+    "SC-OPS-004",
+    "SC-DEF-002"
+  ],
+  "advisoryLockKey": "7356507374803211041",
+  "timeouts": {
+    "lock": "3s",
+    "statement": "30s"
+  },
+  "files": [
+    {
+      "path": "migrations/storecalc/0006_version_content/README.md",
+      "purpose": "scope, lineage, mutation, rollback, deferral, and production boundary",
+      "sha256": "07ba70c38d07403a14389ff84fe88de749605539241babc4fbbf132457ac8e01"
+    },
+    {
+      "path": "migrations/storecalc/0006_version_content/down.sql",
+      "purpose": "fail-closed never-used rollback to the version-header baseline",
+      "sha256": "7b4b84618f4360e129735619530b395325b4b01cfa5cb9b6e11469c4f86a79d7"
+    },
+    {
+      "path": "migrations/storecalc/0006_version_content/up.sql",
+      "purpose": "forward version category and item content migration",
+      "sha256": "59a4dee48847219d3ab85e2e3564fe36c3b078d8cd4889ee51691b7125513a04"
+    },
+    {
+      "path": "migrations/storecalc/0006_version_content/verify.sql",
+      "purpose": "exact inherited and version-content verification",
+      "sha256": "a6a880848a466752616ff806dceca3f8199a864ee6533d23cfe0627e7d6d8e95"
+    }
+  ],
+  "bundleSha256": "0b7f76a36a7539aee3372e71fd7a659c677fc85262efe5e43e3d95999fecb6be",
+  "expectedDefinitions": {
+    "schema": "storecalc",
+    "ownerClass": "migration_owner",
+    "tables": [
+      "version_categories",
+      "version_items"
+    ],
+    "identitySequences": [
+      "version_categories_id_seq",
+      "version_items_id_seq"
+    ],
+    "functions": {
+      "assert_version_content_mutable()": "a51e17e52e4398b1a16092290e5fda94"
+    },
+    "triggers": [
+      "version_categories_version_topology_lock_trigger",
+      "version_categories_content_mutability_trigger",
+      "version_items_version_topology_lock_trigger",
+      "version_items_content_mutability_trigger"
+    ],
+    "vocabulary": {
+      "priceStates": [
+        "known",
+        "unknown",
+        "unsupported"
+      ],
+      "availabilityStates": [
+        "available",
+        "unavailable",
+        "unknown"
+      ],
+      "moneyMinimumMinor": "0",
+      "moneyMaximumMinor": "9223372036854775807",
+      "quantityMinimum": "1",
+      "quantityMaximum": "1000000",
+      "sortOrderMinimum": 0,
+      "sortOrderMaximum": 1000000
+    },
+    "runtimeGrants": {
+      "web": [
+        "SCHEMA USAGE",
+        "schema_capabilities SELECT"
+      ],
+      "worker": [
+        "SCHEMA USAGE",
+        "schema_capabilities SELECT"
+      ],
+      "backup": [
+        "SCHEMA USAGE",
+        "NEW TABLES SELECT",
+        "NEW SEQUENCES SELECT"
+      ],
+      "public": []
+    },
+    "capability": {
+      "key": "anonymous.calculation",
+      "schemaVersion": 3,
+      "available": false,
+      "verified": false
+    }
+  },
+  "deferred": [
+    "spending buckets and item memberships",
+    "tax treatments and rounding",
+    "typed constraints and contributions",
+    "warnings and source evidence",
+    "canonical content serialization and sealing service",
+    "forks, publications, applicability, profiles, and orders",
+    "catalog seed data and Hays-specific claims",
+    "runtime catalog grants and routes",
+    "production migration execution"
+  ],
+  "productionExecution": {
+    "allowed": false,
+    "reason": "SC-OPS-002 rehearsal and an independently reviewed SC-OPS-004 execution path are still required."
+  }
+}
