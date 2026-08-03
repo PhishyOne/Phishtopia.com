@@ -1,0 +1,114 @@
+{
+  "formatVersion": 1,
+  "migrationKey": "0001_schema_foundation",
+  "contractRequirements": [
+    "SC-FND-006",
+    "SC-DAT-001",
+    "SC-DAT-003",
+    "SC-DB-001",
+    "SC-OPS-001",
+    "SC-OPS-003",
+    "SC-OPS-004",
+    "SC-DEF-002"
+  ],
+  "advisoryLockKey": "7356507374803211041",
+  "timeouts": {
+    "lock": "3s",
+    "statement": "30s"
+  },
+  "files": [
+    {
+      "path": "migrations/storecalc/0001_schema_foundation/README.md",
+      "purpose": "scope, lock, rollback, and production-boundary contract",
+      "sha256": "3e4d88bb35ec08fa2cea3ddad5360815727e205f629bfb3574b8017fc2baebd3"
+    },
+    {
+      "path": "migrations/storecalc/0001_schema_foundation/down.sql",
+      "purpose": "fail-closed empty-foundation rollback",
+      "sha256": "b3a75cb8df242774d22e5aa8b066fec40a9252cc56eb21e6d3d87a513235407f"
+    },
+    {
+      "path": "migrations/storecalc/0001_schema_foundation/up.sql",
+      "purpose": "forward migration",
+      "sha256": "1710fbe9facba191940443d47a0835514ba03dc8af201585211850eba5385103"
+    },
+    {
+      "path": "migrations/storecalc/0001_schema_foundation/verify.sql",
+      "purpose": "exact object, owner, grant, and state verification",
+      "sha256": "c0ed1062115410eee4ba3c1ab9ea482826d71de2d980fd46288b5495cbb05b7e"
+    }
+  ],
+  "bundleSha256": "f58eff1539405a08d6027146a9cfce958633271c5a146f5ad6c4989a316e2be6",
+  "expectedDefinitions": {
+    "schema": "storecalc",
+    "ownerClass": "migration_owner",
+    "relations": [
+      "schema_capabilities:r",
+      "schema_capabilities_capability_key_key:i",
+      "schema_capabilities_id_seq:S",
+      "schema_capabilities_pkey:i"
+    ],
+    "constraints": [
+      "schema_capabilities_available_verified_check:c",
+      "schema_capabilities_capability_key_format_check:c",
+      "schema_capabilities_capability_key_key:u",
+      "schema_capabilities_migration_key_format_check:c",
+      "schema_capabilities_pkey:p",
+      "schema_capabilities_schema_version_check:c"
+    ],
+    "runtimeGrants": {
+      "web": [
+        "SCHEMA USAGE",
+        "TABLE SELECT"
+      ],
+      "worker": [
+        "SCHEMA USAGE",
+        "TABLE SELECT"
+      ],
+      "backup": [
+        "SCHEMA USAGE",
+        "TABLE SELECT",
+        "SEQUENCE SELECT"
+      ],
+      "public": []
+    },
+    "capabilities": {
+      "schema.foundation": {
+        "schemaVersion": 1,
+        "available": true
+      },
+      "public.directory": {
+        "schemaVersion": 0,
+        "available": false
+      },
+      "anonymous.calculation": {
+        "schemaVersion": 0,
+        "available": false
+      },
+      "saved.orders": {
+        "schemaVersion": 0,
+        "available": false
+      },
+      "public.contribution": {
+        "schemaVersion": 0,
+        "available": false
+      },
+      "evidence.upload": {
+        "schemaVersion": 0,
+        "available": false
+      },
+      "owner.support": {
+        "schemaVersion": 0,
+        "available": false
+      },
+      "scoped.profiles": {
+        "schemaVersion": 0,
+        "available": false
+      }
+    }
+  },
+  "productionExecution": {
+    "allowed": false,
+    "reason": "SC-OPS-002 rehearsal and an independently reviewed SC-OPS-004 execution path are still required."
+  }
+}
