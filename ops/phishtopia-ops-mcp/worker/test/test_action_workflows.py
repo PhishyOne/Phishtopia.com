@@ -500,8 +500,11 @@ class ActionWorkflowFakeTests(unittest.TestCase):
             ops_releases = root / "ops-releases"
             app_releases.mkdir()
             ops_releases.mkdir()
+            baseline_commit = "c" * 40
+            baseline_release = app_releases / baseline_commit
+            baseline_release.mkdir()
             current_app = root / "current-app"
-            current_app.symlink_to(app_releases)
+            current_app.symlink_to(baseline_release)
             fake = ReleaseFake(archive)
             with (
                 mock.patch.object(platform_module, "APP_RELEASES", app_releases),
@@ -536,6 +539,9 @@ class ActionWorkflowFakeTests(unittest.TestCase):
                 fake._deploy_app(
                     app_action,
                     {
+                        "current": str(baseline_release.resolve()),
+                        "commit": baseline_commit,
+                        "legacy": False,
                         "destination_preexisting": False,
                         "release_destination": str(app_releases / COMMIT),
                         "production_invariants": {},
@@ -570,6 +576,219 @@ class ActionWorkflowFakeTests(unittest.TestCase):
                     platform_module.OPS_WORKER_CURRENT,
                 ],
             )
+
+    def test_legacy_app_capture_succeeds_without_git_metadata(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            app_releases = root / "app-releases"
+            app_releases.mkdir()
+            current_app = root / "current-app"
+            current_app.mkdir()
+            (current_app / "index.js").write_text("legacy source\n")
+            (current_app / ".env").write_text("SESSION_SECRET=not-a-real-secret\n")
+            fake = ReleaseFake(root / "archive")
+            action = {
+                "type": "deploy_verified_release",
+                "commit": COMMIT,
+                "artifactSha256": DIGEST,
+            }
+
+            with (
+                mock.patch.object(platform_module, "APP_RELEASES", app_releases),
+                mock.patch.object(platform_module, "APP_CURRENT", current_app),
+                mock.patch.object(fake, "_production_invariants", return_value={}),
+                mock.patch.object(
+                    platform_module.subprocess,
+                    "run",
+                    side_effect=AssertionError("legacy capture must not require Git"),
+                ),
+            ):
+                baseline = fake.capture(action, JOB_ID)
+
+            self.assertTrue(baseline["legacy"])
+            self.assertRegex(baseline["commit"], r"^[0-9a-f]{40}$")
+            self.assertEqual(
+                baseline["current"], str(app_releases / baseline["commit"])
+            )
+            self.assertEqual(
+                baseline["release_destination"], str(app_releases / COMMIT)
+            )
+            self.assertFalse(baseline["destination_preexisting"])
+
+    def test_legacy_app_release_id_excludes_env_contents(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            app_releases = root / "app-releases"
+            app_releases.mkdir()
+            current_app = root / "current-app"
+            current_app.mkdir()
+            (current_app / "package.json").write_text('{"name":"legacy"}\n')
+            env_file = current_app / ".env"
+            env_file.write_text("SESSION_SECRET=first-synthetic-value\n")
+
+            with (
+                mock.patch.object(platform_module, "APP_RELEASES", app_releases),
+                mock.patch.object(platform_module, "APP_CURRENT", current_app),
+            ):
+                first = RealPlatform._legacy_app_release_id(current_app)
+                env_file.write_text("SESSION_SECRET=second-synthetic-value\n")
+                second = RealPlatform._legacy_app_release_id(current_app)
+
+            self.assertRegex(first, r"^[0-9a-f]{40}$")
+            self.assertEqual(first, second)
+
+    def test_legacy_app_deploy_and_rollback_preserve_exact_baseline(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            archive = root / "archive"
+            archive.mkdir()
+            (archive / "package.json").write_text('{"name":"candidate"}\n')
+            app_releases = root / "app-releases"
+            app_releases.mkdir()
+            current_app = root / "current-app"
+            current_app.mkdir()
+            original_source = b"legacy application bytes\n"
+            original_env = b"SESSION_SECRET=synthetic-rollback-value\n"
+            (current_app / "index.js").write_bytes(original_source)
+            (current_app / ".env").write_bytes(original_env)
+            fake = ReleaseFake(archive)
+
+            with (
+                mock.patch.object(platform_module, "APP_RELEASES", app_releases),
+                mock.patch.object(platform_module, "APP_CURRENT", current_app),
+            ):
+                legacy_release_id = RealPlatform._legacy_app_release_id(current_app)
+                baseline = {
+                    "current": str(app_releases / legacy_release_id),
+                    "commit": legacy_release_id,
+                    "legacy": True,
+                    "destination_preexisting": False,
+                    "release_destination": str(app_releases / COMMIT),
+                    "release_manifest": {
+                        "phishtopia_app": {},
+                        "phishtopia_ops": {},
+                    },
+                    "production_invariants": {},
+                }
+                action = {
+                    "type": "deploy_verified_release",
+                    "commit": COMMIT,
+                    "artifactSha256": DIGEST,
+                }
+
+                fake._deploy_app(action, baseline, check, progress)
+                legacy_release = app_releases / legacy_release_id
+                self.assertFalse(current_app.exists())
+                self.assertEqual(
+                    (legacy_release / "index.js").read_bytes(), original_source
+                )
+                self.assertEqual((legacy_release / ".env").read_bytes(), original_env)
+                self.assertTrue((app_releases / COMMIT).is_dir())
+                self.assertIn(legacy_release_id, fake.manifest["phishtopia_app"])
+
+                fake.rollback(action, baseline)
+                self.assertTrue(current_app.is_dir())
+                self.assertFalse(current_app.is_symlink())
+                self.assertEqual(
+                    (current_app / "index.js").read_bytes(), original_source
+                )
+                self.assertEqual((current_app / ".env").read_bytes(), original_env)
+                self.assertFalse(legacy_release.exists())
+                self.assertFalse((app_releases / COMMIT).exists())
+                self.assertEqual(fake.manifest, baseline["release_manifest"])
+
+    def test_legacy_app_change_after_capture_fails_before_mutation(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            archive = root / "archive"
+            archive.mkdir()
+            app_releases = root / "app-releases"
+            app_releases.mkdir()
+            current_app = root / "current-app"
+            current_app.mkdir()
+            source = current_app / "index.js"
+            source.write_text("before\n")
+            fake = ReleaseFake(archive)
+
+            with (
+                mock.patch.object(platform_module, "APP_RELEASES", app_releases),
+                mock.patch.object(platform_module, "APP_CURRENT", current_app),
+            ):
+                legacy_release_id = RealPlatform._legacy_app_release_id(current_app)
+                baseline = {
+                    "current": str(app_releases / legacy_release_id),
+                    "commit": legacy_release_id,
+                    "legacy": True,
+                    "destination_preexisting": False,
+                    "release_destination": str(app_releases / COMMIT),
+                    "production_invariants": {},
+                }
+                source.write_text("after\n")
+                with self.assertRaisesRegex(
+                    PlatformError, "legacy_app_changed_since_baseline"
+                ):
+                    fake._deploy_app(
+                        {
+                            "type": "deploy_verified_release",
+                            "commit": COMMIT,
+                            "artifactSha256": DIGEST,
+                        },
+                        baseline,
+                        check,
+                        progress,
+                        lambda: fake.events.append("mutation_marker"),
+                    )
+
+                self.assertNotIn("mutation_marker", fake.events)
+                self.assertTrue(current_app.is_dir())
+                self.assertFalse((app_releases / COMMIT).exists())
+                self.assertFalse((app_releases / legacy_release_id).exists())
+
+    def test_unsafe_legacy_rollback_path_fails_before_mutation(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            archive = root / "archive"
+            archive.mkdir()
+            app_releases = root / "app-releases"
+            app_releases.mkdir()
+            current_app = root / "current-app"
+            current_app.mkdir()
+            (current_app / "index.js").write_text("legacy source\n")
+            fake = ReleaseFake(archive)
+
+            with (
+                mock.patch.object(platform_module, "APP_RELEASES", app_releases),
+                mock.patch.object(platform_module, "APP_CURRENT", current_app),
+            ):
+                legacy_release_id = RealPlatform._legacy_app_release_id(current_app)
+                occupied_rollback_path = app_releases / legacy_release_id
+                occupied_rollback_path.mkdir()
+                baseline = {
+                    "current": str(occupied_rollback_path),
+                    "commit": legacy_release_id,
+                    "legacy": True,
+                    "destination_preexisting": False,
+                    "release_destination": str(app_releases / COMMIT),
+                    "production_invariants": {},
+                }
+                with self.assertRaisesRegex(
+                    PlatformError, "legacy_release_baseline_invalid"
+                ):
+                    fake._deploy_app(
+                        {
+                            "type": "deploy_verified_release",
+                            "commit": COMMIT,
+                            "artifactSha256": DIGEST,
+                        },
+                        baseline,
+                        check,
+                        progress,
+                        lambda: fake.events.append("mutation_marker"),
+                    )
+
+                self.assertNotIn("mutation_marker", fake.events)
+                self.assertTrue(current_app.is_dir())
+                self.assertFalse((app_releases / COMMIT).exists())
 
     def test_failed_release_removes_only_new_destination_and_can_retry(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
