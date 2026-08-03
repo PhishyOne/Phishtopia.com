@@ -48,14 +48,14 @@ DECLARE
         'updated_at:timestamp with time zone:NO::transaction_timestamp()'
     ];
     expected_capabilities constant text[] := ARRAY[
-        '1:schema.foundation:1:true:0001_schema_foundation',
-        '2:public.directory:0:false:0001_schema_foundation',
-        '3:anonymous.calculation:0:false:0001_schema_foundation',
-        '4:saved.orders:0:false:0001_schema_foundation',
-        '5:public.contribution:0:false:0001_schema_foundation',
-        '6:evidence.upload:0:false:0001_schema_foundation',
-        '7:owner.support:0:false:0001_schema_foundation',
-        '8:scoped.profiles:0:false:0001_schema_foundation'
+        '1:schema.foundation:1:t:0001_schema_foundation',
+        '2:public.directory:0:f:0001_schema_foundation',
+        '3:anonymous.calculation:0:f:0001_schema_foundation',
+        '4:saved.orders:0:f:0001_schema_foundation',
+        '5:public.contribution:0:f:0001_schema_foundation',
+        '6:evidence.upload:0:f:0001_schema_foundation',
+        '7:owner.support:0:f:0001_schema_foundation',
+        '8:scoped.profiles:0:f:0001_schema_foundation'
     ];
     relation_owner text;
 BEGIN

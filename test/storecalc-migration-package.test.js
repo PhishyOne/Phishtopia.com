@@ -138,6 +138,19 @@ test("StoreCalc product capabilities remain explicitly unavailable", () => {
         assert.equal(state.available, false, `${key} was enabled early`);
     }
 
+    const capabilityFingerprints = Object.entries(capabilities).map(
+        ([key, state]) =>
+            `${state.id}:${key}:${state.schemaVersion}:${state.available ? "t" : "f"}:0001_schema_foundation`
+    );
+    for (const sql of [verifySql, downSql]) {
+        for (const fingerprint of capabilityFingerprints) {
+            assert.ok(
+                sql.includes(`'${fingerprint}'`),
+                `${fingerprint} must use PostgreSQL's canonical boolean output`
+            );
+        }
+    }
+
     assert.equal(manifest.expectedDefinitions.constraints.length, 6);
     assert.equal(manifest.expectedDefinitions.indexes.length, 2);
     assert.equal(manifest.expectedDefinitions.columns.length, 7);
