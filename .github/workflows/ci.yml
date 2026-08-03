@@ -63,7 +63,7 @@ jobs:
       - name: Verify production release archive digest
         run: |
           curl --fail --location --silent --show-error \
-            "https://github.com/$GITHUB_REPOSITORY/archive/e1bbcdd993b194599024fff488cea0eabce5a0fd.tar.gz" \
+            "https://github.com/$GITHUB_REPOSITORY/archive/38068f67b85202291f9726bad63aad3df3eafcb7.tar.gz" \
             --output /tmp/production-release.tar.gz
           printf 'ARTIFACT_SHA256=%s\n' "$(sha256sum /tmp/production-release.tar.gz | cut -d' ' -f1)"
       - name: Locate latest Ops controller runs
