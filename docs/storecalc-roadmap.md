@@ -1,5 +1,9 @@
 # StoreCalc Online Roadmap
 
+> Planning history only. Current implementation requirements and launch gates
+> are defined by `storecalc-implementation-contract.md` and
+> `storecalc-traceability-matrix.md`.
+
 StoreCalc Online will begin as a simple commissary-order calculator and grow into a privacy-conscious, community-maintained platform for facility store catalogs, rules, orders, evidence, and updates.
 
 This document records the product decisions and work discussed during initial planning. It is a roadmap, not a commitment to build every item at once.

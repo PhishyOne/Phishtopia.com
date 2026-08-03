@@ -1,5 +1,9 @@
 # StoreCalc Platform Architecture
 
+> Historical product-architecture record. For implementation, the authoritative
+> source is `storecalc-implementation-contract.md` together with
+> `storecalc-traceability-matrix.md`.
+
 Issue: #109
 
 ## Status
