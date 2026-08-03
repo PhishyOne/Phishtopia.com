@@ -1,0 +1,122 @@
+{
+  "formatVersion": 1,
+  "migrationKey": "0002_directory_lineage",
+  "baseMigrationKey": "0001_schema_foundation",
+  "contractRequirements": [
+    "SC-PRV-001",
+    "SC-DIR-001",
+    "SC-DIR-002",
+    "SC-DIR-003",
+    "SC-DB-001",
+    "SC-DB-002",
+    "SC-DB-003",
+    "SC-DB-004",
+    "SC-OPS-001",
+    "SC-OPS-002",
+    "SC-OPS-003",
+    "SC-OPS-004",
+    "SC-DEF-002"
+  ],
+  "advisoryLockKey": "7356507374803211041",
+  "timeouts": {
+    "lock": "3s",
+    "statement": "30s"
+  },
+  "files": [
+    {
+      "path": "migrations/storecalc/0002_directory_lineage/README.md",
+      "purpose": "scope, dependency, lock, rollback, and production-boundary contract",
+      "sha256": "31bdc7cb6dffc1e6b7830816efb3a3012ec67195c452c5d1516176acae52f103"
+    },
+    {
+      "path": "migrations/storecalc/0002_directory_lineage/down.sql",
+      "purpose": "fail-closed empty-directory rollback to the exact foundation",
+      "sha256": "7144cf18f748e34545b0067a4bcf74306257101dbff332674f2e3c20acc91e61"
+    },
+    {
+      "path": "migrations/storecalc/0002_directory_lineage/up.sql",
+      "purpose": "forward directory-lineage migration",
+      "sha256": "58b51a39c2f9ababe48842142af732922d5160fcc0cff276af5e041a07cf165f"
+    },
+    {
+      "path": "migrations/storecalc/0002_directory_lineage/verify.sql",
+      "purpose": "exact directory object, owner, grant, topology, and gate verification",
+      "sha256": "62e9781dbe87ff3603551dd6ea634a4ea88584cffaf1d7d825d15292e7103607"
+    }
+  ],
+  "bundleSha256": "bdef168a61625274814427150c0a952b0599c0b83b0ddfaa83aff9ddb5ebb1e6",
+  "expectedDefinitions": {
+    "schema": "storecalc",
+    "ownerClass": "migration_owner",
+    "tables": [
+      "contributor_subjects",
+      "reviewed_timezones",
+      "countries",
+      "jurisdictions",
+      "agencies",
+      "facilities",
+      "facility_aliases",
+      "facility_sources"
+    ],
+    "identitySequences": [
+      "contributor_subjects_id_seq",
+      "countries_id_seq",
+      "jurisdictions_id_seq",
+      "agencies_id_seq",
+      "facilities_id_seq",
+      "facility_aliases_id_seq",
+      "facility_sources_id_seq"
+    ],
+    "functions": {
+      "assert_reviewed_timezone_exists()": "413d3098a67b7cfabe0cd4aed1917988",
+      "assert_jurisdiction_acyclic()": "c7c391a378c393c1a65c7cfc2f543c5b",
+      "assert_facility_merge_acyclic()": "cdd50d9c47881788dbfbb8b36f589957"
+    },
+    "triggers": [
+      "reviewed_timezones_validate_trigger",
+      "jurisdictions_acyclic_trigger",
+      "facilities_merge_acyclic_trigger"
+    ],
+    "fingerprints": {
+      "relationsMd5": "fca2a2dbb8efbcd63d9747e1b62dead4",
+      "newColumnsMd5": "f1b5c0116049455b1d4a32f3d649b3b7",
+      "newConstraintInventoryMd5": "f56f7b75661fb074032960b4da5dc668",
+      "newIndexesMd5": "c463b1d054846276d68bacef913d0f34",
+      "newForeignKeysMd5": "040b11e9754c2117a62e0c56af9e18bb"
+    },
+    "runtimeGrants": {
+      "web": [
+        "SCHEMA USAGE",
+        "schema_capabilities SELECT"
+      ],
+      "worker": [
+        "SCHEMA USAGE",
+        "schema_capabilities SELECT"
+      ],
+      "backup": [
+        "SCHEMA USAGE",
+        "NEW TABLES SELECT",
+        "NEW SEQUENCES SELECT"
+      ],
+      "public": []
+    },
+    "capability": {
+      "key": "public.directory",
+      "schemaVersion": 1,
+      "available": false,
+      "verified": false
+    }
+  },
+  "deferred": [
+    "country, facility, alias, and source seed data",
+    "facility fact versions and merge events",
+    "facility requests and private provisional workflows",
+    "programs, applicability, templates, catalogs, and orders",
+    "runtime directory read/write grants and routes",
+    "official-source importers and scheduled maintenance"
+  ],
+  "productionExecution": {
+    "allowed": false,
+    "reason": "SC-OPS-002 rehearsal and an independently reviewed SC-OPS-004 execution path are still required."
+  }
+}

@@ -20,7 +20,7 @@
   "main": "index.js",
   "scripts": {
     "test": "node --test test/*.test.js",
-    "test:storecalc-db": "node --test test-db/storecalc-schema-foundation.test.js",
+    "test:storecalc-db": "node --test --test-concurrency=1 test-db/*.test.js",
     "start": "node index.js"
   },
   "dependencies": {
