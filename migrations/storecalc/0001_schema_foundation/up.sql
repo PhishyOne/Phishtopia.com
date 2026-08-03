@@ -203,8 +203,22 @@ DECLARE
     web_role text := current_setting('storecalc.web_role');
     worker_role text := current_setting('storecalc.worker_role');
     backup_role text := current_setting('storecalc.backup_role');
+    configured_roles text[];
+    allowed_grantee_oids oid[];
     relation_owner text;
 BEGIN
+    configured_roles := ARRAY[
+        migration_owner_role,
+        web_role,
+        worker_role,
+        backup_role
+    ];
+
+    SELECT array_agg(oid ORDER BY oid)
+    INTO allowed_grantee_oids
+    FROM pg_roles
+    WHERE rolname = ANY (configured_roles);
+
     SELECT pg_get_userbyid(nspowner)
     INTO relation_owner
     FROM pg_namespace
@@ -226,22 +240,29 @@ BEGIN
 
     IF EXISTS (
         SELECT 1
-        FROM pg_namespace AS namespaces,
-             LATERAL aclexplode(COALESCE(namespaces.nspacl, acldefault('n', namespaces.nspowner))) AS acl
-        WHERE namespaces.nspname = 'storecalc'
-          AND acl.grantee = 0
-    ) THEN
-        RAISE EXCEPTION 'storecalc_public_schema_grant_detected';
-    END IF;
+        FROM (
+            SELECT acl.grantee
+            FROM pg_namespace AS namespaces,
+                 LATERAL aclexplode(COALESCE(namespaces.nspacl, acldefault('n', namespaces.nspowner))) AS acl
+            WHERE namespaces.nspname = 'storecalc'
 
-    IF EXISTS (
-        SELECT 1
-        FROM pg_class AS relations,
-             LATERAL aclexplode(COALESCE(relations.relacl, acldefault('r', relations.relowner))) AS acl
-        WHERE relations.oid = 'storecalc.schema_capabilities'::regclass
-          AND acl.grantee = 0
+            UNION ALL
+
+            SELECT acl.grantee
+            FROM pg_class AS relations,
+                 LATERAL aclexplode(COALESCE(relations.relacl, acldefault('r', relations.relowner))) AS acl
+            WHERE relations.oid = 'storecalc.schema_capabilities'::regclass
+
+            UNION ALL
+
+            SELECT acl.grantee
+            FROM pg_class AS relations,
+                 LATERAL aclexplode(COALESCE(relations.relacl, acldefault('S', relations.relowner))) AS acl
+            WHERE relations.oid = 'storecalc.schema_capabilities_id_seq'::regclass
+        ) AS object_grants
+        WHERE object_grants.grantee <> ALL (allowed_grantee_oids)
     ) THEN
-        RAISE EXCEPTION 'storecalc_public_table_grant_detected';
+        RAISE EXCEPTION 'storecalc_unexpected_grantee_detected';
     END IF;
 
     IF NOT has_schema_privilege(web_role, 'storecalc', 'USAGE')

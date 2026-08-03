@@ -144,6 +144,11 @@ function toBoolean(value) {
 async function removeTestState(client) {
     await resetRole(client);
     await client.query("DROP SCHEMA IF EXISTS storecalc CASCADE");
+    await client.query(`
+        ALTER DEFAULT PRIVILEGES
+        FOR ROLE ${quoteIdentifier(ROLE_SETTINGS.migration_owner_role)}
+        REVOKE SELECT ON TABLES FROM ${quoteIdentifier(OUTSIDER_ROLE)}
+    `).catch(() => null);
 
     for (const role of ALL_TEST_ROLES) {
         await client.query(
@@ -225,6 +230,28 @@ test(
                     .rows[0].oid,
                 null
             );
+
+            await client.query(`
+                ALTER DEFAULT PRIVILEGES
+                FOR ROLE ${quoteIdentifier(ROLE_SETTINGS.migration_owner_role)}
+                GRANT SELECT ON TABLES TO ${quoteIdentifier(OUTSIDER_ROLE)}
+            `);
+            await expectRejected(
+                runMigrationSql(client, upSql),
+                "storecalc_unexpected_grantee_detected",
+                "P0001"
+            );
+            assert.equal(
+                (await client.query("SELECT to_regnamespace('storecalc') AS oid"))
+                    .rows[0].oid,
+                null,
+                "postflight grant rejection did not roll back the schema"
+            );
+            await client.query(`
+                ALTER DEFAULT PRIVILEGES
+                FOR ROLE ${quoteIdentifier(ROLE_SETTINGS.migration_owner_role)}
+                REVOKE SELECT ON TABLES FROM ${quoteIdentifier(OUTSIDER_ROLE)}
+            `);
 
             await client.query(
                 `CREATE SCHEMA storecalc AUTHORIZATION ${quoteIdentifier(ROLE_SETTINGS.web_role)}`
@@ -336,6 +363,131 @@ test(
                     )
                 );
             });
+
+            await runAsRole(
+                client,
+                ROLE_SETTINGS.migration_owner_role,
+                () =>
+                    client.query(
+                        `GRANT SELECT ON storecalc.schema_capabilities TO ${quoteIdentifier(OUTSIDER_ROLE)}`
+                    )
+            );
+            await expectRejected(
+                runMigrationSql(client, verifySql),
+                "storecalc_unexpected_grantee_detected",
+                "P0001"
+            );
+            await expectRejected(
+                runMigrationSql(client, downSql),
+                "storecalc_rollback_unexpected_grantee",
+                "P0001"
+            );
+            await runAsRole(
+                client,
+                ROLE_SETTINGS.migration_owner_role,
+                () =>
+                    client.query(
+                        `REVOKE SELECT ON storecalc.schema_capabilities FROM ${quoteIdentifier(OUTSIDER_ROLE)}`
+                    )
+            );
+
+            await runAsRole(
+                client,
+                ROLE_SETTINGS.migration_owner_role,
+                () =>
+                    client.query(`
+                        ALTER TABLE storecalc.schema_capabilities
+                            DROP CONSTRAINT schema_capabilities_schema_version_check;
+                        ALTER TABLE storecalc.schema_capabilities
+                            ADD CONSTRAINT schema_capabilities_schema_version_check
+                            CHECK (schema_version >= -1);
+                    `)
+            );
+            await expectRejected(
+                runMigrationSql(client, verifySql),
+                "storecalc_constraint_definition_mismatch",
+                "P0001"
+            );
+            await expectRejected(
+                runMigrationSql(client, downSql),
+                "storecalc_rollback_constraint_mismatch",
+                "P0001"
+            );
+            await runAsRole(
+                client,
+                ROLE_SETTINGS.migration_owner_role,
+                () =>
+                    client.query(`
+                        ALTER TABLE storecalc.schema_capabilities
+                            DROP CONSTRAINT schema_capabilities_schema_version_check;
+                        ALTER TABLE storecalc.schema_capabilities
+                            ADD CONSTRAINT schema_capabilities_schema_version_check
+                            CHECK (schema_version >= 0);
+                    `)
+            );
+
+            await runAsRole(
+                client,
+                ROLE_SETTINGS.migration_owner_role,
+                () =>
+                    client.query(
+                        "SELECT nextval('storecalc.schema_capabilities_id_seq')"
+                    )
+            );
+            await expectRejected(
+                runMigrationSql(client, verifySql),
+                "storecalc_sequence_definition_mismatch",
+                "P0001"
+            );
+            await expectRejected(
+                runMigrationSql(client, downSql),
+                "storecalc_rollback_sequence_mismatch",
+                "P0001"
+            );
+            await runAsRole(
+                client,
+                ROLE_SETTINGS.migration_owner_role,
+                () =>
+                    client.query(
+                        "SELECT setval('storecalc.schema_capabilities_id_seq', 8, true)"
+                    )
+            );
+
+            await runAsRole(
+                client,
+                ROLE_SETTINGS.migration_owner_role,
+                () =>
+                    client.query(`
+                        UPDATE storecalc.schema_capabilities
+                        SET updated_at = updated_at + interval '1 second'
+                        WHERE capability_key = 'public.directory'
+                    `)
+            );
+            await expectRejected(
+                runMigrationSql(client, verifySql),
+                "storecalc_capability_state_mismatch",
+                "P0001"
+            );
+            await expectRejected(
+                runMigrationSql(client, downSql),
+                "storecalc_rollback_capability_state_changed",
+                "P0001"
+            );
+            await runAsRole(
+                client,
+                ROLE_SETTINGS.migration_owner_role,
+                () =>
+                    client.query(`
+                        UPDATE storecalc.schema_capabilities
+                        SET updated_at = (
+                            SELECT verified_at
+                            FROM storecalc.schema_capabilities
+                            WHERE capability_key = 'schema.foundation'
+                        )
+                        WHERE capability_key = 'public.directory'
+                    `)
+            );
+            await runMigrationSql(client, verifySql);
 
             const installedFingerprint = await schemaFingerprint(client);
             await expectRejected(

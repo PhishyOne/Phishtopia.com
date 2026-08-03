@@ -52,11 +52,12 @@ second.
 
 ## Verification and rollback
 
-`verify.sql` checks the exact relation, column, constraint, owner, grant, and
-capability-state inventory. The database test harness also exercises hostile
-role configuration, an unsafe pre-existing schema, rerun rejection, effective
-runtime permissions, rollback refusal after state changes, and restoration of
-the original no-schema fingerprint.
+`verify.sql` checks the exact relation, column/default, constraint body, index,
+identity-sequence, owner, grant/grantee, and capability-state inventory. The
+database test harness also exercises hostile role configuration, an unsafe
+pre-existing schema, rerun rejection, effective runtime permissions, same-name
+constraint drift, unexpected grantees, sequence drift, capability drift,
+rollback refusal, and restoration of the original no-schema fingerprint.
 
 `down.sql` is permitted only while this exact foundation remains untouched. It
 uses no `CASCADE`; any extra object, dependency, capability row, enabled product

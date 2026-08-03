@@ -20,25 +20,25 @@
     {
       "path": "migrations/storecalc/0001_schema_foundation/README.md",
       "purpose": "scope, lock, rollback, and production-boundary contract",
-      "sha256": "3e4d88bb35ec08fa2cea3ddad5360815727e205f629bfb3574b8017fc2baebd3"
+      "sha256": "959cfd76e839400b548cb7da542596c9a757e87ffb893a8c62e7722fe3e8253a"
     },
     {
       "path": "migrations/storecalc/0001_schema_foundation/down.sql",
       "purpose": "fail-closed empty-foundation rollback",
-      "sha256": "b3a75cb8df242774d22e5aa8b066fec40a9252cc56eb21e6d3d87a513235407f"
+      "sha256": "b371a47980a09ce9b278bdf8110f19f246a5a64431ca8412d4950b081360e016"
     },
     {
       "path": "migrations/storecalc/0001_schema_foundation/up.sql",
       "purpose": "forward migration",
-      "sha256": "1710fbe9facba191940443d47a0835514ba03dc8af201585211850eba5385103"
+      "sha256": "7b840abef60e65a4d5a2d28fb89931395833a146d6f235b2de615cbb9266d509"
     },
     {
       "path": "migrations/storecalc/0001_schema_foundation/verify.sql",
       "purpose": "exact object, owner, grant, and state verification",
-      "sha256": "c0ed1062115410eee4ba3c1ab9ea482826d71de2d980fd46288b5495cbb05b7e"
+      "sha256": "775c4ddb905608ed02d1ffda6a7c4dbc22795feaa05313e9af171dc63f823842"
     }
   ],
-  "bundleSha256": "f58eff1539405a08d6027146a9cfce958633271c5a146f5ad6c4989a316e2be6",
+  "bundleSha256": "e120ff9057b844f73e32980fd40abb5d1cf86214f145c368f73976bd4025d3e2",
   "expectedDefinitions": {
     "schema": "storecalc",
     "ownerClass": "migration_owner",
@@ -49,13 +49,37 @@
       "schema_capabilities_pkey:i"
     ],
     "constraints": [
-      "schema_capabilities_available_verified_check:c",
-      "schema_capabilities_capability_key_format_check:c",
-      "schema_capabilities_capability_key_key:u",
-      "schema_capabilities_migration_key_format_check:c",
-      "schema_capabilities_pkey:p",
-      "schema_capabilities_schema_version_check:c"
+      "schema_capabilities_available_verified_check:c:CHECK (((NOT is_available) OR (verified_at IS NOT NULL)))",
+      "schema_capabilities_capability_key_format_check:c:CHECK ((((char_length(capability_key) >= 1) AND (char_length(capability_key) <= 64)) AND (octet_length(capability_key) <= 64) AND (capability_key ~ '^[a-z][a-z0-9]*(\\.[a-z][a-z0-9_]*)*$'::text)))",
+      "schema_capabilities_capability_key_key:u:UNIQUE (capability_key)",
+      "schema_capabilities_migration_key_format_check:c:CHECK ((((char_length(migration_key) >= 6) AND (char_length(migration_key) <= 64)) AND (octet_length(migration_key) <= 64) AND (migration_key ~ '^[0-9]{4}_[a-z][a-z0-9_]*$'::text)))",
+      "schema_capabilities_pkey:p:PRIMARY KEY (id)",
+      "schema_capabilities_schema_version_check:c:CHECK ((schema_version >= 0))"
     ],
+    "indexes": [
+      "schema_capabilities_capability_key_key:CREATE UNIQUE INDEX schema_capabilities_capability_key_key ON storecalc.schema_capabilities USING btree (capability_key)",
+      "schema_capabilities_pkey:CREATE UNIQUE INDEX schema_capabilities_pkey ON storecalc.schema_capabilities USING btree (id)"
+    ],
+    "columns": [
+      "id:integer:NO:BY DEFAULT:",
+      "capability_key:text:NO::",
+      "schema_version:integer:NO::",
+      "is_available:boolean:NO::false",
+      "verified_at:timestamp with time zone:YES::",
+      "migration_key:text:NO::",
+      "updated_at:timestamp with time zone:NO::transaction_timestamp()"
+    ],
+    "sequence": {
+      "name": "storecalc.schema_capabilities_id_seq",
+      "start": 1,
+      "increment": 1,
+      "minimum": 1,
+      "maximum": 2147483647,
+      "cache": 1,
+      "cycle": false,
+      "lastValue": 8,
+      "isCalled": true
+    },
     "runtimeGrants": {
       "web": [
         "SCHEMA USAGE",
@@ -74,34 +98,42 @@
     },
     "capabilities": {
       "schema.foundation": {
+        "id": 1,
         "schemaVersion": 1,
         "available": true
       },
       "public.directory": {
+        "id": 2,
         "schemaVersion": 0,
         "available": false
       },
       "anonymous.calculation": {
+        "id": 3,
         "schemaVersion": 0,
         "available": false
       },
       "saved.orders": {
+        "id": 4,
         "schemaVersion": 0,
         "available": false
       },
       "public.contribution": {
+        "id": 5,
         "schemaVersion": 0,
         "available": false
       },
       "evidence.upload": {
+        "id": 6,
         "schemaVersion": 0,
         "available": false
       },
       "owner.support": {
+        "id": 7,
         "schemaVersion": 0,
         "available": false
       },
       "scoped.profiles": {
+        "id": 8,
         "schemaVersion": 0,
         "available": false
       }

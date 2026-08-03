@@ -122,6 +122,7 @@ test("StoreCalc foundation SQL is transaction-bound and narrowly scoped", () => 
 test("StoreCalc product capabilities remain explicitly unavailable", () => {
     const capabilities = manifest.expectedDefinitions.capabilities;
     assert.deepEqual(capabilities["schema.foundation"], {
+        id: 1,
         schemaVersion: 1,
         available: true
     });
@@ -131,10 +132,26 @@ test("StoreCalc product capabilities remain explicitly unavailable", () => {
     );
     assert.equal(productCapabilities.length, 7);
 
-    for (const [key, state] of productCapabilities) {
+    for (const [index, [key, state]] of productCapabilities.entries()) {
+        assert.equal(state.id, index + 2, `${key} has unexpected identity`);
         assert.equal(state.schemaVersion, 0, `${key} has unexpected schema`);
         assert.equal(state.available, false, `${key} was enabled early`);
     }
+
+    assert.equal(manifest.expectedDefinitions.constraints.length, 6);
+    assert.equal(manifest.expectedDefinitions.indexes.length, 2);
+    assert.equal(manifest.expectedDefinitions.columns.length, 7);
+    assert.deepEqual(manifest.expectedDefinitions.sequence, {
+        name: "storecalc.schema_capabilities_id_seq",
+        start: 1,
+        increment: 1,
+        minimum: 1,
+        maximum: 2147483647,
+        cache: 1,
+        cycle: false,
+        lastValue: 8,
+        isCalled: true
+    });
 
     assert.equal(manifest.productionExecution.allowed, false);
     assert.match(manifest.productionExecution.reason, /SC-OPS-002/);
