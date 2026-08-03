@@ -1,10 +1,191 @@
 <%- include("../partials/header") %>
 
-    <main class="storecalc-page">
-        <section class="storecalc-card">
-            <h1>StoreCalc Online</h1>
-            <p>Commissary/order calculator coming soon.</p>
-        </section>
-    </main>
+<main class="storecalc-shell" data-storecalc-shell data-selection-schema-version="<%= publicSelectionSchemaVersion %>">
+    <section class="storecalc-hero" aria-labelledby="storecalc-title">
+        <div class="storecalc-hero-copy">
+            <p class="storecalc-eyebrow">
+                <span aria-hidden="true"></span>
+                StoreCalc Online
+            </p>
+            <h1 id="storecalc-title">Plan first. Know the math. Keep the choice private.</h1>
+            <p class="storecalc-lede">
+                StoreCalc is becoming a phone-first commissary order calculator with
+                explainable totals, source dates, and clear rule warnings.
+            </p>
+            <div class="storecalc-release-note" role="status">
+                <strong>Directory preview</strong>
+                <span>Facility selection is ready. Catalog calculation is not yet available.</span>
+            </div>
+        </div>
 
-    <%- include("../partials/footer") %>
+        <div class="storecalc-hero-mark" aria-hidden="true">
+            <div class="storecalc-logo-orbit">
+                <img src="/images/phishLogo.png" alt="">
+            </div>
+            <p>Private by design</p>
+            <span>No sign-in required</span>
+        </div>
+    </section>
+
+    <ol class="storecalc-steps" aria-label="StoreCalc workflow">
+        <li class="storecalc-step" data-step-state="current" aria-current="step">
+            <span class="storecalc-step-number">1</span>
+            <span>
+                <strong>Facility</strong>
+                <small>Choose explicitly</small>
+            </span>
+        </li>
+        <li class="storecalc-step" data-step-state="blocked" data-storecalc-template-step>
+            <span class="storecalc-step-number">2</span>
+            <span>
+                <strong>Template</strong>
+                <small>Waiting for reviewed coverage</small>
+            </span>
+        </li>
+        <li class="storecalc-step" data-step-state="blocked" data-storecalc-calculator-step>
+            <span class="storecalc-step-number">3</span>
+            <span>
+                <strong>Calculator</strong>
+                <small>Locked until rules are supported</small>
+            </span>
+        </li>
+    </ol>
+
+    <div class="storecalc-content-grid">
+        <section class="storecalc-selection-card" aria-labelledby="facility-selection-title">
+            <header class="storecalc-card-header">
+                <p class="storecalc-kicker">Step 1 of 3</p>
+                <h2 id="facility-selection-title">Choose a facility</h2>
+                <p>
+                    Nothing is saved or sent. Your choice exists only in this page while
+                    the tab stays open.
+                </p>
+            </header>
+
+            <div class="storecalc-field">
+                <label for="storecalc-facility">Public facility</label>
+                <select
+                    id="storecalc-facility"
+                    autocomplete="off"
+                    aria-describedby="storecalc-selection-privacy"
+                    data-storecalc-facility-selector
+                >
+                    <option value="">Select a facility</option>
+                    <% publicSelectionFacilities.forEach(facility => { %>
+                        <option value="<%= facility.selectionKey %>">
+                            <%= facility.officialName %> — <%= facility.locality %> · <%= facility.agencyName %>
+                        </option>
+                    <% }); %>
+                </select>
+                <p id="storecalc-selection-privacy" class="storecalc-field-note">
+                    Not placed in the URL, account, analytics, cookies, or browser storage.
+                </p>
+            </div>
+
+            <div class="storecalc-selection-empty" data-storecalc-selection-empty>
+                <span class="storecalc-empty-icon" aria-hidden="true">⌁</span>
+                <div>
+                    <h3>No facility selected</h3>
+                    <p>
+                        StoreCalc never guesses between similar names. Choose the exact
+                        public record you want to inspect.
+                    </p>
+                </div>
+            </div>
+
+            <% publicSelectionFacilities.forEach(facility => { %>
+                <article
+                    class="storecalc-facility-panel"
+                    data-storecalc-facility-panel="<%= facility.selectionKey %>"
+                    data-selection-announcement="<%= facility.officialName %> selected. No reviewed StoreCalc template is available yet."
+                    hidden
+                >
+                    <header class="storecalc-facility-heading">
+                        <div>
+                            <p class="storecalc-kicker"><%= facility.country.name %> · <%= facility.jurisdictionName %></p>
+                            <h3><%= facility.officialName %></h3>
+                        </div>
+                        <span class="storecalc-status-badge" data-status="source-listed">
+                            <%= facility.facilityStatusLabel %>
+                        </span>
+                    </header>
+
+                    <dl class="storecalc-facility-facts">
+                        <div>
+                            <dt>Agency</dt>
+                            <dd><%= facility.agencyName %></dd>
+                        </div>
+                        <div>
+                            <dt>Location</dt>
+                            <dd><%= facility.locality %></dd>
+                        </div>
+                        <div>
+                            <dt>Facility type</dt>
+                            <dd><%= facility.facilityType %></dd>
+                        </div>
+                    </dl>
+
+                    <p class="storecalc-source-note">
+                        Facility identity checked <time datetime="<%= facility.source.checkedOn %>"><%= facility.source.checkedOn %></time>
+                        against
+                        <a href="<%= facility.source.url %>" rel="external noopener noreferrer"><%= facility.source.title %></a>.
+                        The source confirms the facility record, not commissary items or rules.
+                    </p>
+
+                    <section class="storecalc-template-state" aria-labelledby="template-state-<%= facility.selectionKey %>">
+                        <div class="storecalc-template-state-copy">
+                            <p class="storecalc-kicker">Step 2</p>
+                            <h4 id="template-state-<%= facility.selectionKey %>">Template coverage</h4>
+                            <p><strong><%= facility.templateCoverage.label %></strong></p>
+                            <p><%= facility.templateCoverage.detail %></p>
+                        </div>
+                        <div class="storecalc-field storecalc-field-disabled">
+                            <label for="template-<%= facility.selectionKey %>">Commissary template</label>
+                            <select id="template-<%= facility.selectionKey %>" disabled>
+                                <option>No reviewed template available</option>
+                            </select>
+                            <p class="storecalc-field-note">Calculation stays locked instead of guessing.</p>
+                        </div>
+                    </section>
+                </article>
+            <% }); %>
+
+            <p class="storecalc-sr-only" aria-live="polite" aria-atomic="true" data-storecalc-selection-live></p>
+
+            <noscript>
+                <div class="storecalc-noscript-note">
+                    JavaScript is required only to reveal the selected facility on this preview.
+                    No selection is sent to the server. The available public record is
+                    <%= publicSelectionFacilities.map(facility => facility.officialName).join(", ") %>.
+                </div>
+            </noscript>
+        </section>
+
+        <aside class="storecalc-truth-card" aria-labelledby="preview-boundary-title">
+            <p class="storecalc-kicker">Honest status</p>
+            <h2 id="preview-boundary-title">What this preview does</h2>
+            <ul>
+                <li>Shows a source-linked public facility identity.</li>
+                <li>Requires an explicit choice instead of guessing.</li>
+                <li>Keeps facility selection out of server and analytics data.</li>
+            </ul>
+
+            <h3>What it does not do yet</h3>
+            <ul>
+                <li>No item, price, tax, limit, audience, or stock claim.</li>
+                <li>No saved order and no facility submission.</li>
+                <li>No calculator until a reviewed catalog and rules pass their gate.</li>
+            </ul>
+
+            <div class="storecalc-coverage-note">
+                <strong>Can’t find the facility you need?</strong>
+                <p>
+                    <a href="/contact">Tell Phishtopia which public coverage matters</a>.
+                    Please do not send inmate IDs, account numbers, housing details, or other private information.
+                </p>
+            </div>
+        </aside>
+    </div>
+</main>
+
+<%- include("../partials/footer") %>

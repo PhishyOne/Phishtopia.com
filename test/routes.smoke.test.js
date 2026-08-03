@@ -77,6 +77,18 @@ test("surviving public pages render successfully", async () => {
     }
 });
 
+test("StoreCalc does not propagate URL-supplied facility context", async () => {
+    const response = await request(
+        "/storecalc?facility=private-choice&template=private-template"
+    );
+    assert.equal(response.status, 200);
+
+    const body = await response.text();
+    assert.doesNotMatch(body, /private-choice|private-template/);
+    assert.doesNotMatch(body, /googletagmanager|dataLayer/);
+    assert.match(body, /href="\/auth\/login\?returnTo=%2Fstorecalc"/);
+});
+
 test("archive gallery exposes preserved material without restoring retired routes", async () => {
     const response = await request("/archive");
     assert.equal(response.status, 200);
