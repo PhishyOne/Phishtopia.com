@@ -123,19 +123,19 @@ BEGIN
     SELECT array_agg(
         format(
             '%s:%s:%s:%s:%s:%s',
-            table_name,
-            column_name,
-            data_type,
-            is_nullable,
-            COALESCE(identity_generation, ''),
-            COALESCE(column_default, '')
+            column_row.table_name,
+            column_row.column_name,
+            column_row.data_type,
+            column_row.is_nullable,
+            COALESCE(column_row.identity_generation, ''),
+            COALESCE(column_row.column_default, '')
         )
-        ORDER BY table_name, ordinal_position
+        ORDER BY column_row.table_name, column_row.ordinal_position
     )
     INTO actual_columns
-    FROM information_schema.columns
-    WHERE table_schema = 'storecalc'
-      AND table_name = ANY (
+    FROM information_schema.columns AS column_row
+    WHERE column_row.table_schema = 'storecalc'
+      AND column_row.table_name = ANY (
           ARRAY[
               'contributor_subjects',
               'reviewed_timezones',

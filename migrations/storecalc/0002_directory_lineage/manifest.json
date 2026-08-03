@@ -31,7 +31,7 @@
     {
       "path": "migrations/storecalc/0002_directory_lineage/down.sql",
       "purpose": "fail-closed empty-directory rollback to the exact foundation",
-      "sha256": "7144cf18f748e34545b0067a4bcf74306257101dbff332674f2e3c20acc91e61"
+      "sha256": "af6816713d05dc43369b90430fa91ecaf283edccb6605abfbb103cf1d2070a69"
     },
     {
       "path": "migrations/storecalc/0002_directory_lineage/up.sql",
@@ -41,10 +41,10 @@
     {
       "path": "migrations/storecalc/0002_directory_lineage/verify.sql",
       "purpose": "exact directory object, owner, grant, topology, and gate verification",
-      "sha256": "62e9781dbe87ff3603551dd6ea634a4ea88584cffaf1d7d825d15292e7103607"
+      "sha256": "e338580351dc0bf7db17091d313dd40003c29e137d78b4f0394fba84e9ff7af2"
     }
   ],
-  "bundleSha256": "bdef168a61625274814427150c0a952b0599c0b83b0ddfaa83aff9ddb5ebb1e6",
+  "bundleSha256": "5ad736ace89b22dd694babcc60ce9df8d97c5fc10bf4c571fc6899b18a7743d8",
   "expectedDefinitions": {
     "schema": "storecalc",
     "ownerClass": "migration_owner",

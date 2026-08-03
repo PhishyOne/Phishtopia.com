@@ -23,7 +23,7 @@ DECLARE
     actual_triggers text[];
     actual_capabilities text[];
     object_name text;
-    table_name text;
+    identity_table_name text;
     expected_sequence text;
     expected_relations constant text[] := ARRAY[
         'agencies:r',
@@ -384,19 +384,19 @@ BEGIN
     SELECT array_agg(
         format(
             '%s:%s:%s:%s:%s:%s',
-            table_name,
-            column_name,
-            data_type,
-            is_nullable,
-            COALESCE(identity_generation, ''),
-            COALESCE(column_default, '')
+            column_row.table_name,
+            column_row.column_name,
+            column_row.data_type,
+            column_row.is_nullable,
+            COALESCE(column_row.identity_generation, ''),
+            COALESCE(column_row.column_default, '')
         )
-        ORDER BY table_name, ordinal_position
+        ORDER BY column_row.table_name, column_row.ordinal_position
     )
     INTO actual_columns
-    FROM information_schema.columns
-    WHERE table_schema = 'storecalc'
-      AND table_name = ANY (
+    FROM information_schema.columns AS column_row
+    WHERE column_row.table_schema = 'storecalc'
+      AND column_row.table_name = ANY (
           ARRAY[
               'contributor_subjects',
               'reviewed_timezones',
@@ -532,10 +532,10 @@ BEGIN
         RAISE EXCEPTION 'storecalc_directory_check_definition_mismatch';
     END IF;
 
-    FOREACH table_name IN ARRAY identity_tables LOOP
-        expected_sequence := table_name || '_id_seq';
+    FOREACH identity_table_name IN ARRAY identity_tables LOOP
+        expected_sequence := identity_table_name || '_id_seq';
 
-        IF pg_get_serial_sequence(table_name, 'id') IS DISTINCT FROM expected_sequence
+        IF pg_get_serial_sequence(identity_table_name, 'id') IS DISTINCT FROM expected_sequence
            OR NOT EXISTS (
                SELECT 1
                FROM pg_sequence
@@ -704,8 +704,8 @@ BEGIN
         END IF;
     END LOOP;
 
-    FOREACH table_name IN ARRAY identity_tables LOOP
-        object_name := table_name || '_id_seq';
+    FOREACH identity_table_name IN ARRAY identity_tables LOOP
+        object_name := identity_table_name || '_id_seq';
 
         IF has_sequence_privilege(web_role, object_name, 'SELECT')
            OR has_sequence_privilege(web_role, object_name, 'USAGE')

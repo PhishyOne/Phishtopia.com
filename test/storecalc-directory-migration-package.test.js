@@ -130,6 +130,14 @@ test("StoreCalc directory SQL is transactional, bounded, and gated", () => {
     assert.match(verifySql, /storecalc_directory_function_definition_mismatch/);
     assert.match(verifySql, /storecalc_directory_foreign_key_definition_mismatch/);
     assert.match(verifySql, /storecalc_directory_unexpected_grantee/);
+    assert.match(verifySql, /identity_table_name text;/);
+    assert.doesNotMatch(verifySql, /\n\s+table_name text;/);
+
+    for (const sql of [verifySql, downSql]) {
+        assert.match(sql, /FROM information_schema\.columns AS column_row/);
+        assert.match(sql, /column_row\.table_name/);
+        assert.match(sql, /column_row\.ordinal_position/);
+    }
 
     assert.match(downSql, /storecalc_directory_rollback_not_empty/);
     assert.match(downSql, /storecalc_directory_rollback_sequence_used/);
