@@ -1,21 +1,56 @@
-function updateTotals() {
-    // 1. Fetch the string values from the HTML inputs
-    const startingFunds = document.getElementById("starting-funds").value;
-    const soupQuantity = document.getElementById("Soup").value;
-    const sodaQuantity = document.getElementById("Soda").value;
-    const sausageQuantity = document.getElementById("Sausage").value;
+(function initializeStoreCalcSelection() {
+    "use strict";
 
-    // 2. Convert the strings to actual numbers
-    const startingNum = Number(startingFunds) * 100; // Convert to cents to avoid floating point issues
-    const soupTotal = Number(soupQuantity) * 90;
-    const sodaTotal = Number(sodaQuantity) * 195;
-    const sausageTotal = Number(sausageQuantity) * 300;
+    const selector = document.querySelector(
+        "[data-storecalc-facility-selector]"
+    );
+    if (!selector) return;
 
-    // 3. Add the numbers together
-    const tot = soupTotal + sodaTotal + sausageTotal;
-    const remain = startingNum - tot;
+    const emptyState = document.querySelector(
+        "[data-storecalc-selection-empty]"
+    );
+    const liveRegion = document.querySelector(
+        "[data-storecalc-selection-live]"
+    );
+    const panels = Array.from(
+        document.querySelectorAll("[data-storecalc-facility-panel]")
+    );
 
-    // 4. Output the result back to the HTML page
-    document.getElementById("total").textContent = tot/100; // Convert back to dollars
-    document.getElementById("remaining").textContent = remain/100; // Convert back to dollars
-}
+    function clearSelection(announcement = "") {
+        for (const panel of panels) {
+            panel.hidden = true;
+        }
+        emptyState.hidden = false;
+        liveRegion.textContent = announcement;
+    }
+
+    function revealSelection(selectionKey) {
+        const matches = panels.filter(
+            panel => panel.dataset.storecalcFacilityPanel === selectionKey
+        );
+
+        if (!selectionKey) {
+            clearSelection();
+            return;
+        }
+        if (matches.length !== 1) {
+            selector.value = "";
+            clearSelection(
+                "That facility selection is unavailable. Choose an option from the list."
+            );
+            return;
+        }
+
+        for (const panel of panels) {
+            panel.hidden = panel !== matches[0];
+        }
+        emptyState.hidden = true;
+        liveRegion.textContent = matches[0].dataset.selectionAnnouncement;
+    }
+
+    selector.addEventListener("change", event => {
+        revealSelection(event.target.value);
+    });
+
+    clearSelection();
+})();
