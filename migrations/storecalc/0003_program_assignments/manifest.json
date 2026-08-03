@@ -1,0 +1,120 @@
+{
+  "formatVersion": 1,
+  "migrationKey": "0003_program_assignments",
+  "baseMigrationKey": "0002_directory_lineage",
+  "contractRequirements": [
+    "SC-DAT-001",
+    "SC-DAT-003",
+    "SC-DAT-004",
+    "SC-DB-001",
+    "SC-DB-002",
+    "SC-DB-003",
+    "SC-DB-004",
+    "SC-APP-001",
+    "SC-APP-002",
+    "SC-SEC-001",
+    "SC-OPS-001",
+    "SC-OPS-002",
+    "SC-OPS-003",
+    "SC-OPS-004",
+    "SC-DEF-002"
+  ],
+  "advisoryLockKey": "7356507374803211041",
+  "timeouts": {
+    "lock": "3s",
+    "statement": "30s"
+  },
+  "files": [
+    {
+      "path": "migrations/storecalc/0003_program_assignments/README.md",
+      "purpose": "scope, assignment semantics, lock order, rollback, and production boundary",
+      "sha256": "45001cc0f9b6223856bc7376a67042c609821f32745cad18abd1b9ffd56efb12"
+    },
+    {
+      "path": "migrations/storecalc/0003_program_assignments/down.sql",
+      "purpose": "fail-closed empty-program rollback to the directory baseline",
+      "sha256": "52a070203f7530fdecec55edfb744c5398ce20f4e3cc53bfb4deaa435d23f1f9"
+    },
+    {
+      "path": "migrations/storecalc/0003_program_assignments/up.sql",
+      "purpose": "forward shared-program and facility-assignment migration",
+      "sha256": "2a0f6b57b5e43c2a14a331df77ec387f528a931498f3f53c623b7da110c7eb54"
+    },
+    {
+      "path": "migrations/storecalc/0003_program_assignments/verify.sql",
+      "purpose": "exact baseline, program, assignment, owner, grant, trigger, and capability verification",
+      "sha256": "c35ec8858645b3163d1c185b44d593eca1f1812bd98e57b6c50a8db8e65f631c"
+    }
+  ],
+  "bundleSha256": "45f399eea05ec77af1bde31456ecab4f5ffaf31ff660ea98ea5af5096ad3ced4",
+  "expectedDefinitions": {
+    "schema": "storecalc",
+    "ownerClass": "migration_owner",
+    "tables": [
+      "store_programs",
+      "program_facility_assignments"
+    ],
+    "identitySequences": [
+      "store_programs_id_seq",
+      "program_facility_assignments_id_seq"
+    ],
+    "functions": {
+      "lock_program_assignment_topology()": "9569aecc34463c8c9246f2b54735c0fe",
+      "assert_program_assignment_coherent()": "36aede37eb9412cba9649983a79e87b2",
+      "protect_store_program_assignment_lineage()": "0bf202d4159ba9df6aa8c16076b2d306",
+      "protect_program_assignment_parent_lineage()": "bac771f0f93698d804caa354c5aeb4e7"
+    },
+    "triggers": [
+      "program_facility_assignments_topology_lock_trigger",
+      "program_facility_assignments_coherent_trigger",
+      "store_programs_assignment_topology_lock_trigger",
+      "store_programs_assignment_lineage_trigger",
+      "facilities_assignment_topology_lock_trigger",
+      "facilities_assignment_lineage_trigger",
+      "agencies_assignment_topology_lock_trigger",
+      "agencies_assignment_lineage_trigger"
+    ],
+    "fingerprints": {
+      "baseRelationsMd5": "fca2a2dbb8efbcd63d9747e1b62dead4",
+      "newColumnsMd5": "78a643d7ab673d84995cdcc825588726",
+      "newConstraintInventoryMd5": "a6c0cf4f60fed8fed1b1a51b6498ef79",
+      "newIndexesMd5": "2b2657b34ac8af7b17e3bfdd89372213",
+      "newForeignKeysMd5": "0e7e58648fd73f040f1c28d8ef73402c"
+    },
+    "runtimeGrants": {
+      "web": [
+        "SCHEMA USAGE",
+        "schema_capabilities SELECT"
+      ],
+      "worker": [
+        "SCHEMA USAGE",
+        "schema_capabilities SELECT"
+      ],
+      "backup": [
+        "SCHEMA USAGE",
+        "NEW TABLES SELECT",
+        "NEW SEQUENCES SELECT"
+      ],
+      "public": []
+    },
+    "capability": {
+      "key": "public.directory",
+      "schemaVersion": 2,
+      "available": false,
+      "verified": false
+    }
+  },
+  "deferred": [
+    "program and assignment seed data",
+    "evidence foreign key activation and assignment evidence rows",
+    "assignment state and evidence event history",
+    "template applicability and scoped publications",
+    "templates, catalogs, prices, rules, and orders",
+    "runtime program or assignment read/write grants and routes",
+    "production migration execution"
+  ],
+  "productionExecution": {
+    "allowed": false,
+    "reason": "SC-OPS-002 rehearsal and an independently reviewed SC-OPS-004 execution path are still required."
+  }
+}
