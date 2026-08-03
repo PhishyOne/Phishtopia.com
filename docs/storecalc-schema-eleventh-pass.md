@@ -1,5 +1,9 @@
 # StoreCalc Eleventh-Pass Asynchronous Lifecycle Review
 
+> Historical review record. Its accepted corrections are consolidated in
+> `storecalc-implementation-contract.md`; this file is not an implementation
+> source.
+
 Issues: #111, #109
 
 Status: mandatory asynchronous authorization and data-lifecycle corrections found after the tenth-pass review.

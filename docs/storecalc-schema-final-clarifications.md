@@ -1,5 +1,9 @@
 # StoreCalc Schema Final Clarifications
 
+> Historical review record. Its accepted corrections are consolidated in
+> `storecalc-implementation-contract.md`; this file is not an implementation
+> source.
+
 Issues: #111, #109
 
 These requirements close contradictions found after the hostile review. Executable migrations must satisfy this document together with the main design and prior review addenda.

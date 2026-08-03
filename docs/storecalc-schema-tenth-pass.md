@@ -1,5 +1,9 @@
 # StoreCalc Tenth-Pass Security and Temporal Review
 
+> Historical review record. Its accepted corrections are consolidated in
+> `storecalc-implementation-contract.md`; this file is not an implementation
+> source.
+
 Issues: #111, #109
 
 Status: mandatory corrections found after the ninth-pass audit reported no new material conceptual flaw.

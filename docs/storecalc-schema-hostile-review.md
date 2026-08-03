@@ -1,5 +1,9 @@
 # StoreCalc Schema Hostile Review
 
+> Historical review record. Its accepted corrections are consolidated in
+> `storecalc-implementation-contract.md`; this file is not an implementation
+> source.
+
 Issues: #111, #109
 
 Status: mandatory design corrections discovered during the second architecture review.

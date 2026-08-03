@@ -1,5 +1,10 @@
 # StoreCalc Schema and Migration Design
 
+> Historical design record. This document is superseded for implementation by
+> `storecalc-implementation-contract.md` and
+> `storecalc-traceability-matrix.md`. Preserve it as review rationale; do not
+> derive executable SQL or application behavior from it.
+
 Issues: #111, #109
 
 ## Status

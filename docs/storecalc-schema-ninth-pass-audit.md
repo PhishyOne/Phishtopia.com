@@ -1,5 +1,9 @@
 # StoreCalc Ninth-Pass Audit
 
+> Historical review record. Its accepted conclusions are consolidated in
+> `storecalc-implementation-contract.md`; this file is not an implementation
+> source.
+
 Issues: #111, #109
 
 Status: no new material conceptual flaw identified in this pass.

@@ -1,5 +1,9 @@
 # StoreCalc Schema Sixth-Pass Review
 
+> Historical review record. Its accepted corrections are consolidated in
+> `storecalc-implementation-contract.md`; this file is not an implementation
+> source.
+
 Issues: #111, #109
 
 Status: mandatory authorization, history, privacy, and dependency corrections found during the sixth independent design review.

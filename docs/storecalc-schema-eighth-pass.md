@@ -1,5 +1,9 @@
 # StoreCalc Eighth-Pass Product-Surface Review
 
+> Historical review record. Its accepted corrections are consolidated in
+> `storecalc-implementation-contract.md`; this file is not an implementation
+> source.
+
 Issues: #111, #109
 
 Status: mandatory accessibility, mobile-resilience, attribution, localization, and output corrections found during the eighth independent design review.

@@ -1,5 +1,9 @@
 # StoreCalc Schema Fifth-Pass Review
 
+> Historical review record. Its accepted corrections are consolidated in
+> `storecalc-implementation-contract.md`; this file is not an implementation
+> source.
+
 Issues: #111, #109
 
 Status: mandatory calculation-model corrections found during the fifth independent design review.

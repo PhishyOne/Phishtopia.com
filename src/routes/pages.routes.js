@@ -30,7 +30,14 @@ export function buildPagesRouter() {
         }));
     });
 
-    router.all(["/", "/archive", "/contact", "/privacy"], pageMethodNotAllowed);
+    router.get("/spencer", (req, res) => {
+        res.render("spencer", pageLocals("spencer", {
+            pageDescription: "A small Phishtopia page made especially for Spencer.",
+            robotsContent: "noindex, nofollow"
+        }));
+    });
+
+    router.all(["/", "/archive", "/contact", "/privacy", "/spencer"], pageMethodNotAllowed);
 
     return router;
 }

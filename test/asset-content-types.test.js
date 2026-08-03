@@ -18,6 +18,7 @@ const EXPECTED_ASSETS = new Map([
     ["/styles/archive.css", /^text\/css\b/],
     ["/styles/errors.css", /^text\/css\b/],
     ["/styles/errors-cinematic.css", /^text\/css\b/],
+    ["/styles/spencer.css", /^text\/css\b/],
     ["/styles/storecalc.css", /^text\/css\b/],
     ["/styles/youlist.css", /^text\/css\b/],
     ["/styles/youlist-mobile.css", /^text\/css\b/],

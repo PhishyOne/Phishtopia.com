@@ -1,5 +1,9 @@
 # StoreCalc Schema Integrity Addendum
 
+> Historical review record. Its accepted corrections are consolidated in
+> `storecalc-implementation-contract.md`; this file is not an implementation
+> source.
+
 Issues: #111, #109
 
 This addendum records mandatory relational constraints discovered during review of `storecalc-schema-design.md`.
