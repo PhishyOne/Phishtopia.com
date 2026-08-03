@@ -804,18 +804,51 @@ class RealPlatform:
             or baseline.get("release_destination") != str(destination)
         ):
             raise PlatformError("release_destination_exists")
+        legacy = baseline.get("legacy")
+        legacy_destination: Path | None = None
+        legacy_release_id = baseline.get("commit")
+        if legacy is True:
+            current = baseline.get("current")
+            if (
+                not isinstance(current, str)
+                or not isinstance(legacy_release_id, str)
+                or re.fullmatch(r"[0-9a-f]{40}", legacy_release_id) is None
+            ):
+                raise PlatformError("legacy_release_baseline_invalid")
+            legacy_destination = Path(current)
+            if (
+                legacy_destination != APP_RELEASES / legacy_release_id
+                or legacy_destination.parent != APP_RELEASES
+                or legacy_destination.exists()
+                or legacy_destination.is_symlink()
+                or APP_CURRENT.is_symlink()
+                or not APP_CURRENT.is_dir()
+            ):
+                raise PlatformError("legacy_release_baseline_invalid")
+            if self._app_commit(APP_CURRENT) != legacy_release_id:
+                raise PlatformError("legacy_app_changed_since_baseline")
+        elif legacy is False:
+            current = baseline.get("current")
+            if (
+                not isinstance(current, str)
+                or not APP_CURRENT.is_symlink()
+                or self._current_target(APP_CURRENT) != current
+            ):
+                raise PlatformError("app_release_baseline_changed")
+        else:
+            raise PlatformError("app_release_baseline_invalid")
         mutation()
         env_bytes = self._safe_env_read()
         self._safe_env_write(root, env_bytes)
         self._install_release(root, destination)
-        if not APP_CURRENT.is_symlink():
-            old_commit = self._app_commit(APP_CURRENT)
-            legacy_destination = APP_RELEASES / old_commit
-            if legacy_destination.exists():
-                raise PlatformError("legacy_release_target_exists")
+        if legacy is True:
+            if legacy_destination is None or not isinstance(legacy_release_id, str):
+                raise PlatformError("legacy_release_baseline_invalid")
             os.rename(APP_CURRENT, legacy_destination)
             self._fsync_directories(APP_CURRENT.parent, legacy_destination.parent)
-            self._record_release("phishtopia_app", old_commit, "legacy-baseline")
+            self._record_release(
+                "phishtopia_app", legacy_release_id, "legacy-baseline"
+            )
         self._switch_symlink(APP_CURRENT, destination)
         self._pm2("reload", PM2_NAME, "--update-env", timeout=45)
         self._public_health(PUBLIC_HEALTH)
@@ -2799,7 +2832,24 @@ class RealPlatform:
                 os.close(parent)
 
     @staticmethod
+    def _legacy_app_release_id(path: Path) -> str:
+        if path != APP_CURRENT or APP_CURRENT.is_symlink():
+            raise PlatformError("legacy_app_baseline_unavailable")
+        resolved = RealPlatform._validated_app_directory(path)
+        if resolved != APP_CURRENT or APP_CURRENT.is_symlink():
+            raise PlatformError("legacy_app_baseline_unavailable")
+        try:
+            tree_digest = RealPlatform._tree_digest(resolved)
+        except OSError as error:
+            raise PlatformError("legacy_app_baseline_unavailable") from error
+        return hashlib.sha256(
+            b"phishtopia-legacy-app\x00" + tree_digest.encode("ascii")
+        ).hexdigest()[:40]
+
+    @staticmethod
     def _app_commit(path: Path) -> str:
+        if path == APP_CURRENT and not APP_CURRENT.is_symlink():
+            return RealPlatform._legacy_app_release_id(path)
         resolved = path.resolve()
         if resolved.parent == APP_RELEASES and re.fullmatch(r"[0-9a-f]{40}", resolved.name):
             return resolved.name
