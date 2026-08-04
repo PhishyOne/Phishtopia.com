@@ -1,0 +1,119 @@
+{
+  "formatVersion": 1,
+  "migrationKey": "0009_constraints",
+  "baseMigrationKey": "0008_tax_rules",
+  "contractRequirements": [
+    "SC-DAT-001",
+    "SC-DAT-002",
+    "SC-DAT-003",
+    "SC-DAT-004",
+    "SC-DAT-005",
+    "SC-DAT-006",
+    "SC-DAT-007",
+    "SC-DB-001",
+    "SC-DB-002",
+    "SC-DB-003",
+    "SC-DB-004",
+    "SC-CAT-007",
+    "SC-CAL-001",
+    "SC-CAL-003",
+    "SC-CAL-004",
+    "SC-SEC-001",
+    "SC-STM-001",
+    "SC-STM-002",
+    "SC-STM-003",
+    "SC-OPS-001",
+    "SC-OPS-002",
+    "SC-OPS-003",
+    "SC-OPS-004",
+    "SC-DEF-002"
+  ],
+  "advisoryLockKey": "7356507374803211041",
+  "timeouts": {
+    "lock": "3s",
+    "statement": "30s"
+  },
+  "files": [
+    {
+      "path": "migrations/storecalc/0009_constraints/README.md",
+      "purpose": "scope, V1 aggregate vocabulary, explicit partial boundary, mutation, rollback, deferral, and production boundary",
+      "sha256": "1244610e175451b885bbe0d781101294eb6b2d765e9c16585dad3561106fe81f"
+    },
+    {
+      "path": "migrations/storecalc/0009_constraints/down.sql",
+      "purpose": "fail-closed never-used rollback to the tax-rule baseline",
+      "sha256": "4ce01cdc3c94c36e111d19b729e6be745e1ff54eecd328a3302d07dad743ade4"
+    },
+    {
+      "path": "migrations/storecalc/0009_constraints/up.sql",
+      "purpose": "forward immutable order-constraint migration",
+      "sha256": "b1ec8031d41ba4673fb9263588d2ef1d2adcb32d3c7adcb0144f674aed9b40c9"
+    },
+    {
+      "path": "migrations/storecalc/0009_constraints/verify.sql",
+      "purpose": "exact inherited and order-constraint verification",
+      "sha256": "a894533624a22932ed800f28ff53ffb955593be6e4ada9a033715cdd8a28d4b5"
+    }
+  ],
+  "bundleSha256": "d2d577431df4c7c499ccdb33a7d351d4b78183d70c659feb6b218f908ad05112",
+  "expectedDefinitions": {
+    "schema": "storecalc",
+    "ownerClass": "migration_owner",
+    "tables": ["version_constraints"],
+    "identitySequences": ["version_constraints_id_seq"],
+    "reusedFunctions": [
+      "lock_template_version_topology()",
+      "assert_version_content_mutable()"
+    ],
+    "triggers": [
+      "version_constraints_version_topology_lock_trigger",
+      "version_constraints_content_mutability_trigger"
+    ],
+    "vocabulary": {
+      "capability": "constraints.order_aggregate.v1",
+      "constraintTypes": ["order_aggregate"],
+      "measureTypes": ["total_quantity", "distinct_line_count"],
+      "comparators": ["less_than_or_equal", "greater_than_or_equal"],
+      "valueStates": [
+        "known",
+        "unlimited",
+        "not_applicable",
+        "unknown",
+        "unsupported"
+      ],
+      "unitCodes": ["count"],
+      "scopeTypes": ["order"],
+      "compositionBehaviors": ["all_must_pass"],
+      "limitMinimum": "0",
+      "limitMaximum": "1000000000",
+      "priorityMinimum": 0,
+      "priorityMaximum": 1000000
+    },
+    "runtimeGrants": {
+      "web": ["SCHEMA USAGE", "schema_capabilities SELECT"],
+      "worker": ["SCHEMA USAGE", "schema_capabilities SELECT"],
+      "backup": ["SCHEMA USAGE", "NEW TABLE SELECT", "NEW SEQUENCE SELECT"],
+      "public": []
+    },
+    "capability": {
+      "key": "anonymous.calculation",
+      "schemaVersion": 6,
+      "available": false,
+      "verified": false
+    }
+  },
+  "deferred": [
+    "constraint memberships and scoped contribution rules",
+    "money, weight, grouped, mutually exclusive, and time-period constraint capabilities",
+    "warnings and source evidence",
+    "canonical content serialization and sealing service",
+    "forks, publications, applicability, profiles, and orders",
+    "catalog seed data and Hays-specific claims",
+    "runtime catalog grants and routes",
+    "production migration execution"
+  ],
+  "productionExecution": {
+    "allowed": false,
+    "reason": "SC-OPS-002 rehearsal and an independently reviewed SC-OPS-004 execution path are still required."
+  }
+}
