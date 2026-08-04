@@ -1105,8 +1105,7 @@ test(
 
       await runAsRole(client, ROLE_SETTINGS.migration_owner_role, () =>
         client.query(
-          "DELETE FROM storecalc.version_items; " +
-            "DELETE FROM storecalc.version_categories",
+          "TRUNCATE storecalc.version_items, storecalc.version_categories",
         ),
       );
       await resetSequences(client, CONTENT_SEQUENCES);
