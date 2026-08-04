@@ -491,8 +491,8 @@ const constraintVerifySql = readMigration("0009_constraints", "verify.sql");
 const constraintDownSql = readMigration("0009_constraints", "down.sql");
 const ORDER_CONSTRAINT_SEQUENCES = ["version_constraints_id_seq"];
 const ORDER_CONSTRAINT_CAPABILITIES = [
-  ...VERSION_CAPABILITIES,
   "constraints.order_aggregate.v1",
+  ...VERSION_CAPABILITIES,
 ];
 
 async function insertOrderConstraint(client, values) {
