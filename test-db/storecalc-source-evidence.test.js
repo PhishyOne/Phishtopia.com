@@ -669,7 +669,7 @@ test(
       const preWarningFingerprint = await schemaFingerprint(client);
       await expectRejected(
         runMigrationSql(client, evidenceUpSql),
-        "storecalc_version_warnings_postflight_relation_mismatch",
+        "storecalc_template_postflight_relation_mismatch",
         "P0001",
       );
       assert.deepEqual(
@@ -1268,7 +1268,7 @@ test(
       const installedShape = await versionBaseShape(client);
       await expectRejected(
         runMigrationSql(client, evidenceUpSql),
-        "storecalc_version_warnings_postflight_relation_mismatch",
+        "storecalc_template_postflight_relation_mismatch",
         "P0001",
       );
       assert.deepEqual(

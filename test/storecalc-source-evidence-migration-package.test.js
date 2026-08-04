@@ -36,6 +36,7 @@ const packageReadme = readFileSync(
 const implementationContract = read(
   "docs/storecalc-implementation-contract.md",
 );
+const databaseAcceptance = read("test-db/storecalc-source-evidence.test.js");
 
 test("StoreCalc source-evidence manifest is exact and traceable", () => {
   assert.equal(manifest.formatVersion, 1);
@@ -267,6 +268,19 @@ test("StoreCalc source-evidence verifier preserves exact inheritance", () => {
   assert.match(downSql, /8:f:0011_source_evidence/);
   assert.match(downSql, /<> 140/);
   assert.match(downSql, /7:f:0010_warnings/);
+
+  assert.equal(
+    (
+      databaseAcceptance.match(
+        /"storecalc_template_postflight_relation_mismatch"/g,
+      ) ?? []
+    ).length,
+    2,
+  );
+  assert.doesNotMatch(
+    databaseAcceptance,
+    /"storecalc_version_warnings_postflight_relation_mismatch"/,
+  );
 });
 
 test("StoreCalc evidence lifecycle expansion remains explicit", () => {
