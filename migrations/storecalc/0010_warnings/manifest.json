@@ -1,0 +1,107 @@
+{
+  "formatVersion": 1,
+  "migrationKey": "0010_warnings",
+  "baseMigrationKey": "0009_constraints",
+  "contractRequirements": [
+    "SC-DAT-001",
+    "SC-DAT-002",
+    "SC-DAT-003",
+    "SC-DAT-004",
+    "SC-DAT-005",
+    "SC-DAT-006",
+    "SC-DAT-007",
+    "SC-DB-001",
+    "SC-DB-002",
+    "SC-DB-003",
+    "SC-DB-004",
+    "SC-CAT-003",
+    "SC-CAT-004",
+    "SC-CAT-008",
+    "SC-CAL-001",
+    "SC-CAL-004",
+    "SC-SEC-001",
+    "SC-STM-001",
+    "SC-STM-002",
+    "SC-STM-003",
+    "SC-OPS-001",
+    "SC-OPS-002",
+    "SC-OPS-003",
+    "SC-OPS-004",
+    "SC-DEF-002"
+  ],
+  "advisoryLockKey": "7356507374803211041",
+  "timeouts": {
+    "lock": "3s",
+    "statement": "30s"
+  },
+  "files": [
+    {
+      "path": "migrations/storecalc/0010_warnings/README.md",
+      "purpose": "scope, supported warning contract, mutation, rollback, deferral, and production boundary",
+      "sha256": "9129466203687d9a18dd8823bfa297767fd1ae44ea2475df990ead964ea686a8"
+    },
+    {
+      "path": "migrations/storecalc/0010_warnings/down.sql",
+      "purpose": "fail-closed never-used rollback to the order-constraint baseline",
+      "sha256": "6c2e1d2866fb9e82e1c8e2011042718776fd4f5447f8a8a5cc5d4734199de16c"
+    },
+    {
+      "path": "migrations/storecalc/0010_warnings/up.sql",
+      "purpose": "forward immutable V1 catalog-warning migration",
+      "sha256": "b8c80d0913f6481335889c3e56c89767e1885c573ba361ada9fc16fa9b90e5f1"
+    },
+    {
+      "path": "migrations/storecalc/0010_warnings/verify.sql",
+      "purpose": "exact inherited and catalog-warning verification",
+      "sha256": "ead4027e52535aef17fa23d4223ee76baf8e3f4de8094f579e6a5ce4e4a2a02e"
+    }
+  ],
+  "bundleSha256": "c07fb538886a0bb0d6818bbd4accfde59b00a50cbe83596413a573b60171422f",
+  "expectedDefinitions": {
+    "schema": "storecalc",
+    "ownerClass": "migration_owner",
+    "tables": ["version_warnings"],
+    "identitySequences": ["version_warnings_id_seq"],
+    "reusedFunctions": [
+      "lock_template_version_topology()",
+      "assert_version_content_mutable()"
+    ],
+    "triggers": [
+      "version_warnings_version_topology_lock_trigger",
+      "version_warnings_content_mutability_trigger"
+    ],
+    "vocabulary": {
+      "scopeTypes": ["template", "item"],
+      "severities": ["warning", "informational"],
+      "warningCodeMaximumBytes": 64,
+      "messageKeyMaximumBytes": 128,
+      "boundedDetails": {}
+    },
+    "runtimeGrants": {
+      "web": ["SCHEMA USAGE", "schema_capabilities SELECT"],
+      "worker": ["SCHEMA USAGE", "schema_capabilities SELECT"],
+      "backup": ["SCHEMA USAGE", "NEW TABLE SELECT", "NEW SEQUENCE SELECT"],
+      "public": []
+    },
+    "capability": {
+      "key": "anonymous.calculation",
+      "schemaVersion": 7,
+      "available": false,
+      "verified": false
+    }
+  },
+  "deferred": [
+    "category-scoped warnings and category-to-item composition",
+    "nonempty typed warning details and translations",
+    "sealed source evidence and append-only context evidence",
+    "canonical content serialization and sealing service",
+    "publication, applicability, profiles, orders, and deterministic database resolution",
+    "catalog seed data and Hays-specific claims",
+    "runtime catalog grants and routes",
+    "production migration execution"
+  ],
+  "productionExecution": {
+    "allowed": false,
+    "reason": "SC-OPS-002 rehearsal and an independently reviewed SC-OPS-004 execution path are still required."
+  }
+}
