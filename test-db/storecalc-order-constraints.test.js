@@ -783,7 +783,7 @@ test(
             versionId: 2_000_000_000,
             stableKey: "missing_version",
           }),
-          "version_constraints_version_id_fkey",
+          "storecalc_version_content_parent_missing",
           "23503",
         );
 
