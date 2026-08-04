@@ -487,10 +487,7 @@ async function insertTaxRule(client, values) {
 }
 
 const constraintUpSql = readMigration("0009_constraints", "up.sql");
-const constraintVerifySql = readMigration(
-  "0009_constraints",
-  "verify.sql",
-);
+const constraintVerifySql = readMigration("0009_constraints", "verify.sql");
 const constraintDownSql = readMigration("0009_constraints", "down.sql");
 const ORDER_CONSTRAINT_SEQUENCES = ["version_constraints_id_seq"];
 const ORDER_CONSTRAINT_CAPABILITIES = [
@@ -571,7 +568,7 @@ test(
       const preTaxFingerprint = await schemaFingerprint(client);
       await expectRejected(
         runMigrationSql(client, constraintUpSql),
-        "storecalc_tax_rules_postflight_relation_mismatch",
+        "storecalc_template_postflight_relation_mismatch",
         "P0001",
       );
       assert.deepEqual(
@@ -1094,7 +1091,7 @@ test(
       const installedShape = await versionBaseShape(client);
       await expectRejected(
         runMigrationSql(client, constraintUpSql),
-        "storecalc_tax_rules_postflight_relation_mismatch",
+        "storecalc_template_postflight_relation_mismatch",
         "P0001",
       );
       assert.deepEqual(
