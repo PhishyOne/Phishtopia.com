@@ -42,20 +42,20 @@
     {
       "path": "migrations/storecalc/0009_constraints/down.sql",
       "purpose": "fail-closed never-used rollback to the tax-rule baseline",
-      "sha256": "a13227d227459002ad7b3bc2764b622ab7bafa7f7b2ab19c5243706a5ce5effe"
+      "sha256": "4ce01cdc3c94c36e111d19b729e6be745e1ff54eecd328a3302d07dad743ade4"
     },
     {
       "path": "migrations/storecalc/0009_constraints/up.sql",
       "purpose": "forward immutable order-constraint migration",
-      "sha256": "c9f4804485e926fdfa067621e283c28becf3bb190b199e49a3714cb061931213"
+      "sha256": "b1ec8031d41ba4673fb9263588d2ef1d2adcb32d3c7adcb0144f674aed9b40c9"
     },
     {
       "path": "migrations/storecalc/0009_constraints/verify.sql",
       "purpose": "exact inherited and order-constraint verification",
-      "sha256": "e3e49b9e534324db7685fe4e3c5448dd76df2afbcab5f7a68749ee33117f15f8"
+      "sha256": "a894533624a22932ed800f28ff53ffb955593be6e4ada9a033715cdd8a28d4b5"
     }
   ],
-  "bundleSha256": "78bb20e53e6102ab5b2418706092ca42bb4f5ddab1298b009c5f78f8b53b840a",
+  "bundleSha256": "d2d577431df4c7c499ccdb33a7d351d4b78183d70c659feb6b218f908ad05112",
   "expectedDefinitions": {
     "schema": "storecalc",
     "ownerClass": "migration_owner",

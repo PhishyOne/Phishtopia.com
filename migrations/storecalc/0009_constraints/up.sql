@@ -2591,6 +2591,7 @@ DECLARE
     actual_relations text[];
     actual_columns text[];
     actual_constraints text[];
+    actual_check_definitions text[];
     actual_indexes text[];
     actual_foreign_keys text[];
     actual_triggers text[];
@@ -2704,32 +2705,31 @@ BEGIN
         RAISE EXCEPTION 'storecalc_order_constraints_postflight_constraint_mismatch';
     END IF;
 
-    IF NOT EXISTS (
-        SELECT 1
-        FROM pg_constraint
-        WHERE conrelid = 'storecalc.version_constraints'::regclass
-          AND conname = 'version_constraints_id_version_key'
-          AND pg_get_constraintdef(oid) = 'UNIQUE (id, version_id)'
-    ) OR NOT EXISTS (
-        SELECT 1
-        FROM pg_constraint
-        WHERE conrelid = 'storecalc.version_constraints'::regclass
-          AND conname = 'version_constraints_version_stable_key_key'
-          AND pg_get_constraintdef(oid) = 'UNIQUE (version_id, stable_key)'
-    ) OR NOT EXISTS (
-        SELECT 1
-        FROM pg_constraint
-        WHERE conrelid = 'storecalc.version_constraints'::regclass
-          AND conname = 'version_constraints_limit_nullability_check'
-          AND pg_get_constraintdef(oid) = 'CHECK ((((value_state = ''known''::text) AND (limit_value IS NOT NULL) AND ((limit_value >= 0) AND (limit_value <= 1000000000))) OR ((value_state = ANY (ARRAY[''unlimited''::text, ''not_applicable''::text, ''unknown''::text, ''unsupported''::text])) AND (limit_value IS NULL))))'
-    ) OR NOT EXISTS (
-        SELECT 1
-        FROM pg_constraint
-        WHERE conrelid = 'storecalc.version_constraints'::regclass
-          AND conname = 'version_constraints_comparator_state_check'
-          AND pg_get_constraintdef(oid) = 'CHECK (((comparator <> ''greater_than_or_equal''::text) OR (value_state <> ''unlimited''::text)))'
-    ) THEN
-        RAISE EXCEPTION 'storecalc_order_constraints_postflight_constraint_definition_mismatch';
+    SELECT array_agg(
+        format('%s:%s', constraint_row.conname, pg_get_constraintdef(constraint_row.oid))
+        ORDER BY constraint_row.conname
+    )
+    INTO actual_check_definitions
+    FROM pg_constraint AS constraint_row
+    WHERE constraint_row.conrelid = 'storecalc.version_constraints'::regclass
+      AND constraint_row.contype = 'c';
+
+    IF actual_check_definitions IS DISTINCT FROM ARRAY[
+        'version_constraints_comparator_check:CHECK ((comparator = ANY (ARRAY[''less_than_or_equal''::text, ''greater_than_or_equal''::text])))',
+        'version_constraints_comparator_state_check:CHECK (((comparator <> ''greater_than_or_equal''::text) OR (value_state <> ''unlimited''::text)))',
+        'version_constraints_composition_behavior_check:CHECK ((composition_behavior = ''all_must_pass''::text))',
+        'version_constraints_constraint_type_check:CHECK ((constraint_type = ''order_aggregate''::text))',
+        'version_constraints_display_name_check:CHECK ((((char_length(display_name) >= 1) AND (char_length(display_name) <= 120)) AND (octet_length(display_name) <= 512) AND (display_name = btrim(display_name)) AND (display_name !~ ''[[:cntrl:]]''::text)))',
+        'version_constraints_limit_nullability_check:CHECK ((((value_state = ''known''::text) AND (limit_value IS NOT NULL) AND ((limit_value >= 0) AND (limit_value <= 1000000000))) OR ((value_state = ANY (ARRAY[''unlimited''::text, ''not_applicable''::text, ''unknown''::text, ''unsupported''::text])) AND (limit_value IS NULL))))',
+        'version_constraints_measure_type_check:CHECK ((measure_type = ANY (ARRAY[''total_quantity''::text, ''distinct_line_count''::text])))',
+        'version_constraints_priority_check:CHECK (((priority >= 0) AND (priority <= 1000000)))',
+        'version_constraints_scope_type_check:CHECK ((scope_type = ''order''::text))',
+        'version_constraints_stable_key_check:CHECK ((((char_length(stable_key) >= 1) AND (char_length(stable_key) <= 64)) AND (octet_length(stable_key) <= 64) AND (stable_key ~ ''^[a-z][a-z0-9]*([._-][a-z0-9]+)*$''::text)))',
+        'version_constraints_unit_code_check:CHECK ((unit_code = ''count''::text))',
+        'version_constraints_value_state_check:CHECK ((value_state = ANY (ARRAY[''known''::text, ''unlimited''::text, ''not_applicable''::text, ''unknown''::text, ''unsupported''::text])))'
+    ]::text[] THEN
+        RAISE EXCEPTION 'storecalc_order_constraints_postflight_constraint_definition_mismatch'
+            USING DETAIL = COALESCE(actual_check_definitions::text, 'NULL');
     END IF;
 
     SELECT array_agg(

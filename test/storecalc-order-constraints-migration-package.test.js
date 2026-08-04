@@ -273,6 +273,30 @@ test("StoreCalc order constraints remain inaccessible and unavailable", () => {
 });
 
 test("StoreCalc order-constraint verifier preserves exact inheritance", () => {
+  const exactCheckNames = [
+    "version_constraints_comparator_check",
+    "version_constraints_comparator_state_check",
+    "version_constraints_composition_behavior_check",
+    "version_constraints_constraint_type_check",
+    "version_constraints_display_name_check",
+    "version_constraints_limit_nullability_check",
+    "version_constraints_measure_type_check",
+    "version_constraints_priority_check",
+    "version_constraints_scope_type_check",
+    "version_constraints_stable_key_check",
+    "version_constraints_unit_code_check",
+    "version_constraints_value_state_check",
+  ];
+
+  for (const sql of [upSql, verifySql, downSql]) {
+    for (const checkName of exactCheckNames) {
+      assert.ok(
+        sql.includes(`${checkName}:CHECK`),
+        `${checkName} lacks an exact verifier fingerprint`,
+      );
+    }
+  }
+
   assert.match(upSql, /<> 127/);
   assert.match(upSql, /5:f:0008_tax_rules/);
   assert.match(upSql, /<> 133/);

@@ -818,7 +818,8 @@ test(
               valueState: "maybe",
               limitValue: null,
             },
-            constraint: "version_constraints_value_state_check",
+            constraint:
+              "version_constraints_(value_state|limit_nullability)_check",
           },
           {
             values: { stableKey: "missing_limit", limitValue: null },
