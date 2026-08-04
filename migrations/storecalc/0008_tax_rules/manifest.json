@@ -1,0 +1,108 @@
+{
+  "formatVersion": 1,
+  "migrationKey": "0008_tax_rules",
+  "baseMigrationKey": "0007_buckets",
+  "contractRequirements": [
+    "SC-DAT-001",
+    "SC-DAT-002",
+    "SC-DAT-003",
+    "SC-DAT-004",
+    "SC-DAT-005",
+    "SC-DAT-006",
+    "SC-DAT-007",
+    "SC-DB-001",
+    "SC-DB-002",
+    "SC-DB-003",
+    "SC-DB-004",
+    "SC-CAT-006",
+    "SC-CAL-001",
+    "SC-CAL-004",
+    "SC-SEC-001",
+    "SC-STM-001",
+    "SC-STM-002",
+    "SC-STM-003",
+    "SC-OPS-001",
+    "SC-OPS-002",
+    "SC-OPS-003",
+    "SC-OPS-004",
+    "SC-DEF-002"
+  ],
+  "advisoryLockKey": "7356507374803211041",
+  "timeouts": {
+    "lock": "3s",
+    "statement": "30s"
+  },
+  "files": [
+    {
+      "path": "migrations/storecalc/0008_tax_rules/README.md",
+      "purpose": "scope, specificity, tax-state semantics, mutation, rollback, deferral, and production boundary",
+      "sha256": "43895818595e05a1baf78aff9ce7ce693d89a60cf59f61b8570557180982998a"
+    },
+    {
+      "path": "migrations/storecalc/0008_tax_rules/down.sql",
+      "purpose": "fail-closed never-used rollback to the spending-bucket baseline",
+      "sha256": "233953c628c1f7c65ee5d6c030a751115c51bcad8934a44ff0bbb370727bc2b9"
+    },
+    {
+      "path": "migrations/storecalc/0008_tax_rules/up.sql",
+      "purpose": "forward scoped tax-rule migration",
+      "sha256": "fbf51610453cc81afa0af46c54abb284e94e943bd044f0be01f06f2c7cb0b9cd"
+    },
+    {
+      "path": "migrations/storecalc/0008_tax_rules/verify.sql",
+      "purpose": "exact inherited and tax-rule verification",
+      "sha256": "3c6698a7a7e8dc1373dd8b014c9ce7437c374474140cb62ab0da29b8bbb0db71"
+    }
+  ],
+  "bundleSha256": "253d33d162182bdbc1bdd5920fba210e402c1da267e80efe6523e75f2507b16f",
+  "expectedDefinitions": {
+    "schema": "storecalc",
+    "ownerClass": "migration_owner",
+    "tables": ["version_tax_rules"],
+    "identitySequences": ["version_tax_rules_id_seq"],
+    "reusedFunctions": [
+      "lock_template_version_topology()",
+      "assert_version_content_mutable()"
+    ],
+    "triggers": [
+      "version_tax_rules_version_topology_lock_trigger",
+      "version_tax_rules_content_mutability_trigger"
+    ],
+    "vocabulary": {
+      "scopeTypes": ["template", "category", "item"],
+      "treatmentStates": ["known", "not_applicable", "unknown", "unsupported"],
+      "roundingModes": ["half_up", "floor", "ceiling"],
+      "roundingScopes": ["line"],
+      "rateMinimumPpm": "0",
+      "rateMaximumPpm": "1000000",
+      "priorityMinimum": 0,
+      "priorityMaximum": 1000000
+    },
+    "runtimeGrants": {
+      "web": ["SCHEMA USAGE", "schema_capabilities SELECT"],
+      "worker": ["SCHEMA USAGE", "schema_capabilities SELECT"],
+      "backup": ["SCHEMA USAGE", "NEW TABLE SELECT", "NEW SEQUENCE SELECT"],
+      "public": []
+    },
+    "capability": {
+      "key": "anonymous.calculation",
+      "schemaVersion": 5,
+      "available": false,
+      "verified": false
+    }
+  },
+  "deferred": [
+    "effective tax rule resolver and ambiguity service",
+    "typed constraints and contributions",
+    "warnings and source evidence",
+    "canonical content serialization and sealing service",
+    "forks, publications, applicability, profiles, and orders",
+    "catalog seed data and Hays-specific claims",
+    "runtime catalog grants and routes",
+    "production migration execution"
+  ],
+  "productionExecution": {
+    "allowed": false,
+    "reason": "SC-OPS-002 rehearsal and an independently reviewed SC-OPS-004 execution path are still required."
+  }
+}
