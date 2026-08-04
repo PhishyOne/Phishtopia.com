@@ -704,7 +704,7 @@ test(
             "INSERT INTO storecalc.template_items (" +
               "template_id, stable_key, created_by_subject_id" +
               ") VALUES " +
-              "($1, 'first-item', $2), ($1, 'second-item', $2) " +
+              "($1, 'first_item', $2), ($1, 'second_item', $2) " +
               "RETURNING id, stable_key",
             [templateId, subjectId],
           );
@@ -724,21 +724,21 @@ test(
           const firstVersionItem = await insertVersionItem(client, {
             versionId: versionOne,
             templateId,
-            itemId: itemByKey["first-item"],
+            itemId: itemByKey.first_item,
             displayName: "First item",
             sortOrder: 10,
           });
           const secondVersionItem = await insertVersionItem(client, {
             versionId: versionOne,
             templateId,
-            itemId: itemByKey["second-item"],
+            itemId: itemByKey.second_item,
             displayName: "Second item",
             sortOrder: 20,
           });
           const otherVersionItem = await insertVersionItem(client, {
             versionId: versionTwo,
             templateId,
-            itemId: itemByKey["first-item"],
+            itemId: itemByKey.first_item,
             displayName: "First item",
             sortOrder: 10,
           });
