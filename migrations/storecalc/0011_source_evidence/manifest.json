@@ -1,0 +1,129 @@
+{
+  "formatVersion": 1,
+  "migrationKey": "0011_source_evidence",
+  "baseMigrationKey": "0010_warnings",
+  "contractRequirements": [
+    "SC-DAT-001",
+    "SC-DAT-002",
+    "SC-DAT-003",
+    "SC-DAT-004",
+    "SC-DAT-005",
+    "SC-DAT-006",
+    "SC-DAT-007",
+    "SC-DB-001",
+    "SC-DB-002",
+    "SC-DB-003",
+    "SC-DB-004",
+    "SC-CAT-003",
+    "SC-CAT-008",
+    "SC-CAL-001",
+    "SC-CAL-004",
+    "SC-EVD-003",
+    "SC-EVD-004",
+    "SC-EVD-005",
+    "SC-SEC-001",
+    "SC-STM-001",
+    "SC-STM-002",
+    "SC-STM-003",
+    "SC-OPS-001",
+    "SC-OPS-002",
+    "SC-OPS-003",
+    "SC-OPS-004",
+    "SC-DEF-002"
+  ],
+  "advisoryLockKey": "7356507374803211041",
+  "timeouts": {
+    "lock": "3s",
+    "statement": "30s"
+  },
+  "files": [
+    {
+      "path": "migrations/storecalc/0011_source_evidence/README.md",
+      "purpose": "scope, metadata-only evidence contract, sealing relationship, rollback, deferral, and production boundary",
+      "sha256": "ad67111661651f62d28d3ecaa0b8223b2d4fbc928ea94583267db198bbce6fee"
+    },
+    {
+      "path": "migrations/storecalc/0011_source_evidence/down.sql",
+      "purpose": "fail-closed never-used rollback to the catalog-warning baseline",
+      "sha256": "ae6e3ddc6a073ff7014fecf35ead7a1719fe260b62a123dcaaa472c31ecd02f4"
+    },
+    {
+      "path": "migrations/storecalc/0011_source_evidence/up.sql",
+      "purpose": "forward immutable V1 evidence and version-source relationship migration",
+      "sha256": "7c8a5d3a6446267e9eb262c6f0d6ecda6b8951e43485635557a7267844da90d6"
+    },
+    {
+      "path": "migrations/storecalc/0011_source_evidence/verify.sql",
+      "purpose": "exact inherited and source-evidence verification",
+      "sha256": "ff1753d74aeb5f7f938c6436a8a5ff81c5c235b0e734d4fda3fc2177a9c4d978"
+    }
+  ],
+  "bundleSha256": "67a9cb7e8c092fd65cae3c1210a45cbf383954849a984755656327205f6565cb",
+  "expectedDefinitions": {
+    "schema": "storecalc",
+    "ownerClass": "migration_owner",
+    "tables": ["evidence", "evidence_groups", "version_source_evidence"],
+    "identitySequences": ["evidence_id_seq", "evidence_groups_id_seq"],
+    "functions": [
+      "forbid_evidence_identity_mutation()",
+      "assert_version_source_evidence_eligible()"
+    ],
+    "reusedFunctions": [
+      "lock_template_version_topology()",
+      "assert_version_content_mutable()"
+    ],
+    "triggers": [
+      "evidence_identity_immutable_trigger",
+      "evidence_groups_identity_immutable_trigger",
+      "version_source_evidence_version_topology_lock_trigger",
+      "version_source_evidence_content_mutability_trigger",
+      "version_source_evidence_eligibility_trigger"
+    ],
+    "vocabulary": {
+      "sourceTypes": ["external_citation"],
+      "relationshipTypes": ["supports_catalog"],
+      "groupingTypes": ["source_lineage"],
+      "metadataVisibility": ["private", "public_citation"],
+      "privacyStates": [
+        "pending_review",
+        "metadata_safe",
+        "restricted",
+        "withdrawn"
+      ],
+      "redistributionStates": ["metadata_only"],
+      "independenceStates": [
+        "unreviewed",
+        "accepted",
+        "disputed",
+        "superseded"
+      ],
+      "fingerprintAlgorithm": "sha256"
+    },
+    "runtimeGrants": {
+      "web": ["SCHEMA USAGE", "schema_capabilities SELECT"],
+      "worker": ["SCHEMA USAGE", "schema_capabilities SELECT"],
+      "backup": ["SCHEMA USAGE", "NEW TABLE SELECT", "NEW SEQUENCE SELECT"],
+      "public": []
+    },
+    "capability": {
+      "key": "anonymous.calculation",
+      "schemaVersion": 8,
+      "available": false,
+      "verified": false
+    }
+  },
+  "deferred": [
+    "private uploads and extraction",
+    "public evidence artifacts and object storage",
+    "append-only evidence-group and withdrawal events",
+    "canonical database extraction and the sealing transaction",
+    "publication, applicability, profiles, and orders",
+    "real catalog rows and source claims",
+    "runtime catalog grants and routes",
+    "production migration execution"
+  ],
+  "productionExecution": {
+    "allowed": false,
+    "reason": "SC-OPS-002 rehearsal and an independently reviewed SC-OPS-004 execution path are still required."
+  }
+}

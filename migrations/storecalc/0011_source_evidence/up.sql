@@ -1,0 +1,4017 @@
+BEGIN;
+
+SET LOCAL lock_timeout = '3s';
+SET LOCAL statement_timeout = '30s';
+
+SELECT pg_advisory_xact_lock(7356507374803211041);
+
+DO $storecalc_template_postflight$
+DECLARE
+    migration_owner_role text := current_setting('storecalc.migration_owner_role');
+    web_role text := current_setting('storecalc.web_role');
+    worker_role text := current_setting('storecalc.worker_role');
+    backup_role text := current_setting('storecalc.backup_role');
+    configured_roles text[] := ARRAY[
+        current_setting('storecalc.migration_owner_role'),
+        current_setting('storecalc.web_role'),
+        current_setting('storecalc.worker_role'),
+        current_setting('storecalc.backup_role')
+    ];
+    allowed_grantee_oids oid[];
+    source_role text;
+    target_role text;
+    object_name text;
+    actual_relations text[];
+    actual_columns text[];
+    actual_constraints text[];
+    actual_indexes text[];
+    actual_foreign_keys text[];
+    actual_triggers text[];
+    actual_capabilities text[];
+    new_tables constant text[] := ARRAY[
+        'storecalc.templates',
+        'storecalc.template_categories',
+        'storecalc.template_items'
+    ];
+    new_sequences constant text[] := ARRAY[
+        'storecalc.templates_id_seq',
+        'storecalc.template_categories_id_seq',
+        'storecalc.template_items_id_seq'
+    ];
+BEGIN
+    IF array_position(configured_roles, NULL) IS NOT NULL
+       OR array_position(configured_roles, '') IS NOT NULL
+       OR lower('public') = ANY (
+           ARRAY(
+               SELECT lower(role_name)
+               FROM unnest(configured_roles) AS role_name
+           )
+       )
+       OR (SELECT count(DISTINCT role_name) FROM unnest(configured_roles) AS role_name) <> 4 THEN
+        RAISE EXCEPTION 'storecalc_template_verify_role_config_invalid'
+            USING ERRCODE = '22023';
+    END IF;
+
+    IF migration_owner_role <> current_user THEN
+        RAISE EXCEPTION 'storecalc_template_verify_owner_mismatch'
+            USING ERRCODE = '42501';
+    END IF;
+
+    SELECT array_agg(oid ORDER BY oid)
+    INTO allowed_grantee_oids
+    FROM pg_roles
+    WHERE rolname = ANY (configured_roles);
+
+    IF COALESCE(cardinality(allowed_grantee_oids), 0) <> 4
+       OR EXISTS (
+           SELECT 1
+           FROM pg_roles
+           WHERE rolname = ANY (configured_roles)
+             AND (rolsuper OR rolcreaterole OR rolcreatedb OR rolreplication OR rolbypassrls)
+       ) THEN
+        RAISE EXCEPTION 'storecalc_template_verify_role_mismatch'
+            USING ERRCODE = '42501';
+    END IF;
+
+    IF NOT has_database_privilege(migration_owner_role, current_database(), 'CREATE')
+       OR has_database_privilege(web_role, current_database(), 'CREATE')
+       OR has_database_privilege(worker_role, current_database(), 'CREATE')
+       OR has_database_privilege(backup_role, current_database(), 'CREATE') THEN
+        RAISE EXCEPTION 'storecalc_template_verify_database_grant_mismatch'
+            USING ERRCODE = '42501';
+    END IF;
+
+    FOREACH source_role IN ARRAY configured_roles LOOP
+        FOREACH target_role IN ARRAY configured_roles LOOP
+            IF source_role <> target_role
+               AND pg_has_role(source_role, target_role, 'MEMBER') THEN
+                RAISE EXCEPTION 'storecalc_template_verify_role_inheritance_mismatch'
+                    USING ERRCODE = '42501';
+            END IF;
+        END LOOP;
+    END LOOP;
+
+    IF to_regnamespace('storecalc') IS NULL
+       OR to_regclass('public.users') IS NULL
+       OR pg_get_userbyid(
+           (SELECT nspowner FROM pg_namespace WHERE nspname = 'storecalc')
+       ) IS DISTINCT FROM migration_owner_role THEN
+        RAISE EXCEPTION 'storecalc_template_verify_baseline_mismatch';
+    END IF;
+
+    SELECT array_agg(format('%s:%s', relname, relkind) ORDER BY relname)
+    INTO actual_relations
+    FROM pg_class
+    WHERE relnamespace = 'storecalc'::regnamespace
+      AND relname = ANY (
+          ARRAY[
+              'templates',
+              'templates_id_seq',
+              'templates_pkey',
+              'templates_id_program_key',
+              'templates_program_name_idx',
+              'templates_owner_idx',
+              'templates_created_by_subject_idx',
+              'templates_visibility_status_idx',
+              'template_categories',
+              'template_categories_id_seq',
+              'template_categories_pkey',
+              'template_categories_id_template_key',
+              'template_categories_template_stable_key_key',
+              'template_categories_created_by_subject_idx',
+              'template_categories_active_idx',
+              'template_items',
+              'template_items_id_seq',
+              'template_items_pkey',
+              'template_items_id_template_key',
+              'template_items_template_stable_key_key',
+              'template_items_created_by_subject_idx',
+              'template_items_active_idx'
+          ]
+      );
+
+    IF actual_relations IS DISTINCT FROM ARRAY[
+        'template_categories:r',
+        'template_categories_active_idx:i',
+        'template_categories_created_by_subject_idx:i',
+        'template_categories_id_seq:S',
+        'template_categories_id_template_key:i',
+        'template_categories_pkey:i',
+        'template_categories_template_stable_key_key:i',
+        'template_items:r',
+        'template_items_active_idx:i',
+        'template_items_created_by_subject_idx:i',
+        'template_items_id_seq:S',
+        'template_items_id_template_key:i',
+        'template_items_pkey:i',
+        'template_items_template_stable_key_key:i',
+        'templates:r',
+        'templates_created_by_subject_idx:i',
+        'templates_id_program_key:i',
+        'templates_id_seq:S',
+        'templates_owner_idx:i',
+        'templates_pkey:i',
+        'templates_program_name_idx:i',
+        'templates_visibility_status_idx:i'
+    ]::text[]
+       OR (
+           SELECT count(*)
+           FROM pg_class
+           WHERE relnamespace = 'storecalc'::regnamespace
+       ) <> 140 THEN
+        RAISE EXCEPTION 'storecalc_template_postflight_relation_mismatch';
+    END IF;
+
+    SELECT array_agg(
+        format(
+            '%s:%s:%s:%s:%s:%s',
+            column_row.table_name,
+            column_row.column_name,
+            column_row.data_type,
+            column_row.is_nullable,
+            COALESCE(column_row.identity_generation, ''),
+            COALESCE(column_row.column_default, '')
+        )
+        ORDER BY column_row.table_name, column_row.ordinal_position
+    )
+    INTO actual_columns
+    FROM information_schema.columns AS column_row
+    WHERE column_row.table_schema = 'storecalc'
+      AND column_row.table_name = ANY (
+          ARRAY['templates', 'template_categories', 'template_items']
+      );
+
+    IF actual_columns IS DISTINCT FROM ARRAY[
+        'template_categories:id:integer:NO:BY DEFAULT:',
+        'template_categories:template_id:integer:NO::',
+        'template_categories:stable_key:text:NO::',
+        'template_categories:created_by_subject_id:integer:YES::',
+        'template_categories:created_at:timestamp with time zone:NO::transaction_timestamp()',
+        'template_categories:retired_at:timestamp with time zone:YES::',
+        'template_items:id:integer:NO:BY DEFAULT:',
+        'template_items:template_id:integer:NO::',
+        'template_items:stable_key:text:NO::',
+        'template_items:created_by_subject_id:integer:YES::',
+        'template_items:created_at:timestamp with time zone:NO::transaction_timestamp()',
+        'template_items:retired_at:timestamp with time zone:YES::',
+        'templates:id:integer:NO:BY DEFAULT:',
+        'templates:program_id:integer:NO::',
+        'templates:visibility:text:NO::',
+        'templates:owner_user_id:integer:YES::',
+        'templates:name:text:NO::',
+        'templates:status:text:NO::',
+        'templates:created_by_subject_id:integer:YES::',
+        'templates:created_at:timestamp with time zone:NO::transaction_timestamp()',
+        'templates:updated_at:timestamp with time zone:NO::transaction_timestamp()',
+        'templates:archived_at:timestamp with time zone:YES::'
+    ]::text[] THEN
+        RAISE EXCEPTION 'storecalc_template_postflight_column_mismatch';
+    END IF;
+
+    SELECT array_agg(
+        format('%s:%s:%s', relation.relname, constraint_row.conname, constraint_row.contype)
+        ORDER BY relation.relname, constraint_row.conname
+    )
+    INTO actual_constraints
+    FROM pg_constraint AS constraint_row
+    JOIN pg_class AS relation ON relation.oid = constraint_row.conrelid
+    WHERE relation.relnamespace = 'storecalc'::regnamespace
+      AND relation.relname = ANY (
+          ARRAY['templates', 'template_categories', 'template_items']
+      );
+
+    IF actual_constraints IS DISTINCT FROM ARRAY[
+        'template_categories:template_categories_created_by_subject_id_fkey:f',
+        'template_categories:template_categories_id_template_key:u',
+        'template_categories:template_categories_pkey:p',
+        'template_categories:template_categories_retired_order_check:c',
+        'template_categories:template_categories_stable_key_check:c',
+        'template_categories:template_categories_template_id_fkey:f',
+        'template_categories:template_categories_template_stable_key_key:u',
+        'template_items:template_items_created_by_subject_id_fkey:f',
+        'template_items:template_items_id_template_key:u',
+        'template_items:template_items_pkey:p',
+        'template_items:template_items_retired_order_check:c',
+        'template_items:template_items_stable_key_check:c',
+        'template_items:template_items_template_id_fkey:f',
+        'template_items:template_items_template_stable_key_key:u',
+        'templates:templates_archived_state_check:c',
+        'templates:templates_created_by_subject_id_fkey:f',
+        'templates:templates_id_program_key:u',
+        'templates:templates_name_check:c',
+        'templates:templates_owner_user_id_fkey:f',
+        'templates:templates_pkey:p',
+        'templates:templates_program_id_fkey:f',
+        'templates:templates_status_check:c',
+        'templates:templates_timestamp_order_check:c',
+        'templates:templates_visibility_check:c',
+        'templates:templates_visibility_owner_check:c'
+    ]::text[]
+       OR EXISTS (
+           SELECT 1
+           FROM pg_constraint AS constraint_row
+           JOIN pg_class AS relation ON relation.oid = constraint_row.conrelid
+           WHERE relation.relnamespace = 'storecalc'::regnamespace
+             AND relation.relname = ANY (
+                 ARRAY['templates', 'template_categories', 'template_items']
+             )
+             AND (
+                 NOT constraint_row.convalidated
+                 OR constraint_row.condeferrable
+                 OR constraint_row.condeferred
+             )
+       ) THEN
+        RAISE EXCEPTION 'storecalc_template_postflight_constraint_mismatch';
+    END IF;
+
+    IF NOT EXISTS (
+        SELECT 1
+        FROM pg_constraint
+        WHERE conrelid = 'storecalc.templates'::regclass
+          AND conname = 'templates_visibility_owner_check'
+          AND pg_get_constraintdef(oid) = 'CHECK ((((visibility = ''public''::text) AND (owner_user_id IS NULL)) OR ((visibility = ''private''::text) AND (owner_user_id IS NOT NULL))))'
+    ) OR NOT EXISTS (
+        SELECT 1
+        FROM pg_constraint
+        WHERE conrelid = 'storecalc.templates'::regclass
+          AND conname = 'templates_archived_state_check'
+          AND pg_get_constraintdef(oid) = 'CHECK (((status = ''archived''::text) = (archived_at IS NOT NULL)))'
+    ) OR NOT EXISTS (
+        SELECT 1
+        FROM pg_constraint
+        WHERE conrelid = 'storecalc.template_categories'::regclass
+          AND conname = 'template_categories_template_stable_key_key'
+          AND pg_get_constraintdef(oid) = 'UNIQUE (template_id, stable_key)'
+    ) OR NOT EXISTS (
+        SELECT 1
+        FROM pg_constraint
+        WHERE conrelid = 'storecalc.template_items'::regclass
+          AND conname = 'template_items_template_stable_key_key'
+          AND pg_get_constraintdef(oid) = 'UNIQUE (template_id, stable_key)'
+    ) THEN
+        RAISE EXCEPTION 'storecalc_template_verify_constraint_definition_mismatch';
+    END IF;
+
+    SELECT array_agg(
+        format('%s:%s', relation.relname, pg_get_indexdef(relation.oid))
+        ORDER BY relation.relname
+    )
+    INTO actual_indexes
+    FROM pg_class AS relation
+    WHERE relation.relnamespace = 'storecalc'::regnamespace
+      AND relation.relkind = 'i'
+      AND relation.relname = ANY (
+          ARRAY[
+              'templates_pkey',
+              'templates_id_program_key',
+              'templates_program_name_idx',
+              'templates_owner_idx',
+              'templates_created_by_subject_idx',
+              'templates_visibility_status_idx',
+              'template_categories_pkey',
+              'template_categories_id_template_key',
+              'template_categories_template_stable_key_key',
+              'template_categories_created_by_subject_idx',
+              'template_categories_active_idx',
+              'template_items_pkey',
+              'template_items_id_template_key',
+              'template_items_template_stable_key_key',
+              'template_items_created_by_subject_idx',
+              'template_items_active_idx'
+          ]
+      );
+
+    IF actual_indexes IS DISTINCT FROM ARRAY[
+        'template_categories_active_idx:CREATE INDEX template_categories_active_idx ON storecalc.template_categories USING btree (template_id, stable_key, id) WHERE (retired_at IS NULL)',
+        'template_categories_created_by_subject_idx:CREATE INDEX template_categories_created_by_subject_idx ON storecalc.template_categories USING btree (created_by_subject_id) WHERE (created_by_subject_id IS NOT NULL)',
+        'template_categories_id_template_key:CREATE UNIQUE INDEX template_categories_id_template_key ON storecalc.template_categories USING btree (id, template_id)',
+        'template_categories_pkey:CREATE UNIQUE INDEX template_categories_pkey ON storecalc.template_categories USING btree (id)',
+        'template_categories_template_stable_key_key:CREATE UNIQUE INDEX template_categories_template_stable_key_key ON storecalc.template_categories USING btree (template_id, stable_key)',
+        'template_items_active_idx:CREATE INDEX template_items_active_idx ON storecalc.template_items USING btree (template_id, stable_key, id) WHERE (retired_at IS NULL)',
+        'template_items_created_by_subject_idx:CREATE INDEX template_items_created_by_subject_idx ON storecalc.template_items USING btree (created_by_subject_id) WHERE (created_by_subject_id IS NOT NULL)',
+        'template_items_id_template_key:CREATE UNIQUE INDEX template_items_id_template_key ON storecalc.template_items USING btree (id, template_id)',
+        'template_items_pkey:CREATE UNIQUE INDEX template_items_pkey ON storecalc.template_items USING btree (id)',
+        'template_items_template_stable_key_key:CREATE UNIQUE INDEX template_items_template_stable_key_key ON storecalc.template_items USING btree (template_id, stable_key)',
+        'templates_created_by_subject_idx:CREATE INDEX templates_created_by_subject_idx ON storecalc.templates USING btree (created_by_subject_id) WHERE (created_by_subject_id IS NOT NULL)',
+        'templates_id_program_key:CREATE UNIQUE INDEX templates_id_program_key ON storecalc.templates USING btree (id, program_id)',
+        'templates_owner_idx:CREATE INDEX templates_owner_idx ON storecalc.templates USING btree (owner_user_id) WHERE (owner_user_id IS NOT NULL)',
+        'templates_pkey:CREATE UNIQUE INDEX templates_pkey ON storecalc.templates USING btree (id)',
+        'templates_program_name_idx:CREATE INDEX templates_program_name_idx ON storecalc.templates USING btree (program_id, status, name, id)',
+        'templates_visibility_status_idx:CREATE INDEX templates_visibility_status_idx ON storecalc.templates USING btree (visibility, status, name, id)'
+    ]::text[] THEN
+        RAISE EXCEPTION 'storecalc_template_postflight_index_mismatch';
+    END IF;
+
+    SELECT array_agg(
+        format(
+            '%s:%s.%s:%s:%s.%s:%s:%s',
+            constraint_row.conname,
+            source_namespace.nspname,
+            source_relation.relname,
+            ARRAY(
+                SELECT attribute.attname
+                FROM unnest(constraint_row.conkey) WITH ORDINALITY AS key(attnum, position)
+                JOIN pg_attribute AS attribute
+                  ON attribute.attrelid = constraint_row.conrelid
+                 AND attribute.attnum = key.attnum
+                ORDER BY key.position
+            ),
+            target_namespace.nspname,
+            target_relation.relname,
+            ARRAY(
+                SELECT attribute.attname
+                FROM unnest(constraint_row.confkey) WITH ORDINALITY AS key(attnum, position)
+                JOIN pg_attribute AS attribute
+                  ON attribute.attrelid = constraint_row.confrelid
+                 AND attribute.attnum = key.attnum
+                ORDER BY key.position
+            ),
+            constraint_row.confdeltype
+        )
+        ORDER BY constraint_row.conname
+    )
+    INTO actual_foreign_keys
+    FROM pg_constraint AS constraint_row
+    JOIN pg_class AS source_relation ON source_relation.oid = constraint_row.conrelid
+    JOIN pg_namespace AS source_namespace ON source_namespace.oid = source_relation.relnamespace
+    JOIN pg_class AS target_relation ON target_relation.oid = constraint_row.confrelid
+    JOIN pg_namespace AS target_namespace ON target_namespace.oid = target_relation.relnamespace
+    WHERE constraint_row.contype = 'f'
+      AND source_relation.relnamespace = 'storecalc'::regnamespace
+      AND source_relation.relname = ANY (
+          ARRAY['templates', 'template_categories', 'template_items']
+      );
+
+    IF actual_foreign_keys IS DISTINCT FROM ARRAY[
+        'template_categories_created_by_subject_id_fkey:storecalc.template_categories:{created_by_subject_id}:storecalc.contributor_subjects:{id}:r',
+        'template_categories_template_id_fkey:storecalc.template_categories:{template_id}:storecalc.templates:{id}:r',
+        'template_items_created_by_subject_id_fkey:storecalc.template_items:{created_by_subject_id}:storecalc.contributor_subjects:{id}:r',
+        'template_items_template_id_fkey:storecalc.template_items:{template_id}:storecalc.templates:{id}:r',
+        'templates_created_by_subject_id_fkey:storecalc.templates:{created_by_subject_id}:storecalc.contributor_subjects:{id}:r',
+        'templates_owner_user_id_fkey:storecalc.templates:{owner_user_id}:public.users:{id}:r',
+        'templates_program_id_fkey:storecalc.templates:{program_id}:storecalc.store_programs:{id}:r'
+    ]::text[] THEN
+        RAISE EXCEPTION 'storecalc_template_postflight_foreign_key_mismatch';
+    END IF;
+
+    FOREACH object_name IN ARRAY new_tables LOOP
+        IF pg_get_userbyid(
+            (SELECT relowner FROM pg_class WHERE oid = object_name::regclass)
+        ) IS DISTINCT FROM migration_owner_role THEN
+            RAISE EXCEPTION 'storecalc_template_postflight_owner_mismatch';
+        END IF;
+    END LOOP;
+
+    FOREACH object_name IN ARRAY new_sequences LOOP
+        IF pg_get_serial_sequence(
+            replace(object_name, '_id_seq', ''),
+            'id'
+        ) IS DISTINCT FROM object_name
+           OR NOT EXISTS (
+               SELECT 1
+               FROM pg_sequence
+               WHERE seqrelid = object_name::regclass
+                 AND seqstart = 1
+                 AND seqincrement = 1
+                 AND seqmax = 2147483647
+                 AND seqmin = 1
+                 AND seqcache = 1
+                 AND NOT seqcycle
+           ) THEN
+            RAISE EXCEPTION 'storecalc_template_postflight_sequence_mismatch';
+        END IF;
+    END LOOP;
+
+    SELECT array_agg(
+        format('%s:%s:%s:%s:%s', trigger_row.tgname, relation.relname, procedure.proname, trigger_row.tgenabled, trigger_row.tgtype)
+        ORDER BY trigger_row.tgname
+    )
+    INTO actual_triggers
+    FROM pg_trigger AS trigger_row
+    JOIN pg_class AS relation ON relation.oid = trigger_row.tgrelid
+    JOIN pg_proc AS procedure ON procedure.oid = trigger_row.tgfoid
+    WHERE trigger_row.tgname = ANY (
+        ARRAY[
+            'templates_topology_lock_trigger',
+            'templates_coherence_trigger',
+            'store_programs_template_topology_lock_trigger',
+            'store_programs_template_lineage_trigger',
+            'template_categories_topology_lock_trigger',
+            'template_categories_identity_trigger',
+            'template_items_topology_lock_trigger',
+            'template_items_identity_trigger'
+        ]
+    )
+      AND NOT trigger_row.tgisinternal
+      AND trigger_row.tgqual IS NULL;
+
+    IF actual_triggers IS DISTINCT FROM ARRAY[
+        'store_programs_template_lineage_trigger:store_programs:protect_program_template_lineage:O:19',
+        'store_programs_template_topology_lock_trigger:store_programs:lock_template_identity_topology:O:18',
+        'template_categories_identity_trigger:template_categories:protect_template_stable_identity:O:23',
+        'template_categories_topology_lock_trigger:template_categories:lock_template_identity_topology:O:30',
+        'template_items_identity_trigger:template_items:protect_template_stable_identity:O:23',
+        'template_items_topology_lock_trigger:template_items:lock_template_identity_topology:O:30',
+        'templates_coherence_trigger:templates:assert_template_coherent:O:23',
+        'templates_topology_lock_trigger:templates:lock_template_identity_topology:O:22'
+    ]::text[] THEN
+        RAISE EXCEPTION 'storecalc_template_postflight_trigger_mismatch';
+    END IF;
+
+    IF (SELECT count(*) FROM pg_proc WHERE pronamespace = 'storecalc'::regnamespace) <> 14
+       OR NOT EXISTS (
+           SELECT 1
+           FROM pg_proc AS procedure
+           JOIN pg_language AS language ON language.oid = procedure.prolang
+           WHERE procedure.oid = 'storecalc.lock_template_identity_topology()'::regprocedure
+             AND language.lanname = 'plpgsql'
+             AND procedure.prorettype = 'trigger'::regtype
+             AND procedure.pronargs = 0
+             AND procedure.prosecdef
+             AND procedure.provolatile = 'v'
+             AND procedure.proconfig = ARRAY['search_path=pg_catalog, storecalc']
+             AND pg_get_userbyid(procedure.proowner) = migration_owner_role
+             AND md5(procedure.prosrc) = 'efea8fe71bdefd1e62dff018998c63c7'
+       ) OR NOT EXISTS (
+           SELECT 1
+           FROM pg_proc AS procedure
+           JOIN pg_language AS language ON language.oid = procedure.prolang
+           WHERE procedure.oid = 'storecalc.assert_template_coherent()'::regprocedure
+             AND language.lanname = 'plpgsql'
+             AND procedure.prorettype = 'trigger'::regtype
+             AND procedure.pronargs = 0
+             AND procedure.prosecdef
+             AND procedure.provolatile = 'v'
+             AND procedure.proconfig = ARRAY['search_path=pg_catalog, storecalc']
+             AND pg_get_userbyid(procedure.proowner) = migration_owner_role
+             AND md5(procedure.prosrc) = '9fff4f8ef280d873cbd898c3cb58023a'
+       ) OR NOT EXISTS (
+           SELECT 1
+           FROM pg_proc AS procedure
+           JOIN pg_language AS language ON language.oid = procedure.prolang
+           WHERE procedure.oid = 'storecalc.protect_program_template_lineage()'::regprocedure
+             AND language.lanname = 'plpgsql'
+             AND procedure.prorettype = 'trigger'::regtype
+             AND procedure.pronargs = 0
+             AND procedure.prosecdef
+             AND procedure.provolatile = 'v'
+             AND procedure.proconfig = ARRAY['search_path=pg_catalog, storecalc']
+             AND pg_get_userbyid(procedure.proowner) = migration_owner_role
+             AND md5(procedure.prosrc) = '69445ad031bfa14abf64901418e5111c'
+       ) OR NOT EXISTS (
+           SELECT 1
+           FROM pg_proc AS procedure
+           JOIN pg_language AS language ON language.oid = procedure.prolang
+           WHERE procedure.oid = 'storecalc.protect_template_stable_identity()'::regprocedure
+             AND language.lanname = 'plpgsql'
+             AND procedure.prorettype = 'trigger'::regtype
+             AND procedure.pronargs = 0
+             AND procedure.prosecdef
+             AND procedure.provolatile = 'v'
+             AND procedure.proconfig = ARRAY['search_path=pg_catalog, storecalc']
+             AND pg_get_userbyid(procedure.proowner) = migration_owner_role
+             AND md5(procedure.prosrc) = 'efc91571e536933a4f1469eabd5f555e'
+       ) THEN
+        RAISE EXCEPTION 'storecalc_template_postflight_function_inventory_mismatch';
+    END IF;
+
+    IF (
+        SELECT count(*)
+        FROM pg_trigger AS trigger_row
+        JOIN pg_class AS relation ON relation.oid = trigger_row.tgrelid
+        WHERE relation.relnamespace = 'storecalc'::regnamespace
+          AND NOT trigger_row.tgisinternal
+    ) <> 36 THEN
+        RAISE EXCEPTION 'storecalc_template_verify_trigger_inventory_mismatch';
+    END IF;
+
+    IF EXISTS (
+        SELECT 1
+        FROM (
+            SELECT acl.grantee
+            FROM pg_namespace AS namespace,
+                 LATERAL aclexplode(COALESCE(namespace.nspacl, acldefault('n', namespace.nspowner))) AS acl
+            WHERE namespace.nspname = 'storecalc'
+
+            UNION ALL
+
+            SELECT acl.grantee
+            FROM pg_class AS relation,
+                 LATERAL aclexplode(
+                     COALESCE(
+                         relation.relacl,
+                         acldefault(
+                             CASE WHEN relation.relkind = 'S' THEN 'S'::"char" ELSE 'r'::"char" END,
+                             relation.relowner
+                         )
+                     )
+                 ) AS acl
+            WHERE relation.relnamespace = 'storecalc'::regnamespace
+
+            UNION ALL
+
+            SELECT acl.grantee
+            FROM pg_proc AS procedure,
+                 LATERAL aclexplode(COALESCE(procedure.proacl, acldefault('f', procedure.proowner))) AS acl
+            WHERE procedure.pronamespace = 'storecalc'::regnamespace
+        ) AS object_grants
+        WHERE object_grants.grantee <> ALL (allowed_grantee_oids)
+    ) THEN
+        RAISE EXCEPTION 'storecalc_template_postflight_unexpected_grantee';
+    END IF;
+
+    FOREACH object_name IN ARRAY new_tables LOOP
+        IF has_table_privilege(web_role, object_name, 'SELECT')
+           OR has_table_privilege(web_role, object_name, 'INSERT')
+           OR has_table_privilege(web_role, object_name, 'UPDATE')
+           OR has_table_privilege(web_role, object_name, 'DELETE')
+           OR has_table_privilege(worker_role, object_name, 'SELECT')
+           OR has_table_privilege(worker_role, object_name, 'INSERT')
+           OR has_table_privilege(worker_role, object_name, 'UPDATE')
+           OR has_table_privilege(worker_role, object_name, 'DELETE')
+           OR NOT has_table_privilege(backup_role, object_name, 'SELECT')
+           OR has_table_privilege(backup_role, object_name, 'INSERT')
+           OR has_table_privilege(backup_role, object_name, 'UPDATE')
+           OR has_table_privilege(backup_role, object_name, 'DELETE') THEN
+            RAISE EXCEPTION 'storecalc_template_postflight_table_grant_mismatch';
+        END IF;
+    END LOOP;
+
+    FOREACH object_name IN ARRAY new_sequences LOOP
+        IF has_sequence_privilege(web_role, object_name, 'SELECT')
+           OR has_sequence_privilege(web_role, object_name, 'USAGE')
+           OR has_sequence_privilege(worker_role, object_name, 'SELECT')
+           OR has_sequence_privilege(worker_role, object_name, 'USAGE')
+           OR NOT has_sequence_privilege(backup_role, object_name, 'SELECT')
+           OR has_sequence_privilege(backup_role, object_name, 'USAGE')
+           OR has_sequence_privilege(backup_role, object_name, 'UPDATE') THEN
+            RAISE EXCEPTION 'storecalc_template_postflight_sequence_grant_mismatch';
+        END IF;
+    END LOOP;
+
+    FOREACH object_name IN ARRAY ARRAY[
+        'storecalc.lock_template_identity_topology()',
+        'storecalc.assert_template_coherent()',
+        'storecalc.protect_program_template_lineage()',
+        'storecalc.protect_template_stable_identity()'
+    ] LOOP
+        IF has_function_privilege(web_role, object_name, 'EXECUTE')
+           OR has_function_privilege(worker_role, object_name, 'EXECUTE')
+           OR has_function_privilege(backup_role, object_name, 'EXECUTE') THEN
+            RAISE EXCEPTION 'storecalc_template_postflight_function_grant_mismatch';
+        END IF;
+    END LOOP;
+
+    SELECT array_agg(
+        format('%s:%s:%s:%s:%s', id, capability_key, schema_version, is_available, migration_key)
+        ORDER BY id
+    )
+    INTO actual_capabilities
+    FROM storecalc.schema_capabilities;
+
+    IF actual_capabilities IS DISTINCT FROM ARRAY[
+        '1:schema.foundation:1:t:0001_schema_foundation',
+        '2:public.directory:2:f:0003_program_assignments',
+        '3:anonymous.calculation:7:f:0010_warnings',
+        '4:saved.orders:0:f:0001_schema_foundation',
+        '5:public.contribution:0:f:0001_schema_foundation',
+        '6:evidence.upload:0:f:0001_schema_foundation',
+        '7:owner.support:0:f:0001_schema_foundation',
+        '8:scoped.profiles:0:f:0001_schema_foundation'
+    ]::text[]
+       OR EXISTS (
+           SELECT 1
+           FROM storecalc.schema_capabilities
+           WHERE capability_key <> 'schema.foundation'
+             AND verified_at IS NOT NULL
+       )
+       OR EXISTS (
+           SELECT 1
+           FROM storecalc.schema_capabilities
+           WHERE capability_key = 'schema.foundation'
+             AND verified_at IS NULL
+       ) THEN
+        RAISE EXCEPTION 'storecalc_template_postflight_capability_or_seed_mismatch';
+    END IF;
+END
+$storecalc_template_postflight$;
+
+DO $storecalc_template_version_postflight$
+DECLARE
+    migration_owner_role text := current_setting('storecalc.migration_owner_role');
+    web_role text := current_setting('storecalc.web_role');
+    worker_role text := current_setting('storecalc.worker_role');
+    backup_role text := current_setting('storecalc.backup_role');
+    configured_roles text[] := ARRAY[
+        current_setting('storecalc.migration_owner_role'),
+        current_setting('storecalc.web_role'),
+        current_setting('storecalc.worker_role'),
+        current_setting('storecalc.backup_role')
+    ];
+    allowed_grantee_oids oid[];
+    actual_relations text[];
+    actual_columns text[];
+    actual_constraints text[];
+    actual_check_definitions text[];
+    actual_indexes text[];
+    actual_foreign_keys text[];
+    actual_triggers text[];
+    actual_capabilities text[];
+BEGIN
+    SELECT array_agg(oid ORDER BY oid)
+    INTO allowed_grantee_oids
+    FROM pg_roles
+    WHERE rolname = ANY (configured_roles);
+
+    SELECT array_agg(format('%s:%s', relname, relkind) ORDER BY relname)
+    INTO actual_relations
+    FROM pg_class
+    WHERE relnamespace = 'storecalc'::regnamespace
+      AND relname = ANY (
+          ARRAY[
+              'template_versions',
+              'template_versions_id_seq',
+              'template_versions_pkey',
+              'template_versions_id_template_key',
+              'template_versions_template_number_key',
+              'template_versions_state_idx',
+              'template_versions_based_on_idx',
+              'template_versions_created_by_subject_idx',
+              'template_versions_content_hash_idx'
+          ]
+      );
+
+    IF actual_relations IS DISTINCT FROM ARRAY[
+        'template_versions:r',
+        'template_versions_based_on_idx:i',
+        'template_versions_content_hash_idx:i',
+        'template_versions_created_by_subject_idx:i',
+        'template_versions_id_seq:S',
+        'template_versions_id_template_key:i',
+        'template_versions_pkey:i',
+        'template_versions_state_idx:i',
+        'template_versions_template_number_key:i'
+    ]::text[] THEN
+        RAISE EXCEPTION 'storecalc_template_version_postflight_relation_mismatch';
+    END IF;
+
+    SELECT array_agg(
+        format(
+            '%s:%s:%s:%s:%s',
+            column_row.column_name,
+            column_row.data_type,
+            column_row.is_nullable,
+            COALESCE(column_row.identity_generation, ''),
+            COALESCE(column_row.column_default, '')
+        )
+        ORDER BY column_row.ordinal_position
+    )
+    INTO actual_columns
+    FROM information_schema.columns AS column_row
+    WHERE column_row.table_schema = 'storecalc'
+      AND column_row.table_name = 'template_versions';
+
+    IF actual_columns IS DISTINCT FROM ARRAY[
+        'id:integer:NO:BY DEFAULT:',
+        'template_id:integer:NO::',
+        'version_number:integer:NO::',
+        'content_state:text:NO::',
+        'currency_code:text:NO::',
+        'currency_exponent:smallint:NO::',
+        'source_effective_date:date:YES::',
+        'source_published_date:date:YES::',
+        'based_on_version_id:integer:YES::',
+        'calculation_contract_version:text:NO::',
+        'required_capabilities:ARRAY:NO::',
+        'content_schema_version:text:NO::',
+        'canonicalization_version:text:NO::',
+        'hash_algorithm:text:YES::',
+        'content_hash:text:YES::',
+        'created_by_subject_id:integer:YES::',
+        'created_at:timestamp with time zone:NO::transaction_timestamp()',
+        'sealed_at:timestamp with time zone:YES::'
+    ]::text[] THEN
+        RAISE EXCEPTION 'storecalc_template_version_postflight_column_mismatch';
+    END IF;
+
+    SELECT array_agg(
+        format('%s:%s', constraint_row.conname, constraint_row.contype)
+        ORDER BY constraint_row.conname
+    )
+    INTO actual_constraints
+    FROM pg_constraint AS constraint_row
+    WHERE constraint_row.conrelid = 'storecalc.template_versions'::regclass;
+
+    IF actual_constraints IS DISTINCT FROM ARRAY[
+        'template_versions_based_on_self_check:c',
+        'template_versions_based_on_template_fkey:f',
+        'template_versions_calculation_contract_check:c',
+        'template_versions_canonicalization_check:c',
+        'template_versions_content_schema_check:c',
+        'template_versions_content_state_check:c',
+        'template_versions_created_by_subject_id_fkey:f',
+        'template_versions_currency_contract_check:c',
+        'template_versions_hash_state_check:c',
+        'template_versions_id_template_key:u',
+        'template_versions_pkey:p',
+        'template_versions_required_capabilities_check:c',
+        'template_versions_sealed_order_check:c',
+        'template_versions_template_id_fkey:f',
+        'template_versions_template_number_key:u',
+        'template_versions_version_number_check:c'
+    ]::text[]
+       OR EXISTS (
+           SELECT 1
+           FROM pg_constraint
+           WHERE conrelid = 'storecalc.template_versions'::regclass
+             AND (NOT convalidated OR condeferrable OR condeferred)
+       ) THEN
+       RAISE EXCEPTION 'storecalc_template_version_postflight_constraint_mismatch';
+    END IF;
+
+
+    SELECT array_agg(
+        format('%s:%s', constraint_row.conname, pg_get_constraintdef(constraint_row.oid))
+        ORDER BY constraint_row.conname
+    )
+    INTO actual_check_definitions
+    FROM pg_constraint AS constraint_row
+    WHERE constraint_row.conrelid = 'storecalc.template_versions'::regclass
+      AND constraint_row.contype = 'c';
+
+    IF actual_check_definitions IS DISTINCT FROM ARRAY[
+        'template_versions_based_on_self_check:CHECK (((based_on_version_id IS NULL) OR (based_on_version_id <> id)))',
+        'template_versions_calculation_contract_check:CHECK ((calculation_contract_version = ''storecalc.calculation.v1''::text))',
+        'template_versions_canonicalization_check:CHECK ((canonicalization_version = ''storecalc.canonical-json.v1''::text))',
+        'template_versions_content_schema_check:CHECK ((content_schema_version = ''storecalc.catalog-content.v1''::text))',
+        'template_versions_content_state_check:CHECK ((content_state = ANY (ARRAY[''draft''::text, ''sealed''::text])))',
+        'template_versions_currency_contract_check:CHECK (((currency_code = ''USD''::text) AND (currency_exponent = 2)))',
+        'template_versions_hash_state_check:CHECK ((((content_state = ''draft''::text) AND (hash_algorithm IS NULL) AND (content_hash IS NULL) AND (sealed_at IS NULL)) OR ((content_state = ''sealed''::text) AND (hash_algorithm = ''sha256''::text) AND (content_hash ~ ''^[a-f0-9]{64}$''::text) AND (sealed_at IS NOT NULL))))',
+        'template_versions_required_capabilities_check:CHECK (((array_ndims(required_capabilities) = 1) AND (array_lower(required_capabilities, 1) = 1) AND ((cardinality(required_capabilities) >= 2) AND (cardinality(required_capabilities) <= 32)) AND (array_position(required_capabilities, NULL::text) IS NULL) AND (required_capabilities <@ ARRAY[''constraints.order_aggregate.v1''::text, ''money.minor_units.v1''::text, ''quantity.bounded_integer.v1''::text, ''spending_buckets.parallel_pretax.v1''::text, ''tax.single_treatment.line_rounding.v1''::text])))',
+        'template_versions_sealed_order_check:CHECK (((sealed_at IS NULL) OR (sealed_at >= created_at)))',
+        'template_versions_version_number_check:CHECK ((version_number >= 1))'
+    ]::text[] THEN
+        RAISE EXCEPTION 'storecalc_template_version_postflight_check_definition_mismatch'
+            USING DETAIL = COALESCE(actual_check_definitions::text, 'NULL');
+    END IF;
+    IF NOT EXISTS (
+        SELECT 1
+        FROM pg_constraint
+        WHERE conrelid = 'storecalc.template_versions'::regclass
+          AND conname = 'template_versions_id_template_key'
+          AND pg_get_constraintdef(oid) = 'UNIQUE (id, template_id)'
+    ) OR NOT EXISTS (
+        SELECT 1
+        FROM pg_constraint
+        WHERE conrelid = 'storecalc.template_versions'::regclass
+          AND conname = 'template_versions_template_number_key'
+          AND pg_get_constraintdef(oid) = 'UNIQUE (template_id, version_number)'
+    ) OR NOT EXISTS (
+        SELECT 1
+        FROM pg_constraint
+        WHERE conrelid = 'storecalc.template_versions'::regclass
+          AND conname = 'template_versions_currency_contract_check'
+          AND pg_get_constraintdef(oid) = 'CHECK (((currency_code = ''USD''::text) AND (currency_exponent = 2)))'
+    ) OR NOT EXISTS (
+        SELECT 1
+        FROM pg_constraint
+        WHERE conrelid = 'storecalc.template_versions'::regclass
+          AND conname = 'template_versions_calculation_contract_check'
+          AND pg_get_constraintdef(oid) = 'CHECK ((calculation_contract_version = ''storecalc.calculation.v1''::text))'
+    ) OR NOT EXISTS (
+        SELECT 1
+        FROM pg_constraint
+        WHERE conrelid = 'storecalc.template_versions'::regclass
+          AND conname = 'template_versions_content_schema_check'
+          AND pg_get_constraintdef(oid) = 'CHECK ((content_schema_version = ''storecalc.catalog-content.v1''::text))'
+    ) OR NOT EXISTS (
+        SELECT 1
+        FROM pg_constraint
+        WHERE conrelid = 'storecalc.template_versions'::regclass
+          AND conname = 'template_versions_canonicalization_check'
+          AND pg_get_constraintdef(oid) = 'CHECK ((canonicalization_version = ''storecalc.canonical-json.v1''::text))'
+    ) THEN
+        RAISE EXCEPTION 'storecalc_template_version_postflight_constraint_definition_mismatch';
+    END IF;
+
+    SELECT array_agg(
+        format('%s:%s', relation.relname, pg_get_indexdef(relation.oid))
+        ORDER BY relation.relname
+    )
+    INTO actual_indexes
+    FROM pg_class AS relation
+    WHERE relation.relnamespace = 'storecalc'::regnamespace
+      AND relation.relkind = 'i'
+      AND relation.relname = ANY (
+          ARRAY[
+              'template_versions_pkey',
+              'template_versions_id_template_key',
+              'template_versions_template_number_key',
+              'template_versions_state_idx',
+              'template_versions_based_on_idx',
+              'template_versions_created_by_subject_idx',
+              'template_versions_content_hash_idx'
+          ]
+      );
+
+    IF actual_indexes IS DISTINCT FROM ARRAY[
+        'template_versions_based_on_idx:CREATE INDEX template_versions_based_on_idx ON storecalc.template_versions USING btree (based_on_version_id) WHERE (based_on_version_id IS NOT NULL)',
+        'template_versions_content_hash_idx:CREATE INDEX template_versions_content_hash_idx ON storecalc.template_versions USING btree (content_hash) WHERE (content_hash IS NOT NULL)',
+        'template_versions_created_by_subject_idx:CREATE INDEX template_versions_created_by_subject_idx ON storecalc.template_versions USING btree (created_by_subject_id) WHERE (created_by_subject_id IS NOT NULL)',
+        'template_versions_id_template_key:CREATE UNIQUE INDEX template_versions_id_template_key ON storecalc.template_versions USING btree (id, template_id)',
+        'template_versions_pkey:CREATE UNIQUE INDEX template_versions_pkey ON storecalc.template_versions USING btree (id)',
+        'template_versions_state_idx:CREATE INDEX template_versions_state_idx ON storecalc.template_versions USING btree (template_id, content_state, version_number DESC, id)',
+        'template_versions_template_number_key:CREATE UNIQUE INDEX template_versions_template_number_key ON storecalc.template_versions USING btree (template_id, version_number)'
+    ]::text[] THEN
+        RAISE EXCEPTION 'storecalc_template_version_postflight_index_mismatch';
+    END IF;
+
+    SELECT array_agg(
+        format(
+            '%s:%s.%s:%s:%s.%s:%s:%s',
+            constraint_row.conname,
+            source_namespace.nspname,
+            source_relation.relname,
+            ARRAY(
+                SELECT attribute.attname
+                FROM unnest(constraint_row.conkey) WITH ORDINALITY AS key(attnum, position)
+                JOIN pg_attribute AS attribute
+                  ON attribute.attrelid = constraint_row.conrelid
+                 AND attribute.attnum = key.attnum
+                ORDER BY key.position
+            ),
+            target_namespace.nspname,
+            target_relation.relname,
+            ARRAY(
+                SELECT attribute.attname
+                FROM unnest(constraint_row.confkey) WITH ORDINALITY AS key(attnum, position)
+                JOIN pg_attribute AS attribute
+                  ON attribute.attrelid = constraint_row.confrelid
+                 AND attribute.attnum = key.attnum
+                ORDER BY key.position
+            ),
+            constraint_row.confdeltype
+        )
+        ORDER BY constraint_row.conname
+    )
+    INTO actual_foreign_keys
+    FROM pg_constraint AS constraint_row
+    JOIN pg_class AS source_relation ON source_relation.oid = constraint_row.conrelid
+    JOIN pg_namespace AS source_namespace ON source_namespace.oid = source_relation.relnamespace
+    JOIN pg_class AS target_relation ON target_relation.oid = constraint_row.confrelid
+    JOIN pg_namespace AS target_namespace ON target_namespace.oid = target_relation.relnamespace
+    WHERE constraint_row.contype = 'f'
+      AND constraint_row.conrelid = 'storecalc.template_versions'::regclass;
+
+    IF actual_foreign_keys IS DISTINCT FROM ARRAY[
+        'template_versions_based_on_template_fkey:storecalc.template_versions:{based_on_version_id,template_id}:storecalc.template_versions:{id,template_id}:r',
+        'template_versions_created_by_subject_id_fkey:storecalc.template_versions:{created_by_subject_id}:storecalc.contributor_subjects:{id}:r',
+        'template_versions_template_id_fkey:storecalc.template_versions:{template_id}:storecalc.templates:{id}:r'
+    ]::text[] THEN
+        RAISE EXCEPTION 'storecalc_template_version_postflight_foreign_key_mismatch';
+    END IF;
+
+    IF pg_get_userbyid(
+        (SELECT relowner FROM pg_class WHERE oid = 'storecalc.template_versions'::regclass)
+    ) IS DISTINCT FROM migration_owner_role
+       OR pg_get_userbyid(
+           (SELECT relowner FROM pg_class WHERE oid = 'storecalc.template_versions_id_seq'::regclass)
+       ) IS DISTINCT FROM migration_owner_role
+       OR pg_get_serial_sequence(
+           'storecalc.template_versions',
+           'id'
+       ) IS DISTINCT FROM 'storecalc.template_versions_id_seq'
+       OR NOT EXISTS (
+           SELECT 1
+           FROM pg_sequence
+           WHERE seqrelid = 'storecalc.template_versions_id_seq'::regclass
+             AND seqstart = 1
+             AND seqincrement = 1
+             AND seqmax = 2147483647
+             AND seqmin = 1
+             AND seqcache = 1
+             AND NOT seqcycle
+       ) THEN
+        RAISE EXCEPTION 'storecalc_template_version_postflight_owner_or_sequence_mismatch';
+    END IF;
+
+    SELECT array_agg(
+        format('%s:%s:%s:%s:%s', trigger_row.tgname, relation.relname, procedure.proname, trigger_row.tgenabled, trigger_row.tgtype)
+        ORDER BY trigger_row.tgname
+    )
+    INTO actual_triggers
+    FROM pg_trigger AS trigger_row
+    JOIN pg_class AS relation ON relation.oid = trigger_row.tgrelid
+    JOIN pg_proc AS procedure ON procedure.oid = trigger_row.tgfoid
+    WHERE trigger_row.tgname = ANY (
+        ARRAY[
+            'template_versions_topology_lock_trigger',
+            'template_versions_coherence_trigger',
+            'templates_version_topology_lock_trigger'
+        ]
+    )
+      AND NOT trigger_row.tgisinternal
+      AND trigger_row.tgqual IS NULL;
+
+    IF actual_triggers IS DISTINCT FROM ARRAY[
+        'template_versions_coherence_trigger:template_versions:assert_template_version_coherent:O:31',
+        'template_versions_topology_lock_trigger:template_versions:lock_template_version_topology:O:30',
+        'templates_version_topology_lock_trigger:templates:lock_template_version_topology:O:18'
+    ]::text[]
+       OR (
+           SELECT count(*)
+           FROM pg_trigger AS trigger_row
+           JOIN pg_class AS relation ON relation.oid = trigger_row.tgrelid
+           WHERE relation.relnamespace = 'storecalc'::regnamespace
+             AND NOT trigger_row.tgisinternal
+       ) <> 36
+       OR (SELECT count(*) FROM pg_proc WHERE pronamespace = 'storecalc'::regnamespace) <> 14
+       OR NOT EXISTS (
+           SELECT 1
+           FROM pg_proc AS procedure
+           JOIN pg_language AS language ON language.oid = procedure.prolang
+           WHERE procedure.oid = 'storecalc.lock_template_version_topology()'::regprocedure
+             AND language.lanname = 'plpgsql'
+             AND procedure.prorettype = 'trigger'::regtype
+             AND procedure.pronargs = 0
+             AND procedure.prosecdef
+             AND procedure.provolatile = 'v'
+             AND procedure.proconfig = ARRAY['search_path=pg_catalog, storecalc']
+             AND pg_get_userbyid(procedure.proowner) = migration_owner_role
+             AND md5(procedure.prosrc) = '97bdfca97587a8f75e98a951a660d924'
+       ) OR NOT EXISTS (
+           SELECT 1
+           FROM pg_proc AS procedure
+           JOIN pg_language AS language ON language.oid = procedure.prolang
+           WHERE procedure.oid = 'storecalc.assert_template_version_coherent()'::regprocedure
+             AND language.lanname = 'plpgsql'
+             AND procedure.prorettype = 'trigger'::regtype
+             AND procedure.pronargs = 0
+             AND procedure.prosecdef
+             AND procedure.provolatile = 'v'
+             AND procedure.proconfig = ARRAY['search_path=pg_catalog, storecalc']
+             AND pg_get_userbyid(procedure.proowner) = migration_owner_role
+             AND md5(procedure.prosrc) = '11c51b40a9603a7e43e158e323e696d9'
+       )
+       OR (SELECT count(*) FROM pg_class WHERE relnamespace = 'storecalc'::regnamespace) <> 140 THEN
+        RAISE EXCEPTION 'storecalc_template_version_postflight_function_or_trigger_mismatch';
+    END IF;
+
+    IF EXISTS (
+        SELECT 1
+        FROM (
+            SELECT acl.grantee
+            FROM pg_namespace AS namespace,
+                 LATERAL aclexplode(COALESCE(namespace.nspacl, acldefault('n', namespace.nspowner))) AS acl
+            WHERE namespace.nspname = 'storecalc'
+
+            UNION ALL
+
+            SELECT acl.grantee
+            FROM pg_class AS relation,
+                 LATERAL aclexplode(
+                     COALESCE(
+                         relation.relacl,
+                         acldefault(
+                             CASE WHEN relation.relkind = 'S' THEN 'S'::"char" ELSE 'r'::"char" END,
+                             relation.relowner
+                         )
+                     )
+                 ) AS acl
+            WHERE relation.relnamespace = 'storecalc'::regnamespace
+
+            UNION ALL
+
+            SELECT acl.grantee
+            FROM pg_proc AS procedure,
+                 LATERAL aclexplode(COALESCE(procedure.proacl, acldefault('f', procedure.proowner))) AS acl
+            WHERE procedure.pronamespace = 'storecalc'::regnamespace
+        ) AS object_grants
+        WHERE object_grants.grantee <> ALL (allowed_grantee_oids)
+    ) THEN
+        RAISE EXCEPTION 'storecalc_template_version_postflight_unexpected_grantee';
+    END IF;
+
+    IF has_table_privilege(web_role, 'storecalc.template_versions', 'SELECT')
+       OR has_table_privilege(web_role, 'storecalc.template_versions', 'INSERT')
+       OR has_table_privilege(web_role, 'storecalc.template_versions', 'UPDATE')
+       OR has_table_privilege(web_role, 'storecalc.template_versions', 'DELETE')
+       OR has_table_privilege(worker_role, 'storecalc.template_versions', 'SELECT')
+       OR has_table_privilege(worker_role, 'storecalc.template_versions', 'INSERT')
+       OR has_table_privilege(worker_role, 'storecalc.template_versions', 'UPDATE')
+       OR has_table_privilege(worker_role, 'storecalc.template_versions', 'DELETE')
+       OR NOT has_table_privilege(backup_role, 'storecalc.template_versions', 'SELECT')
+       OR has_table_privilege(backup_role, 'storecalc.template_versions', 'INSERT')
+       OR has_table_privilege(backup_role, 'storecalc.template_versions', 'UPDATE')
+       OR has_table_privilege(backup_role, 'storecalc.template_versions', 'DELETE')
+       OR has_sequence_privilege(web_role, 'storecalc.template_versions_id_seq', 'SELECT')
+       OR has_sequence_privilege(web_role, 'storecalc.template_versions_id_seq', 'USAGE')
+       OR has_sequence_privilege(worker_role, 'storecalc.template_versions_id_seq', 'SELECT')
+       OR has_sequence_privilege(worker_role, 'storecalc.template_versions_id_seq', 'USAGE')
+       OR NOT has_sequence_privilege(backup_role, 'storecalc.template_versions_id_seq', 'SELECT')
+       OR has_sequence_privilege(backup_role, 'storecalc.template_versions_id_seq', 'USAGE')
+       OR has_sequence_privilege(backup_role, 'storecalc.template_versions_id_seq', 'UPDATE')
+       OR has_function_privilege(web_role, 'storecalc.lock_template_version_topology()', 'EXECUTE')
+       OR has_function_privilege(worker_role, 'storecalc.lock_template_version_topology()', 'EXECUTE')
+       OR has_function_privilege(backup_role, 'storecalc.lock_template_version_topology()', 'EXECUTE')
+       OR has_function_privilege(web_role, 'storecalc.assert_template_version_coherent()', 'EXECUTE')
+       OR has_function_privilege(worker_role, 'storecalc.assert_template_version_coherent()', 'EXECUTE')
+       OR has_function_privilege(backup_role, 'storecalc.assert_template_version_coherent()', 'EXECUTE') THEN
+        RAISE EXCEPTION 'storecalc_template_version_postflight_grant_mismatch';
+    END IF;
+
+    SELECT array_agg(
+        format('%s:%s:%s:%s:%s', id, capability_key, schema_version, is_available, migration_key)
+        ORDER BY id
+    )
+    INTO actual_capabilities
+    FROM storecalc.schema_capabilities;
+
+    IF actual_capabilities IS DISTINCT FROM ARRAY[
+        '1:schema.foundation:1:t:0001_schema_foundation',
+        '2:public.directory:2:f:0003_program_assignments',
+        '3:anonymous.calculation:7:f:0010_warnings',
+        '4:saved.orders:0:f:0001_schema_foundation',
+        '5:public.contribution:0:f:0001_schema_foundation',
+        '6:evidence.upload:0:f:0001_schema_foundation',
+        '7:owner.support:0:f:0001_schema_foundation',
+        '8:scoped.profiles:0:f:0001_schema_foundation'
+    ]::text[]
+       OR EXISTS (
+           SELECT 1
+           FROM storecalc.schema_capabilities
+           WHERE capability_key <> 'schema.foundation'
+             AND verified_at IS NOT NULL
+       ) THEN
+        RAISE EXCEPTION 'storecalc_template_version_postflight_capability_or_seed_mismatch';
+    END IF;
+END
+$storecalc_template_version_postflight$;
+
+DO $storecalc_version_content_postflight$
+DECLARE
+    migration_owner_role text := current_setting('storecalc.migration_owner_role');
+    web_role text := current_setting('storecalc.web_role');
+    worker_role text := current_setting('storecalc.worker_role');
+    backup_role text := current_setting('storecalc.backup_role');
+    configured_roles text[] := ARRAY[
+        current_setting('storecalc.migration_owner_role'),
+        current_setting('storecalc.web_role'),
+        current_setting('storecalc.worker_role'),
+        current_setting('storecalc.backup_role')
+    ];
+    allowed_grantee_oids oid[];
+    object_name text;
+    actual_relations text[];
+    actual_columns text[];
+    actual_constraints text[];
+    actual_indexes text[];
+    actual_foreign_keys text[];
+    actual_triggers text[];
+    actual_capabilities text[];
+    new_tables constant text[] := ARRAY[
+        'storecalc.version_categories',
+        'storecalc.version_items'
+    ];
+    new_sequences constant text[] := ARRAY[
+        'storecalc.version_categories_id_seq',
+        'storecalc.version_items_id_seq'
+    ];
+BEGIN
+    SELECT array_agg(oid ORDER BY oid)
+    INTO allowed_grantee_oids
+    FROM pg_roles
+    WHERE rolname = ANY (configured_roles);
+
+    SELECT array_agg(format('%s:%s', relname, relkind) ORDER BY relname)
+    INTO actual_relations
+    FROM pg_class
+    WHERE relnamespace = 'storecalc'::regnamespace
+      AND relname = ANY (
+          ARRAY[
+              'version_categories',
+              'version_categories_id_seq',
+              'version_categories_pkey',
+              'version_categories_id_version_key',
+              'version_categories_version_category_key',
+              'version_categories_version_sort_idx',
+              'version_categories_category_lineage_idx',
+              'version_items',
+              'version_items_id_seq',
+              'version_items_pkey',
+              'version_items_id_version_key',
+              'version_items_version_item_key',
+              'version_items_version_sort_idx',
+              'version_items_item_lineage_idx',
+              'version_items_category_version_idx'
+          ]
+      );
+
+    IF actual_relations IS DISTINCT FROM ARRAY[
+        'version_categories:r',
+        'version_categories_category_lineage_idx:i',
+        'version_categories_id_seq:S',
+        'version_categories_id_version_key:i',
+        'version_categories_pkey:i',
+        'version_categories_version_category_key:i',
+        'version_categories_version_sort_idx:i',
+        'version_items:r',
+        'version_items_category_version_idx:i',
+        'version_items_id_seq:S',
+        'version_items_id_version_key:i',
+        'version_items_item_lineage_idx:i',
+        'version_items_pkey:i',
+        'version_items_version_item_key:i',
+        'version_items_version_sort_idx:i'
+    ]::text[]
+       OR (SELECT count(*) FROM pg_class WHERE relnamespace = 'storecalc'::regnamespace) <> 140 THEN
+        RAISE EXCEPTION 'storecalc_version_content_postflight_relation_mismatch';
+    END IF;
+
+    SELECT array_agg(
+        format(
+            '%s:%s:%s:%s:%s:%s',
+            column_row.table_name,
+            column_row.column_name,
+            column_row.data_type,
+            column_row.is_nullable,
+            COALESCE(column_row.identity_generation, ''),
+            COALESCE(column_row.column_default, '')
+        )
+        ORDER BY column_row.table_name, column_row.ordinal_position
+    )
+    INTO actual_columns
+    FROM information_schema.columns AS column_row
+    WHERE column_row.table_schema = 'storecalc'
+      AND column_row.table_name = ANY (
+          ARRAY['version_categories', 'version_items']
+      );
+
+    IF actual_columns IS DISTINCT FROM ARRAY[
+        'version_categories:id:integer:NO:BY DEFAULT:',
+        'version_categories:version_id:integer:NO::',
+        'version_categories:template_id:integer:NO::',
+        'version_categories:category_id:integer:NO::',
+        'version_categories:display_name:text:NO::',
+        'version_categories:description:text:YES::',
+        'version_categories:sort_order:integer:NO::',
+        'version_categories:active:boolean:NO::',
+        'version_items:id:integer:NO:BY DEFAULT:',
+        'version_items:version_id:integer:NO::',
+        'version_items:template_id:integer:NO::',
+        'version_items:item_id:integer:NO::',
+        'version_items:category_version_id:integer:YES::',
+        'version_items:sku:text:YES::',
+        'version_items:display_name:text:NO::',
+        'version_items:description:text:YES::',
+        'version_items:unit_label:text:YES::',
+        'version_items:price_state:text:NO::',
+        'version_items:price_minor:bigint:YES::',
+        'version_items:minimum_selected_quantity:integer:NO::',
+        'version_items:maximum_order_quantity:integer:NO::',
+        'version_items:quantity_step:integer:NO::',
+        'version_items:availability_state:text:NO::',
+        'version_items:sort_order:integer:NO::'
+    ]::text[] THEN
+        RAISE EXCEPTION 'storecalc_version_content_postflight_column_mismatch';
+    END IF;
+
+    SELECT array_agg(
+        format('%s:%s:%s', relation.relname, constraint_row.conname, constraint_row.contype)
+        ORDER BY relation.relname, constraint_row.conname
+    )
+    INTO actual_constraints
+    FROM pg_constraint AS constraint_row
+    JOIN pg_class AS relation ON relation.oid = constraint_row.conrelid
+    WHERE relation.relnamespace = 'storecalc'::regnamespace
+      AND relation.relname = ANY (
+          ARRAY['version_categories', 'version_items']
+      );
+
+    IF actual_constraints IS DISTINCT FROM ARRAY[
+        'version_categories:version_categories_category_template_fkey:f',
+        'version_categories:version_categories_description_check:c',
+        'version_categories:version_categories_display_name_check:c',
+        'version_categories:version_categories_id_version_key:u',
+        'version_categories:version_categories_pkey:p',
+        'version_categories:version_categories_sort_order_check:c',
+        'version_categories:version_categories_version_category_key:u',
+        'version_categories:version_categories_version_template_fkey:f',
+        'version_items:version_items_availability_state_check:c',
+        'version_items:version_items_category_version_fkey:f',
+        'version_items:version_items_description_check:c',
+        'version_items:version_items_display_name_check:c',
+        'version_items:version_items_id_version_key:u',
+        'version_items:version_items_item_template_fkey:f',
+        'version_items:version_items_pkey:p',
+        'version_items:version_items_price_nullability_check:c',
+        'version_items:version_items_price_state_check:c',
+        'version_items:version_items_quantity_check:c',
+        'version_items:version_items_sku_check:c',
+        'version_items:version_items_sort_order_check:c',
+        'version_items:version_items_unit_label_check:c',
+        'version_items:version_items_version_item_key:u',
+        'version_items:version_items_version_template_fkey:f'
+    ]::text[]
+       OR EXISTS (
+           SELECT 1
+           FROM pg_constraint AS constraint_row
+           JOIN pg_class AS relation ON relation.oid = constraint_row.conrelid
+           WHERE relation.relnamespace = 'storecalc'::regnamespace
+             AND relation.relname = ANY (
+                 ARRAY['version_categories', 'version_items']
+             )
+             AND (
+                 NOT constraint_row.convalidated
+                 OR constraint_row.condeferrable
+                 OR constraint_row.condeferred
+             )
+       ) THEN
+        RAISE EXCEPTION 'storecalc_version_content_postflight_constraint_mismatch';
+    END IF;
+
+    IF NOT EXISTS (
+        SELECT 1
+        FROM pg_constraint
+        WHERE conrelid = 'storecalc.version_items'::regclass
+          AND conname = 'version_items_price_nullability_check'
+          AND pg_get_constraintdef(oid) = 'CHECK ((((price_state = ''known''::text) AND (price_minor IS NOT NULL) AND (price_minor >= 0)) OR ((price_state = ANY (ARRAY[''unknown''::text, ''unsupported''::text])) AND (price_minor IS NULL))))'
+    ) OR NOT EXISTS (
+        SELECT 1
+        FROM pg_constraint
+        WHERE conrelid = 'storecalc.version_items'::regclass
+          AND conname = 'version_items_quantity_check'
+          AND pg_get_constraintdef(oid) = 'CHECK ((((minimum_selected_quantity >= 1) AND (minimum_selected_quantity <= 1000000)) AND ((maximum_order_quantity >= 1) AND (maximum_order_quantity <= 1000000)) AND ((quantity_step >= 1) AND (quantity_step <= 1000000)) AND (maximum_order_quantity >= minimum_selected_quantity)))'
+    ) OR NOT EXISTS (
+        SELECT 1
+        FROM pg_constraint
+        WHERE conrelid = 'storecalc.version_categories'::regclass
+          AND conname = 'version_categories_version_category_key'
+          AND pg_get_constraintdef(oid) = 'UNIQUE (version_id, category_id)'
+    ) OR NOT EXISTS (
+        SELECT 1
+        FROM pg_constraint
+        WHERE conrelid = 'storecalc.version_items'::regclass
+          AND conname = 'version_items_version_item_key'
+          AND pg_get_constraintdef(oid) = 'UNIQUE (version_id, item_id)'
+    ) THEN
+        RAISE EXCEPTION 'storecalc_version_content_postflight_constraint_definition_mismatch';
+    END IF;
+
+    SELECT array_agg(
+        format('%s:%s', relation.relname, pg_get_indexdef(relation.oid))
+        ORDER BY relation.relname
+    )
+    INTO actual_indexes
+    FROM pg_class AS relation
+    WHERE relation.relnamespace = 'storecalc'::regnamespace
+      AND relation.relkind = 'i'
+      AND relation.relname = ANY (
+          ARRAY[
+              'version_categories_pkey',
+              'version_categories_id_version_key',
+              'version_categories_version_category_key',
+              'version_categories_version_sort_idx',
+              'version_categories_category_lineage_idx',
+              'version_items_pkey',
+              'version_items_id_version_key',
+              'version_items_version_item_key',
+              'version_items_version_sort_idx',
+              'version_items_item_lineage_idx',
+              'version_items_category_version_idx'
+          ]
+      );
+
+    IF actual_indexes IS DISTINCT FROM ARRAY[
+        'version_categories_category_lineage_idx:CREATE INDEX version_categories_category_lineage_idx ON storecalc.version_categories USING btree (category_id, template_id, version_id)',
+        'version_categories_id_version_key:CREATE UNIQUE INDEX version_categories_id_version_key ON storecalc.version_categories USING btree (id, version_id)',
+        'version_categories_pkey:CREATE UNIQUE INDEX version_categories_pkey ON storecalc.version_categories USING btree (id)',
+        'version_categories_version_category_key:CREATE UNIQUE INDEX version_categories_version_category_key ON storecalc.version_categories USING btree (version_id, category_id)',
+        'version_categories_version_sort_idx:CREATE INDEX version_categories_version_sort_idx ON storecalc.version_categories USING btree (version_id, active DESC, sort_order, id)',
+        'version_items_category_version_idx:CREATE INDEX version_items_category_version_idx ON storecalc.version_items USING btree (category_version_id, version_id, sort_order, id) WHERE (category_version_id IS NOT NULL)',
+        'version_items_id_version_key:CREATE UNIQUE INDEX version_items_id_version_key ON storecalc.version_items USING btree (id, version_id)',
+        'version_items_item_lineage_idx:CREATE INDEX version_items_item_lineage_idx ON storecalc.version_items USING btree (item_id, template_id, version_id)',
+        'version_items_pkey:CREATE UNIQUE INDEX version_items_pkey ON storecalc.version_items USING btree (id)',
+        'version_items_version_item_key:CREATE UNIQUE INDEX version_items_version_item_key ON storecalc.version_items USING btree (version_id, item_id)',
+        'version_items_version_sort_idx:CREATE INDEX version_items_version_sort_idx ON storecalc.version_items USING btree (version_id, availability_state, sort_order, id)'
+    ]::text[] THEN
+        RAISE EXCEPTION 'storecalc_version_content_postflight_index_mismatch';
+    END IF;
+
+    SELECT array_agg(
+        format(
+            '%s:%s.%s:%s:%s.%s:%s:%s',
+            constraint_row.conname,
+            source_namespace.nspname,
+            source_relation.relname,
+            ARRAY(
+                SELECT attribute.attname
+                FROM unnest(constraint_row.conkey) WITH ORDINALITY AS key(attnum, position)
+                JOIN pg_attribute AS attribute
+                  ON attribute.attrelid = constraint_row.conrelid
+                 AND attribute.attnum = key.attnum
+                ORDER BY key.position
+            ),
+            target_namespace.nspname,
+            target_relation.relname,
+            ARRAY(
+                SELECT attribute.attname
+                FROM unnest(constraint_row.confkey) WITH ORDINALITY AS key(attnum, position)
+                JOIN pg_attribute AS attribute
+                  ON attribute.attrelid = constraint_row.confrelid
+                 AND attribute.attnum = key.attnum
+                ORDER BY key.position
+            ),
+            constraint_row.confdeltype
+        )
+        ORDER BY constraint_row.conname
+    )
+    INTO actual_foreign_keys
+    FROM pg_constraint AS constraint_row
+    JOIN pg_class AS source_relation ON source_relation.oid = constraint_row.conrelid
+    JOIN pg_namespace AS source_namespace ON source_namespace.oid = source_relation.relnamespace
+    JOIN pg_class AS target_relation ON target_relation.oid = constraint_row.confrelid
+    JOIN pg_namespace AS target_namespace ON target_namespace.oid = target_relation.relnamespace
+    WHERE constraint_row.contype = 'f'
+      AND source_relation.relnamespace = 'storecalc'::regnamespace
+      AND source_relation.relname = ANY (
+          ARRAY['version_categories', 'version_items']
+      );
+
+    IF actual_foreign_keys IS DISTINCT FROM ARRAY[
+        'version_categories_category_template_fkey:storecalc.version_categories:{category_id,template_id}:storecalc.template_categories:{id,template_id}:r',
+        'version_categories_version_template_fkey:storecalc.version_categories:{version_id,template_id}:storecalc.template_versions:{id,template_id}:r',
+        'version_items_category_version_fkey:storecalc.version_items:{category_version_id,version_id}:storecalc.version_categories:{id,version_id}:r',
+        'version_items_item_template_fkey:storecalc.version_items:{item_id,template_id}:storecalc.template_items:{id,template_id}:r',
+        'version_items_version_template_fkey:storecalc.version_items:{version_id,template_id}:storecalc.template_versions:{id,template_id}:r'
+    ]::text[] THEN
+        RAISE EXCEPTION 'storecalc_version_content_postflight_foreign_key_mismatch';
+    END IF;
+
+    FOREACH object_name IN ARRAY new_tables LOOP
+        IF pg_get_userbyid(
+            (SELECT relowner FROM pg_class WHERE oid = object_name::regclass)
+        ) IS DISTINCT FROM migration_owner_role
+           OR EXISTS (
+               SELECT 1
+               FROM pg_class
+               WHERE oid = object_name::regclass
+                 AND (relpersistence <> 'p' OR relrowsecurity OR relforcerowsecurity)
+           )
+           OR EXISTS (
+               SELECT 1
+               FROM pg_policy
+               WHERE polrelid = object_name::regclass
+           ) THEN
+            RAISE EXCEPTION 'storecalc_version_content_postflight_table_security_mismatch';
+        END IF;
+    END LOOP;
+
+    FOREACH object_name IN ARRAY new_sequences LOOP
+        IF pg_get_userbyid(
+            (SELECT relowner FROM pg_class WHERE oid = object_name::regclass)
+        ) IS DISTINCT FROM migration_owner_role
+           OR pg_get_serial_sequence(
+               replace(object_name, '_id_seq', ''),
+               'id'
+           ) IS DISTINCT FROM object_name
+           OR NOT EXISTS (
+               SELECT 1
+               FROM pg_sequence
+               WHERE seqrelid = object_name::regclass
+                 AND seqstart = 1
+                 AND seqincrement = 1
+                 AND seqmax = 2147483647
+                 AND seqmin = 1
+                 AND seqcache = 1
+                 AND NOT seqcycle
+           ) THEN
+            RAISE EXCEPTION 'storecalc_version_content_postflight_sequence_mismatch';
+        END IF;
+    END LOOP;
+
+    SELECT array_agg(
+        format('%s:%s:%s:%s:%s', trigger_row.tgname, relation.relname, procedure.proname, trigger_row.tgenabled, trigger_row.tgtype)
+        ORDER BY trigger_row.tgname
+    )
+    INTO actual_triggers
+    FROM pg_trigger AS trigger_row
+    JOIN pg_class AS relation ON relation.oid = trigger_row.tgrelid
+    JOIN pg_proc AS procedure ON procedure.oid = trigger_row.tgfoid
+    WHERE trigger_row.tgname = ANY (
+        ARRAY[
+            'version_categories_version_topology_lock_trigger',
+            'version_categories_content_mutability_trigger',
+            'version_items_version_topology_lock_trigger',
+            'version_items_content_mutability_trigger'
+        ]
+    )
+      AND NOT trigger_row.tgisinternal
+      AND trigger_row.tgqual IS NULL;
+
+    IF actual_triggers IS DISTINCT FROM ARRAY[
+        'version_categories_content_mutability_trigger:version_categories:assert_version_content_mutable:O:31',
+        'version_categories_version_topology_lock_trigger:version_categories:lock_template_version_topology:O:30',
+        'version_items_content_mutability_trigger:version_items:assert_version_content_mutable:O:31',
+        'version_items_version_topology_lock_trigger:version_items:lock_template_version_topology:O:30'
+    ]::text[]
+       OR (
+           SELECT count(*)
+           FROM pg_trigger AS trigger_row
+           JOIN pg_class AS relation ON relation.oid = trigger_row.tgrelid
+           WHERE relation.relnamespace = 'storecalc'::regnamespace
+             AND NOT trigger_row.tgisinternal
+       ) <> 36
+       OR (SELECT count(*) FROM pg_proc WHERE pronamespace = 'storecalc'::regnamespace) <> 14
+       OR NOT EXISTS (
+           SELECT 1
+           FROM pg_proc AS procedure
+           JOIN pg_language AS language ON language.oid = procedure.prolang
+           WHERE procedure.oid = 'storecalc.assert_version_content_mutable()'::regprocedure
+             AND language.lanname = 'plpgsql'
+             AND procedure.prorettype = 'trigger'::regtype
+             AND procedure.pronargs = 0
+             AND procedure.prosecdef
+             AND procedure.provolatile = 'v'
+             AND procedure.proconfig = ARRAY['search_path=pg_catalog, storecalc']
+             AND pg_get_userbyid(procedure.proowner) = migration_owner_role
+             AND md5(procedure.prosrc) = 'a51e17e52e4398b1a16092290e5fda94'
+       ) THEN
+        RAISE EXCEPTION 'storecalc_version_content_postflight_function_or_trigger_mismatch';
+    END IF;
+
+    IF EXISTS (
+        SELECT 1
+        FROM (
+            SELECT acl.grantee
+            FROM pg_namespace AS namespace,
+                 LATERAL aclexplode(COALESCE(namespace.nspacl, acldefault('n', namespace.nspowner))) AS acl
+            WHERE namespace.nspname = 'storecalc'
+
+            UNION ALL
+
+            SELECT acl.grantee
+            FROM pg_class AS relation,
+                 LATERAL aclexplode(
+                     COALESCE(
+                         relation.relacl,
+                         acldefault(
+                             CASE WHEN relation.relkind = 'S' THEN 'S'::"char" ELSE 'r'::"char" END,
+                             relation.relowner
+                         )
+                     )
+                 ) AS acl
+            WHERE relation.relnamespace = 'storecalc'::regnamespace
+
+            UNION ALL
+
+            SELECT acl.grantee
+            FROM pg_proc AS procedure,
+                 LATERAL aclexplode(COALESCE(procedure.proacl, acldefault('f', procedure.proowner))) AS acl
+            WHERE procedure.pronamespace = 'storecalc'::regnamespace
+        ) AS object_grants
+        WHERE object_grants.grantee <> ALL (allowed_grantee_oids)
+    ) THEN
+        RAISE EXCEPTION 'storecalc_version_content_postflight_unexpected_grantee';
+    END IF;
+
+    FOREACH object_name IN ARRAY new_tables LOOP
+        IF has_table_privilege(web_role, object_name, 'SELECT')
+           OR has_table_privilege(web_role, object_name, 'INSERT')
+           OR has_table_privilege(web_role, object_name, 'UPDATE')
+           OR has_table_privilege(web_role, object_name, 'DELETE')
+           OR has_table_privilege(worker_role, object_name, 'SELECT')
+           OR has_table_privilege(worker_role, object_name, 'INSERT')
+           OR has_table_privilege(worker_role, object_name, 'UPDATE')
+           OR has_table_privilege(worker_role, object_name, 'DELETE')
+           OR NOT has_table_privilege(backup_role, object_name, 'SELECT')
+           OR has_table_privilege(backup_role, object_name, 'INSERT')
+           OR has_table_privilege(backup_role, object_name, 'UPDATE')
+           OR has_table_privilege(backup_role, object_name, 'DELETE') THEN
+            RAISE EXCEPTION 'storecalc_version_content_postflight_table_grant_mismatch';
+        END IF;
+    END LOOP;
+
+    FOREACH object_name IN ARRAY new_sequences LOOP
+        IF has_sequence_privilege(web_role, object_name, 'SELECT')
+           OR has_sequence_privilege(web_role, object_name, 'USAGE')
+           OR has_sequence_privilege(worker_role, object_name, 'SELECT')
+           OR has_sequence_privilege(worker_role, object_name, 'USAGE')
+           OR NOT has_sequence_privilege(backup_role, object_name, 'SELECT')
+           OR has_sequence_privilege(backup_role, object_name, 'USAGE')
+           OR has_sequence_privilege(backup_role, object_name, 'UPDATE') THEN
+            RAISE EXCEPTION 'storecalc_version_content_postflight_sequence_grant_mismatch';
+        END IF;
+    END LOOP;
+
+    IF has_function_privilege(
+        web_role,
+        'storecalc.assert_version_content_mutable()',
+        'EXECUTE'
+    ) OR has_function_privilege(
+        worker_role,
+        'storecalc.assert_version_content_mutable()',
+        'EXECUTE'
+    ) OR has_function_privilege(
+        backup_role,
+        'storecalc.assert_version_content_mutable()',
+        'EXECUTE'
+    ) THEN
+        RAISE EXCEPTION 'storecalc_version_content_postflight_function_grant_mismatch';
+    END IF;
+
+    SELECT array_agg(
+        format('%s:%s:%s:%s:%s', id, capability_key, schema_version, is_available, migration_key)
+        ORDER BY id
+    )
+    INTO actual_capabilities
+    FROM storecalc.schema_capabilities;
+
+    IF actual_capabilities IS DISTINCT FROM ARRAY[
+        '1:schema.foundation:1:t:0001_schema_foundation',
+        '2:public.directory:2:f:0003_program_assignments',
+        '3:anonymous.calculation:7:f:0010_warnings',
+        '4:saved.orders:0:f:0001_schema_foundation',
+        '5:public.contribution:0:f:0001_schema_foundation',
+        '6:evidence.upload:0:f:0001_schema_foundation',
+        '7:owner.support:0:f:0001_schema_foundation',
+        '8:scoped.profiles:0:f:0001_schema_foundation'
+    ]::text[]
+       OR EXISTS (
+           SELECT 1
+           FROM storecalc.schema_capabilities
+           WHERE capability_key <> 'schema.foundation'
+             AND verified_at IS NOT NULL
+       ) THEN
+        RAISE EXCEPTION 'storecalc_version_content_postflight_capability_or_seed_mismatch';
+    END IF;
+END
+$storecalc_version_content_postflight$;
+
+DO $storecalc_spending_buckets_postflight$
+DECLARE
+    migration_owner_role text := current_setting('storecalc.migration_owner_role');
+    web_role text := current_setting('storecalc.web_role');
+    worker_role text := current_setting('storecalc.worker_role');
+    backup_role text := current_setting('storecalc.backup_role');
+    configured_roles text[] := ARRAY[
+        current_setting('storecalc.migration_owner_role'),
+        current_setting('storecalc.web_role'),
+        current_setting('storecalc.worker_role'),
+        current_setting('storecalc.backup_role')
+    ];
+    allowed_grantee_oids oid[];
+    object_name text;
+    actual_relations text[];
+    actual_columns text[];
+    actual_constraints text[];
+    actual_indexes text[];
+    actual_foreign_keys text[];
+    actual_triggers text[];
+    actual_capabilities text[];
+    new_tables constant text[] := ARRAY[
+        'storecalc.version_spending_buckets',
+        'storecalc.version_item_bucket_memberships'
+    ];
+    new_sequences constant text[] := ARRAY[
+        'storecalc.version_spending_buckets_id_seq'
+    ];
+BEGIN
+    SELECT array_agg(oid ORDER BY oid)
+    INTO allowed_grantee_oids
+    FROM pg_roles
+    WHERE rolname = ANY (configured_roles);
+
+    SELECT array_agg(format('%s:%s', relname, relkind) ORDER BY relname)
+    INTO actual_relations
+    FROM pg_class
+    WHERE relnamespace = 'storecalc'::regnamespace
+      AND relname = ANY (
+          ARRAY[
+              'version_spending_buckets',
+              'version_spending_buckets_id_seq',
+              'version_spending_buckets_pkey',
+              'version_spending_buckets_id_version_key',
+              'version_spending_buckets_version_stable_key_key',
+              'version_spending_buckets_version_sort_idx',
+              'version_spending_buckets_primary_display_key',
+              'version_item_bucket_memberships',
+              'version_item_bucket_memberships_pkey',
+              'version_item_bucket_memberships_version_item_lineage_idx',
+              'version_item_bucket_memberships_bucket_lineage_idx',
+              'version_item_bucket_memberships_primary_display_key'
+          ]
+      );
+
+    IF actual_relations IS DISTINCT FROM ARRAY[
+        'version_item_bucket_memberships:r',
+        'version_item_bucket_memberships_bucket_lineage_idx:i',
+        'version_item_bucket_memberships_pkey:i',
+        'version_item_bucket_memberships_primary_display_key:i',
+        'version_item_bucket_memberships_version_item_lineage_idx:i',
+        'version_spending_buckets:r',
+        'version_spending_buckets_id_seq:S',
+        'version_spending_buckets_id_version_key:i',
+        'version_spending_buckets_pkey:i',
+        'version_spending_buckets_primary_display_key:i',
+        'version_spending_buckets_version_sort_idx:i',
+        'version_spending_buckets_version_stable_key_key:i'
+    ]::text[]
+       OR (SELECT count(*) FROM pg_class WHERE relnamespace = 'storecalc'::regnamespace) <> 140 THEN
+        RAISE EXCEPTION 'storecalc_spending_buckets_postflight_relation_mismatch';
+    END IF;
+
+    SELECT array_agg(
+        format(
+            '%s:%s:%s:%s:%s:%s',
+            column_row.table_name,
+            column_row.column_name,
+            column_row.data_type,
+            column_row.is_nullable,
+            COALESCE(column_row.identity_generation, ''),
+            COALESCE(column_row.column_default, '')
+        )
+        ORDER BY column_row.table_name, column_row.ordinal_position
+    )
+    INTO actual_columns
+    FROM information_schema.columns AS column_row
+    WHERE column_row.table_schema = 'storecalc'
+      AND column_row.table_name = ANY (
+          ARRAY[
+              'version_spending_buckets',
+              'version_item_bucket_memberships'
+          ]
+      );
+
+    IF actual_columns IS DISTINCT FROM ARRAY[
+        'version_item_bucket_memberships:version_item_id:integer:NO::',
+        'version_item_bucket_memberships:version_id:integer:NO::',
+        'version_item_bucket_memberships:spending_bucket_id:integer:NO::',
+        'version_item_bucket_memberships:membership_type:text:NO::',
+        'version_item_bucket_memberships:primary_display:boolean:NO::',
+        'version_spending_buckets:id:integer:NO:BY DEFAULT:',
+        'version_spending_buckets:version_id:integer:NO::',
+        'version_spending_buckets:stable_key:text:NO::',
+        'version_spending_buckets:display_name:text:NO::',
+        'version_spending_buckets:limit_state:text:NO::',
+        'version_spending_buckets:limit_minor:bigint:YES::',
+        'version_spending_buckets:measure_currency_code:text:NO::',
+        'version_spending_buckets:is_primary_display:boolean:NO::',
+        'version_spending_buckets:sort_order:integer:NO::'
+    ]::text[] THEN
+        RAISE EXCEPTION 'storecalc_spending_buckets_postflight_column_mismatch';
+    END IF;
+
+    SELECT array_agg(
+        format('%s:%s:%s', relation.relname, constraint_row.conname, constraint_row.contype)
+        ORDER BY relation.relname, constraint_row.conname
+    )
+    INTO actual_constraints
+    FROM pg_constraint AS constraint_row
+    JOIN pg_class AS relation ON relation.oid = constraint_row.conrelid
+    WHERE relation.relnamespace = 'storecalc'::regnamespace
+      AND relation.relname = ANY (
+          ARRAY[
+              'version_spending_buckets',
+              'version_item_bucket_memberships'
+          ]
+      );
+
+    IF actual_constraints IS DISTINCT FROM ARRAY[
+        'version_item_bucket_memberships:version_item_bucket_memberships_membership_type_check:c',
+        'version_item_bucket_memberships:version_item_bucket_memberships_pkey:p',
+        'version_item_bucket_memberships:version_item_bucket_memberships_spending_bucket_version_fkey:f',
+        'version_item_bucket_memberships:version_item_bucket_memberships_version_item_fkey:f',
+        'version_spending_buckets:version_spending_buckets_display_name_check:c',
+        'version_spending_buckets:version_spending_buckets_id_version_key:u',
+        'version_spending_buckets:version_spending_buckets_limit_nullability_check:c',
+        'version_spending_buckets:version_spending_buckets_limit_state_check:c',
+        'version_spending_buckets:version_spending_buckets_measure_currency_code_check:c',
+        'version_spending_buckets:version_spending_buckets_pkey:p',
+        'version_spending_buckets:version_spending_buckets_sort_order_check:c',
+        'version_spending_buckets:version_spending_buckets_stable_key_check:c',
+        'version_spending_buckets:version_spending_buckets_version_id_fkey:f',
+        'version_spending_buckets:version_spending_buckets_version_stable_key_key:u'
+    ]::text[]
+       OR EXISTS (
+           SELECT 1
+           FROM pg_constraint AS constraint_row
+           JOIN pg_class AS relation ON relation.oid = constraint_row.conrelid
+           WHERE relation.relnamespace = 'storecalc'::regnamespace
+             AND relation.relname = ANY (
+                 ARRAY[
+                     'version_spending_buckets',
+                     'version_item_bucket_memberships'
+                 ]
+             )
+             AND (
+                 NOT constraint_row.convalidated
+                 OR constraint_row.condeferrable
+                 OR constraint_row.condeferred
+             )
+       ) THEN
+        RAISE EXCEPTION 'storecalc_spending_buckets_postflight_constraint_mismatch';
+    END IF;
+
+    IF NOT EXISTS (
+        SELECT 1
+        FROM pg_constraint
+        WHERE conrelid = 'storecalc.version_spending_buckets'::regclass
+          AND conname = 'version_spending_buckets_limit_nullability_check'
+          AND pg_get_constraintdef(oid) = 'CHECK ((((limit_state = ''known''::text) AND (limit_minor IS NOT NULL) AND (limit_minor >= 0)) OR ((limit_state = ANY (ARRAY[''unlimited''::text, ''not_applicable''::text, ''unknown''::text, ''unsupported''::text])) AND (limit_minor IS NULL))))'
+    ) OR NOT EXISTS (
+        SELECT 1
+        FROM pg_constraint
+        WHERE conrelid = 'storecalc.version_spending_buckets'::regclass
+          AND conname = 'version_spending_buckets_version_stable_key_key'
+          AND pg_get_constraintdef(oid) = 'UNIQUE (version_id, stable_key)'
+    ) OR NOT EXISTS (
+        SELECT 1
+        FROM pg_constraint
+        WHERE conrelid = 'storecalc.version_item_bucket_memberships'::regclass
+          AND conname = 'version_item_bucket_memberships_membership_type_check'
+          AND pg_get_constraintdef(oid) = 'CHECK ((membership_type = ANY (ARRAY[''counts_toward''::text, ''excluded''::text, ''informational_only''::text])))'
+    ) THEN
+        RAISE EXCEPTION 'storecalc_spending_buckets_postflight_constraint_definition_mismatch';
+    END IF;
+
+    SELECT array_agg(
+        format('%s:%s', relation.relname, pg_get_indexdef(relation.oid))
+        ORDER BY relation.relname
+    )
+    INTO actual_indexes
+    FROM pg_class AS relation
+    WHERE relation.relnamespace = 'storecalc'::regnamespace
+      AND relation.relkind = 'i'
+      AND relation.relname = ANY (
+          ARRAY[
+              'version_spending_buckets_pkey',
+              'version_spending_buckets_id_version_key',
+              'version_spending_buckets_version_stable_key_key',
+              'version_spending_buckets_version_sort_idx',
+              'version_spending_buckets_primary_display_key',
+              'version_item_bucket_memberships_pkey',
+              'version_item_bucket_memberships_version_item_lineage_idx',
+              'version_item_bucket_memberships_bucket_lineage_idx',
+              'version_item_bucket_memberships_primary_display_key'
+          ]
+      );
+
+    IF actual_indexes IS DISTINCT FROM ARRAY[
+        'version_item_bucket_memberships_bucket_lineage_idx:CREATE INDEX version_item_bucket_memberships_bucket_lineage_idx ON storecalc.version_item_bucket_memberships USING btree (spending_bucket_id, version_id, version_item_id)',
+        'version_item_bucket_memberships_pkey:CREATE UNIQUE INDEX version_item_bucket_memberships_pkey ON storecalc.version_item_bucket_memberships USING btree (version_item_id, spending_bucket_id)',
+        'version_item_bucket_memberships_primary_display_key:CREATE UNIQUE INDEX version_item_bucket_memberships_primary_display_key ON storecalc.version_item_bucket_memberships USING btree (version_item_id) WHERE primary_display',
+        'version_item_bucket_memberships_version_item_lineage_idx:CREATE INDEX version_item_bucket_memberships_version_item_lineage_idx ON storecalc.version_item_bucket_memberships USING btree (version_item_id, version_id, spending_bucket_id)',
+        'version_spending_buckets_id_version_key:CREATE UNIQUE INDEX version_spending_buckets_id_version_key ON storecalc.version_spending_buckets USING btree (id, version_id)',
+        'version_spending_buckets_pkey:CREATE UNIQUE INDEX version_spending_buckets_pkey ON storecalc.version_spending_buckets USING btree (id)',
+        'version_spending_buckets_primary_display_key:CREATE UNIQUE INDEX version_spending_buckets_primary_display_key ON storecalc.version_spending_buckets USING btree (version_id) WHERE is_primary_display',
+        'version_spending_buckets_version_sort_idx:CREATE INDEX version_spending_buckets_version_sort_idx ON storecalc.version_spending_buckets USING btree (version_id, sort_order, stable_key, id)',
+        'version_spending_buckets_version_stable_key_key:CREATE UNIQUE INDEX version_spending_buckets_version_stable_key_key ON storecalc.version_spending_buckets USING btree (version_id, stable_key)'
+    ]::text[] THEN
+        RAISE EXCEPTION 'storecalc_spending_buckets_postflight_index_mismatch';
+    END IF;
+
+    SELECT array_agg(
+        format(
+            '%s:%s.%s:%s:%s.%s:%s:%s',
+            constraint_row.conname,
+            source_namespace.nspname,
+            source_relation.relname,
+            ARRAY(
+                SELECT attribute.attname
+                FROM unnest(constraint_row.conkey) WITH ORDINALITY AS key(attnum, position)
+                JOIN pg_attribute AS attribute
+                  ON attribute.attrelid = constraint_row.conrelid
+                 AND attribute.attnum = key.attnum
+                ORDER BY key.position
+            ),
+            target_namespace.nspname,
+            target_relation.relname,
+            ARRAY(
+                SELECT attribute.attname
+                FROM unnest(constraint_row.confkey) WITH ORDINALITY AS key(attnum, position)
+                JOIN pg_attribute AS attribute
+                  ON attribute.attrelid = constraint_row.confrelid
+                 AND attribute.attnum = key.attnum
+                ORDER BY key.position
+            ),
+            constraint_row.confdeltype
+        )
+        ORDER BY constraint_row.conname
+    )
+    INTO actual_foreign_keys
+    FROM pg_constraint AS constraint_row
+    JOIN pg_class AS source_relation ON source_relation.oid = constraint_row.conrelid
+    JOIN pg_namespace AS source_namespace ON source_namespace.oid = source_relation.relnamespace
+    JOIN pg_class AS target_relation ON target_relation.oid = constraint_row.confrelid
+    JOIN pg_namespace AS target_namespace ON target_namespace.oid = target_relation.relnamespace
+    WHERE constraint_row.contype = 'f'
+      AND source_relation.relnamespace = 'storecalc'::regnamespace
+      AND source_relation.relname = ANY (
+          ARRAY[
+              'version_spending_buckets',
+              'version_item_bucket_memberships'
+          ]
+      );
+
+    IF actual_foreign_keys IS DISTINCT FROM ARRAY[
+        'version_item_bucket_memberships_spending_bucket_version_fkey:storecalc.version_item_bucket_memberships:{spending_bucket_id,version_id}:storecalc.version_spending_buckets:{id,version_id}:r',
+        'version_item_bucket_memberships_version_item_fkey:storecalc.version_item_bucket_memberships:{version_item_id,version_id}:storecalc.version_items:{id,version_id}:r',
+        'version_spending_buckets_version_id_fkey:storecalc.version_spending_buckets:{version_id}:storecalc.template_versions:{id}:r'
+    ]::text[] THEN
+        RAISE EXCEPTION 'storecalc_spending_buckets_postflight_foreign_key_mismatch';
+    END IF;
+
+    FOREACH object_name IN ARRAY new_tables LOOP
+        IF pg_get_userbyid(
+            (SELECT relowner FROM pg_class WHERE oid = object_name::regclass)
+        ) IS DISTINCT FROM migration_owner_role
+           OR EXISTS (
+               SELECT 1
+               FROM pg_class
+               WHERE oid = object_name::regclass
+                 AND (relpersistence <> 'p' OR relrowsecurity OR relforcerowsecurity)
+           )
+           OR EXISTS (
+               SELECT 1
+               FROM pg_policy
+               WHERE polrelid = object_name::regclass
+           ) THEN
+            RAISE EXCEPTION 'storecalc_spending_buckets_postflight_table_security_mismatch';
+        END IF;
+    END LOOP;
+
+    FOREACH object_name IN ARRAY new_sequences LOOP
+        IF pg_get_userbyid(
+            (SELECT relowner FROM pg_class WHERE oid = object_name::regclass)
+        ) IS DISTINCT FROM migration_owner_role
+           OR pg_get_serial_sequence(
+               replace(object_name, '_id_seq', ''),
+               'id'
+           ) IS DISTINCT FROM object_name
+           OR NOT EXISTS (
+               SELECT 1
+               FROM pg_sequence
+               WHERE seqrelid = object_name::regclass
+                 AND seqstart = 1
+                 AND seqincrement = 1
+                 AND seqmax = 2147483647
+                 AND seqmin = 1
+                 AND seqcache = 1
+                 AND NOT seqcycle
+           ) THEN
+            RAISE EXCEPTION 'storecalc_spending_buckets_postflight_sequence_mismatch';
+        END IF;
+    END LOOP;
+
+    SELECT array_agg(
+        format('%s:%s:%s:%s:%s', trigger_row.tgname, relation.relname, procedure.proname, trigger_row.tgenabled, trigger_row.tgtype)
+        ORDER BY trigger_row.tgname
+    )
+    INTO actual_triggers
+    FROM pg_trigger AS trigger_row
+    JOIN pg_class AS relation ON relation.oid = trigger_row.tgrelid
+    JOIN pg_proc AS procedure ON procedure.oid = trigger_row.tgfoid
+    WHERE trigger_row.tgname = ANY (
+        ARRAY[
+            'version_spending_buckets_version_topology_lock_trigger',
+            'version_spending_buckets_content_mutability_trigger',
+            'version_item_bucket_memberships_version_topology_lock_trigger',
+            'version_item_bucket_memberships_content_mutability_trigger'
+        ]
+    )
+      AND NOT trigger_row.tgisinternal
+      AND trigger_row.tgqual IS NULL;
+
+    IF actual_triggers IS DISTINCT FROM ARRAY[
+        'version_item_bucket_memberships_content_mutability_trigger:version_item_bucket_memberships:assert_version_content_mutable:O:31',
+        'version_item_bucket_memberships_version_topology_lock_trigger:version_item_bucket_memberships:lock_template_version_topology:O:30',
+        'version_spending_buckets_content_mutability_trigger:version_spending_buckets:assert_version_content_mutable:O:31',
+        'version_spending_buckets_version_topology_lock_trigger:version_spending_buckets:lock_template_version_topology:O:30'
+    ]::text[]
+       OR (
+           SELECT count(*)
+           FROM pg_trigger AS trigger_row
+           JOIN pg_class AS relation ON relation.oid = trigger_row.tgrelid
+           WHERE relation.relnamespace = 'storecalc'::regnamespace
+             AND NOT trigger_row.tgisinternal
+       ) <> 36
+       OR (SELECT count(*) FROM pg_proc WHERE pronamespace = 'storecalc'::regnamespace) <> 14 THEN
+        RAISE EXCEPTION 'storecalc_spending_buckets_postflight_trigger_mismatch';
+    END IF;
+
+    IF EXISTS (
+        SELECT 1
+        FROM (
+            SELECT acl.grantee
+            FROM pg_namespace AS namespace,
+                 LATERAL aclexplode(COALESCE(namespace.nspacl, acldefault('n', namespace.nspowner))) AS acl
+            WHERE namespace.nspname = 'storecalc'
+
+            UNION ALL
+
+            SELECT acl.grantee
+            FROM pg_class AS relation,
+                 LATERAL aclexplode(
+                     COALESCE(
+                         relation.relacl,
+                         acldefault(
+                             CASE WHEN relation.relkind = 'S' THEN 'S'::"char" ELSE 'r'::"char" END,
+                             relation.relowner
+                         )
+                     )
+                 ) AS acl
+            WHERE relation.relnamespace = 'storecalc'::regnamespace
+
+            UNION ALL
+
+            SELECT acl.grantee
+            FROM pg_proc AS procedure,
+                 LATERAL aclexplode(COALESCE(procedure.proacl, acldefault('f', procedure.proowner))) AS acl
+            WHERE procedure.pronamespace = 'storecalc'::regnamespace
+        ) AS object_grants
+        WHERE object_grants.grantee <> ALL (allowed_grantee_oids)
+    ) THEN
+        RAISE EXCEPTION 'storecalc_spending_buckets_postflight_unexpected_grantee';
+    END IF;
+
+    FOREACH object_name IN ARRAY new_tables LOOP
+        IF has_table_privilege(web_role, object_name, 'SELECT')
+           OR has_table_privilege(web_role, object_name, 'INSERT')
+           OR has_table_privilege(web_role, object_name, 'UPDATE')
+           OR has_table_privilege(web_role, object_name, 'DELETE')
+           OR has_table_privilege(worker_role, object_name, 'SELECT')
+           OR has_table_privilege(worker_role, object_name, 'INSERT')
+           OR has_table_privilege(worker_role, object_name, 'UPDATE')
+           OR has_table_privilege(worker_role, object_name, 'DELETE')
+           OR NOT has_table_privilege(backup_role, object_name, 'SELECT')
+           OR has_table_privilege(backup_role, object_name, 'INSERT')
+           OR has_table_privilege(backup_role, object_name, 'UPDATE')
+           OR has_table_privilege(backup_role, object_name, 'DELETE') THEN
+            RAISE EXCEPTION 'storecalc_spending_buckets_postflight_table_grant_mismatch';
+        END IF;
+    END LOOP;
+
+    FOREACH object_name IN ARRAY new_sequences LOOP
+        IF has_sequence_privilege(web_role, object_name, 'SELECT')
+           OR has_sequence_privilege(web_role, object_name, 'USAGE')
+           OR has_sequence_privilege(worker_role, object_name, 'SELECT')
+           OR has_sequence_privilege(worker_role, object_name, 'USAGE')
+           OR NOT has_sequence_privilege(backup_role, object_name, 'SELECT')
+           OR has_sequence_privilege(backup_role, object_name, 'USAGE')
+           OR has_sequence_privilege(backup_role, object_name, 'UPDATE') THEN
+            RAISE EXCEPTION 'storecalc_spending_buckets_postflight_sequence_grant_mismatch';
+        END IF;
+    END LOOP;
+
+    SELECT array_agg(
+        format('%s:%s:%s:%s:%s', id, capability_key, schema_version, is_available, migration_key)
+        ORDER BY id
+    )
+    INTO actual_capabilities
+    FROM storecalc.schema_capabilities;
+
+    IF actual_capabilities IS DISTINCT FROM ARRAY[
+        '1:schema.foundation:1:t:0001_schema_foundation',
+        '2:public.directory:2:f:0003_program_assignments',
+        '3:anonymous.calculation:7:f:0010_warnings',
+        '4:saved.orders:0:f:0001_schema_foundation',
+        '5:public.contribution:0:f:0001_schema_foundation',
+        '6:evidence.upload:0:f:0001_schema_foundation',
+        '7:owner.support:0:f:0001_schema_foundation',
+        '8:scoped.profiles:0:f:0001_schema_foundation'
+    ]::text[]
+       OR EXISTS (
+           SELECT 1
+           FROM storecalc.schema_capabilities
+           WHERE capability_key <> 'schema.foundation'
+             AND verified_at IS NOT NULL
+       ) THEN
+        RAISE EXCEPTION 'storecalc_spending_buckets_postflight_capability_or_seed_mismatch';
+    END IF;
+END
+$storecalc_spending_buckets_postflight$;
+
+DO $storecalc_tax_rules_postflight$
+DECLARE
+    migration_owner_role text := current_setting('storecalc.migration_owner_role');
+    web_role text := current_setting('storecalc.web_role');
+    worker_role text := current_setting('storecalc.worker_role');
+    backup_role text := current_setting('storecalc.backup_role');
+    configured_roles text[] := ARRAY[
+        current_setting('storecalc.migration_owner_role'),
+        current_setting('storecalc.web_role'),
+        current_setting('storecalc.worker_role'),
+        current_setting('storecalc.backup_role')
+    ];
+    allowed_grantee_oids oid[];
+    object_name text;
+    actual_relations text[];
+    actual_columns text[];
+    actual_constraints text[];
+    actual_indexes text[];
+    actual_foreign_keys text[];
+    actual_triggers text[];
+    actual_capabilities text[];
+    new_tables constant text[] := ARRAY[
+        'storecalc.version_tax_rules'
+    ];
+    new_sequences constant text[] := ARRAY[
+        'storecalc.version_tax_rules_id_seq'
+    ];
+BEGIN
+    SELECT array_agg(oid ORDER BY oid)
+    INTO allowed_grantee_oids
+    FROM pg_roles
+    WHERE rolname = ANY (configured_roles);
+
+    SELECT array_agg(format('%s:%s', relname, relkind) ORDER BY relname)
+    INTO actual_relations
+    FROM pg_class
+    WHERE relnamespace = 'storecalc'::regnamespace
+      AND relname = ANY (
+          ARRAY[
+              'version_tax_rules',
+              'version_tax_rules_id_seq',
+              'version_tax_rules_pkey',
+              'version_tax_rules_id_version_key',
+              'version_tax_rules_version_resolution_idx',
+              'version_tax_rules_template_priority_key',
+              'version_tax_rules_category_priority_key',
+              'version_tax_rules_item_priority_key'
+          ]
+      );
+
+    IF actual_relations IS DISTINCT FROM ARRAY[
+        'version_tax_rules:r',
+        'version_tax_rules_category_priority_key:i',
+        'version_tax_rules_id_seq:S',
+        'version_tax_rules_id_version_key:i',
+        'version_tax_rules_item_priority_key:i',
+        'version_tax_rules_pkey:i',
+        'version_tax_rules_template_priority_key:i',
+        'version_tax_rules_version_resolution_idx:i'
+    ]::text[]
+       OR (SELECT count(*) FROM pg_class WHERE relnamespace = 'storecalc'::regnamespace) <> 140 THEN
+        RAISE EXCEPTION 'storecalc_tax_rules_postflight_relation_mismatch';
+    END IF;
+
+    SELECT array_agg(
+        format(
+            '%s:%s:%s:%s:%s:%s',
+            column_row.table_name,
+            column_row.column_name,
+            column_row.data_type,
+            column_row.is_nullable,
+            COALESCE(column_row.identity_generation, ''),
+            COALESCE(column_row.column_default, '')
+        )
+        ORDER BY column_row.table_name, column_row.ordinal_position
+    )
+    INTO actual_columns
+    FROM information_schema.columns AS column_row
+    WHERE column_row.table_schema = 'storecalc'
+      AND column_row.table_name = 'version_tax_rules';
+
+    IF actual_columns IS DISTINCT FROM ARRAY[
+        'version_tax_rules:id:integer:NO:BY DEFAULT:',
+        'version_tax_rules:version_id:integer:NO::',
+        'version_tax_rules:scope_type:text:NO::',
+        'version_tax_rules:category_version_id:integer:YES::',
+        'version_tax_rules:item_version_id:integer:YES::',
+        'version_tax_rules:treatment_state:text:NO::',
+        'version_tax_rules:rate_ppm:integer:YES::',
+        'version_tax_rules:price_includes_tax:boolean:YES::',
+        'version_tax_rules:rounding_mode:text:YES::',
+        'version_tax_rules:rounding_scope:text:YES::',
+        'version_tax_rules:priority:integer:NO::',
+        'version_tax_rules:created_at:timestamp with time zone:NO::transaction_timestamp()'
+    ]::text[] THEN
+        RAISE EXCEPTION 'storecalc_tax_rules_postflight_column_mismatch';
+    END IF;
+
+    SELECT array_agg(
+        format('%s:%s', constraint_row.conname, constraint_row.contype)
+        ORDER BY constraint_row.conname
+    )
+    INTO actual_constraints
+    FROM pg_constraint AS constraint_row
+    WHERE constraint_row.conrelid = 'storecalc.version_tax_rules'::regclass;
+
+    IF actual_constraints IS DISTINCT FROM ARRAY[
+        'version_tax_rules_category_version_fkey:f',
+        'version_tax_rules_id_version_key:u',
+        'version_tax_rules_item_version_fkey:f',
+        'version_tax_rules_pkey:p',
+        'version_tax_rules_priority_check:c',
+        'version_tax_rules_rate_ppm_check:c',
+        'version_tax_rules_rounding_mode_check:c',
+        'version_tax_rules_rounding_scope_check:c',
+        'version_tax_rules_scope_target_check:c',
+        'version_tax_rules_scope_type_check:c',
+        'version_tax_rules_treatment_nullability_check:c',
+        'version_tax_rules_treatment_state_check:c',
+        'version_tax_rules_version_id_fkey:f'
+    ]::text[]
+       OR EXISTS (
+           SELECT 1
+           FROM pg_constraint
+           WHERE conrelid = 'storecalc.version_tax_rules'::regclass
+             AND (NOT convalidated OR condeferrable OR condeferred)
+       ) THEN
+        RAISE EXCEPTION 'storecalc_tax_rules_postflight_constraint_mismatch';
+    END IF;
+
+    IF NOT EXISTS (
+        SELECT 1
+        FROM pg_constraint
+        WHERE conrelid = 'storecalc.version_tax_rules'::regclass
+          AND conname = 'version_tax_rules_scope_target_check'
+          AND pg_get_constraintdef(oid) = 'CHECK ((((scope_type = ''template''::text) AND (category_version_id IS NULL) AND (item_version_id IS NULL)) OR ((scope_type = ''category''::text) AND (category_version_id IS NOT NULL) AND (item_version_id IS NULL)) OR ((scope_type = ''item''::text) AND (category_version_id IS NULL) AND (item_version_id IS NOT NULL))))'
+    ) OR NOT EXISTS (
+        SELECT 1
+        FROM pg_constraint
+        WHERE conrelid = 'storecalc.version_tax_rules'::regclass
+          AND conname = 'version_tax_rules_treatment_nullability_check'
+          AND pg_get_constraintdef(oid) = 'CHECK ((((treatment_state = ''known''::text) AND (rate_ppm IS NOT NULL) AND (price_includes_tax IS NOT NULL) AND (rounding_mode IS NOT NULL) AND (rounding_scope IS NOT NULL)) OR ((treatment_state <> ''known''::text) AND (rate_ppm IS NULL) AND (price_includes_tax IS NULL) AND (rounding_mode IS NULL) AND (rounding_scope IS NULL))))'
+    ) OR NOT EXISTS (
+        SELECT 1
+        FROM pg_constraint
+        WHERE conrelid = 'storecalc.version_tax_rules'::regclass
+          AND conname = 'version_tax_rules_rate_ppm_check'
+          AND pg_get_constraintdef(oid) = 'CHECK (((rate_ppm IS NULL) OR ((rate_ppm >= 0) AND (rate_ppm <= 1000000))))'
+    ) OR NOT EXISTS (
+        SELECT 1
+        FROM pg_constraint
+        WHERE conrelid = 'storecalc.version_tax_rules'::regclass
+          AND conname = 'version_tax_rules_id_version_key'
+          AND pg_get_constraintdef(oid) = 'UNIQUE (id, version_id)'
+    ) THEN
+        RAISE EXCEPTION 'storecalc_tax_rules_postflight_constraint_definition_mismatch';
+    END IF;
+
+    SELECT array_agg(
+        format('%s:%s', relation.relname, pg_get_indexdef(relation.oid))
+        ORDER BY relation.relname
+    )
+    INTO actual_indexes
+    FROM pg_class AS relation
+    WHERE relation.relnamespace = 'storecalc'::regnamespace
+      AND relation.relkind = 'i'
+      AND relation.relname = ANY (
+          ARRAY[
+              'version_tax_rules_pkey',
+              'version_tax_rules_id_version_key',
+              'version_tax_rules_version_resolution_idx',
+              'version_tax_rules_template_priority_key',
+              'version_tax_rules_category_priority_key',
+              'version_tax_rules_item_priority_key'
+          ]
+      );
+
+    IF actual_indexes IS DISTINCT FROM ARRAY[
+        'version_tax_rules_category_priority_key:CREATE UNIQUE INDEX version_tax_rules_category_priority_key ON storecalc.version_tax_rules USING btree (version_id, category_version_id, priority) WHERE (scope_type = ''category''::text)',
+        'version_tax_rules_id_version_key:CREATE UNIQUE INDEX version_tax_rules_id_version_key ON storecalc.version_tax_rules USING btree (id, version_id)',
+        'version_tax_rules_item_priority_key:CREATE UNIQUE INDEX version_tax_rules_item_priority_key ON storecalc.version_tax_rules USING btree (version_id, item_version_id, priority) WHERE (scope_type = ''item''::text)',
+        'version_tax_rules_pkey:CREATE UNIQUE INDEX version_tax_rules_pkey ON storecalc.version_tax_rules USING btree (id)',
+        'version_tax_rules_template_priority_key:CREATE UNIQUE INDEX version_tax_rules_template_priority_key ON storecalc.version_tax_rules USING btree (version_id, priority) WHERE (scope_type = ''template''::text)',
+        'version_tax_rules_version_resolution_idx:CREATE INDEX version_tax_rules_version_resolution_idx ON storecalc.version_tax_rules USING btree (version_id, priority DESC, scope_type, id)'
+    ]::text[] THEN
+        RAISE EXCEPTION 'storecalc_tax_rules_postflight_index_mismatch';
+    END IF;
+
+    SELECT array_agg(
+        format(
+            '%s:%s.%s:%s:%s.%s:%s:%s',
+            constraint_row.conname,
+            source_namespace.nspname,
+            source_relation.relname,
+            ARRAY(
+                SELECT attribute.attname
+                FROM unnest(constraint_row.conkey) WITH ORDINALITY AS key(attnum, position)
+                JOIN pg_attribute AS attribute
+                  ON attribute.attrelid = constraint_row.conrelid
+                 AND attribute.attnum = key.attnum
+                ORDER BY key.position
+            ),
+            target_namespace.nspname,
+            target_relation.relname,
+            ARRAY(
+                SELECT attribute.attname
+                FROM unnest(constraint_row.confkey) WITH ORDINALITY AS key(attnum, position)
+                JOIN pg_attribute AS attribute
+                  ON attribute.attrelid = constraint_row.confrelid
+                 AND attribute.attnum = key.attnum
+                ORDER BY key.position
+            ),
+            constraint_row.confdeltype
+        )
+        ORDER BY constraint_row.conname
+    )
+    INTO actual_foreign_keys
+    FROM pg_constraint AS constraint_row
+    JOIN pg_class AS source_relation ON source_relation.oid = constraint_row.conrelid
+    JOIN pg_namespace AS source_namespace ON source_namespace.oid = source_relation.relnamespace
+    JOIN pg_class AS target_relation ON target_relation.oid = constraint_row.confrelid
+    JOIN pg_namespace AS target_namespace ON target_namespace.oid = target_relation.relnamespace
+    WHERE constraint_row.contype = 'f'
+      AND source_relation.oid = 'storecalc.version_tax_rules'::regclass;
+
+    IF actual_foreign_keys IS DISTINCT FROM ARRAY[
+        'version_tax_rules_category_version_fkey:storecalc.version_tax_rules:{category_version_id,version_id}:storecalc.version_categories:{id,version_id}:r',
+        'version_tax_rules_item_version_fkey:storecalc.version_tax_rules:{item_version_id,version_id}:storecalc.version_items:{id,version_id}:r',
+        'version_tax_rules_version_id_fkey:storecalc.version_tax_rules:{version_id}:storecalc.template_versions:{id}:r'
+    ]::text[] THEN
+        RAISE EXCEPTION 'storecalc_tax_rules_postflight_foreign_key_mismatch';
+    END IF;
+
+    FOREACH object_name IN ARRAY new_tables LOOP
+        IF pg_get_userbyid(
+            (SELECT relowner FROM pg_class WHERE oid = object_name::regclass)
+        ) IS DISTINCT FROM migration_owner_role
+           OR EXISTS (
+               SELECT 1
+               FROM pg_class
+               WHERE oid = object_name::regclass
+                 AND (relpersistence <> 'p' OR relrowsecurity OR relforcerowsecurity)
+           )
+           OR EXISTS (
+               SELECT 1
+               FROM pg_policy
+               WHERE polrelid = object_name::regclass
+           ) THEN
+            RAISE EXCEPTION 'storecalc_tax_rules_postflight_table_security_mismatch';
+        END IF;
+    END LOOP;
+
+    FOREACH object_name IN ARRAY new_sequences LOOP
+        IF pg_get_userbyid(
+            (SELECT relowner FROM pg_class WHERE oid = object_name::regclass)
+        ) IS DISTINCT FROM migration_owner_role
+           OR pg_get_serial_sequence(
+               replace(object_name, '_id_seq', ''),
+               'id'
+           ) IS DISTINCT FROM object_name
+           OR NOT EXISTS (
+               SELECT 1
+               FROM pg_sequence
+               WHERE seqrelid = object_name::regclass
+                 AND seqstart = 1
+                 AND seqincrement = 1
+                 AND seqmax = 2147483647
+                 AND seqmin = 1
+                 AND seqcache = 1
+                 AND NOT seqcycle
+           ) THEN
+            RAISE EXCEPTION 'storecalc_tax_rules_postflight_sequence_mismatch';
+        END IF;
+    END LOOP;
+
+    SELECT array_agg(
+        format('%s:%s:%s:%s:%s', trigger_row.tgname, relation.relname, procedure.proname, trigger_row.tgenabled, trigger_row.tgtype)
+        ORDER BY trigger_row.tgname
+    )
+    INTO actual_triggers
+    FROM pg_trigger AS trigger_row
+    JOIN pg_class AS relation ON relation.oid = trigger_row.tgrelid
+    JOIN pg_proc AS procedure ON procedure.oid = trigger_row.tgfoid
+    WHERE trigger_row.tgname = ANY (
+        ARRAY[
+            'version_tax_rules_version_topology_lock_trigger',
+            'version_tax_rules_content_mutability_trigger'
+        ]
+    )
+      AND NOT trigger_row.tgisinternal
+      AND trigger_row.tgqual IS NULL;
+
+    IF actual_triggers IS DISTINCT FROM ARRAY[
+        'version_tax_rules_content_mutability_trigger:version_tax_rules:assert_version_content_mutable:O:31',
+        'version_tax_rules_version_topology_lock_trigger:version_tax_rules:lock_template_version_topology:O:30'
+    ]::text[]
+       OR (
+           SELECT count(*)
+           FROM pg_trigger AS trigger_row
+           JOIN pg_class AS relation ON relation.oid = trigger_row.tgrelid
+           WHERE relation.relnamespace = 'storecalc'::regnamespace
+             AND NOT trigger_row.tgisinternal
+       ) <> 36
+       OR (SELECT count(*) FROM pg_proc WHERE pronamespace = 'storecalc'::regnamespace) <> 14 THEN
+        RAISE EXCEPTION 'storecalc_tax_rules_postflight_trigger_mismatch';
+    END IF;
+
+    IF EXISTS (
+        SELECT 1
+        FROM (
+            SELECT acl.grantee
+            FROM pg_namespace AS namespace,
+                 LATERAL aclexplode(COALESCE(namespace.nspacl, acldefault('n', namespace.nspowner))) AS acl
+            WHERE namespace.nspname = 'storecalc'
+
+            UNION ALL
+
+            SELECT acl.grantee
+            FROM pg_class AS relation,
+                 LATERAL aclexplode(
+                     COALESCE(
+                         relation.relacl,
+                         acldefault(
+                             CASE WHEN relation.relkind = 'S' THEN 'S'::"char" ELSE 'r'::"char" END,
+                             relation.relowner
+                         )
+                     )
+                 ) AS acl
+            WHERE relation.relnamespace = 'storecalc'::regnamespace
+
+            UNION ALL
+
+            SELECT acl.grantee
+            FROM pg_proc AS procedure,
+                 LATERAL aclexplode(COALESCE(procedure.proacl, acldefault('f', procedure.proowner))) AS acl
+            WHERE procedure.pronamespace = 'storecalc'::regnamespace
+        ) AS object_grants
+        WHERE object_grants.grantee <> ALL (allowed_grantee_oids)
+    ) THEN
+        RAISE EXCEPTION 'storecalc_tax_rules_postflight_unexpected_grantee';
+    END IF;
+
+    FOREACH object_name IN ARRAY new_tables LOOP
+        IF has_table_privilege(web_role, object_name, 'SELECT')
+           OR has_table_privilege(web_role, object_name, 'INSERT')
+           OR has_table_privilege(web_role, object_name, 'UPDATE')
+           OR has_table_privilege(web_role, object_name, 'DELETE')
+           OR has_table_privilege(worker_role, object_name, 'SELECT')
+           OR has_table_privilege(worker_role, object_name, 'INSERT')
+           OR has_table_privilege(worker_role, object_name, 'UPDATE')
+           OR has_table_privilege(worker_role, object_name, 'DELETE')
+           OR NOT has_table_privilege(backup_role, object_name, 'SELECT')
+           OR has_table_privilege(backup_role, object_name, 'INSERT')
+           OR has_table_privilege(backup_role, object_name, 'UPDATE')
+           OR has_table_privilege(backup_role, object_name, 'DELETE') THEN
+            RAISE EXCEPTION 'storecalc_tax_rules_postflight_table_grant_mismatch';
+        END IF;
+    END LOOP;
+
+    FOREACH object_name IN ARRAY new_sequences LOOP
+        IF has_sequence_privilege(web_role, object_name, 'SELECT')
+           OR has_sequence_privilege(web_role, object_name, 'USAGE')
+           OR has_sequence_privilege(worker_role, object_name, 'SELECT')
+           OR has_sequence_privilege(worker_role, object_name, 'USAGE')
+           OR NOT has_sequence_privilege(backup_role, object_name, 'SELECT')
+           OR has_sequence_privilege(backup_role, object_name, 'USAGE')
+           OR has_sequence_privilege(backup_role, object_name, 'UPDATE') THEN
+            RAISE EXCEPTION 'storecalc_tax_rules_postflight_sequence_grant_mismatch';
+        END IF;
+    END LOOP;
+
+    SELECT array_agg(
+        format('%s:%s:%s:%s:%s', id, capability_key, schema_version, is_available, migration_key)
+        ORDER BY id
+    )
+    INTO actual_capabilities
+    FROM storecalc.schema_capabilities;
+
+    IF actual_capabilities IS DISTINCT FROM ARRAY[
+        '1:schema.foundation:1:t:0001_schema_foundation',
+        '2:public.directory:2:f:0003_program_assignments',
+        '3:anonymous.calculation:7:f:0010_warnings',
+        '4:saved.orders:0:f:0001_schema_foundation',
+        '5:public.contribution:0:f:0001_schema_foundation',
+        '6:evidence.upload:0:f:0001_schema_foundation',
+        '7:owner.support:0:f:0001_schema_foundation',
+        '8:scoped.profiles:0:f:0001_schema_foundation'
+    ]::text[]
+       OR EXISTS (
+           SELECT 1
+           FROM storecalc.schema_capabilities
+           WHERE capability_key <> 'schema.foundation'
+             AND verified_at IS NOT NULL
+       ) THEN
+        RAISE EXCEPTION 'storecalc_tax_rules_postflight_capability_or_seed_mismatch';
+    END IF;
+END
+$storecalc_tax_rules_postflight$;
+
+DO $storecalc_order_constraints_postflight$
+DECLARE
+    migration_owner_role text := current_setting('storecalc.migration_owner_role');
+    web_role text := current_setting('storecalc.web_role');
+    worker_role text := current_setting('storecalc.worker_role');
+    backup_role text := current_setting('storecalc.backup_role');
+    configured_roles text[] := ARRAY[
+        current_setting('storecalc.migration_owner_role'),
+        current_setting('storecalc.web_role'),
+        current_setting('storecalc.worker_role'),
+        current_setting('storecalc.backup_role')
+    ];
+    allowed_grantee_oids oid[];
+    object_name text;
+    actual_relations text[];
+    actual_columns text[];
+    actual_constraints text[];
+    actual_check_definitions text[];
+    actual_indexes text[];
+    actual_foreign_keys text[];
+    actual_triggers text[];
+    actual_capabilities text[];
+    new_tables constant text[] := ARRAY[
+        'storecalc.version_constraints'
+    ];
+    new_sequences constant text[] := ARRAY[
+        'storecalc.version_constraints_id_seq'
+    ];
+BEGIN
+    SELECT array_agg(oid ORDER BY oid)
+    INTO allowed_grantee_oids
+    FROM pg_roles
+    WHERE rolname = ANY (configured_roles);
+
+    SELECT array_agg(format('%s:%s', relname, relkind) ORDER BY relname)
+    INTO actual_relations
+    FROM pg_class
+    WHERE relnamespace = 'storecalc'::regnamespace
+      AND relname = ANY (
+          ARRAY[
+              'version_constraints',
+              'version_constraints_id_seq',
+              'version_constraints_pkey',
+              'version_constraints_id_version_key',
+              'version_constraints_version_stable_key_key',
+              'version_constraints_version_resolution_idx'
+          ]
+      );
+
+    IF actual_relations IS DISTINCT FROM ARRAY[
+        'version_constraints:r',
+        'version_constraints_id_seq:S',
+        'version_constraints_id_version_key:i',
+        'version_constraints_pkey:i',
+        'version_constraints_version_resolution_idx:i',
+        'version_constraints_version_stable_key_key:i'
+    ]::text[]
+       OR (SELECT count(*) FROM pg_class WHERE relnamespace = 'storecalc'::regnamespace) <> 140 THEN
+        RAISE EXCEPTION 'storecalc_order_constraints_postflight_relation_mismatch';
+    END IF;
+
+    SELECT array_agg(
+        format(
+            '%s:%s:%s:%s:%s:%s',
+            column_row.table_name,
+            column_row.column_name,
+            column_row.data_type,
+            column_row.is_nullable,
+            COALESCE(column_row.identity_generation, ''),
+            COALESCE(column_row.column_default, '')
+        )
+        ORDER BY column_row.table_name, column_row.ordinal_position
+    )
+    INTO actual_columns
+    FROM information_schema.columns AS column_row
+    WHERE column_row.table_schema = 'storecalc'
+      AND column_row.table_name = 'version_constraints';
+
+    IF actual_columns IS DISTINCT FROM ARRAY[
+        'version_constraints:id:integer:NO:BY DEFAULT:',
+        'version_constraints:version_id:integer:NO::',
+        'version_constraints:stable_key:text:NO::',
+        'version_constraints:display_name:text:NO::',
+        'version_constraints:constraint_type:text:NO::',
+        'version_constraints:measure_type:text:NO::',
+        'version_constraints:comparator:text:NO::',
+        'version_constraints:value_state:text:NO::',
+        'version_constraints:limit_value:bigint:YES::',
+        'version_constraints:unit_code:text:NO::',
+        'version_constraints:scope_type:text:NO::',
+        'version_constraints:composition_behavior:text:NO::',
+        'version_constraints:priority:integer:NO::'
+    ]::text[] THEN
+        RAISE EXCEPTION 'storecalc_order_constraints_postflight_column_mismatch';
+    END IF;
+
+    SELECT array_agg(
+        format('%s:%s', constraint_row.conname, constraint_row.contype)
+        ORDER BY constraint_row.conname
+    )
+    INTO actual_constraints
+    FROM pg_constraint AS constraint_row
+    WHERE constraint_row.conrelid = 'storecalc.version_constraints'::regclass;
+
+    IF actual_constraints IS DISTINCT FROM ARRAY[
+        'version_constraints_comparator_check:c',
+        'version_constraints_comparator_state_check:c',
+        'version_constraints_composition_behavior_check:c',
+        'version_constraints_constraint_type_check:c',
+        'version_constraints_display_name_check:c',
+        'version_constraints_id_version_key:u',
+        'version_constraints_limit_nullability_check:c',
+        'version_constraints_measure_type_check:c',
+        'version_constraints_pkey:p',
+        'version_constraints_priority_check:c',
+        'version_constraints_scope_type_check:c',
+        'version_constraints_stable_key_check:c',
+        'version_constraints_unit_code_check:c',
+        'version_constraints_value_state_check:c',
+        'version_constraints_version_id_fkey:f',
+        'version_constraints_version_stable_key_key:u'
+    ]::text[]
+       OR EXISTS (
+           SELECT 1
+           FROM pg_constraint
+           WHERE conrelid = 'storecalc.version_constraints'::regclass
+             AND (NOT convalidated OR condeferrable OR condeferred)
+       ) THEN
+        RAISE EXCEPTION 'storecalc_order_constraints_postflight_constraint_mismatch';
+    END IF;
+
+    SELECT array_agg(
+        format('%s:%s', constraint_row.conname, pg_get_constraintdef(constraint_row.oid))
+        ORDER BY constraint_row.conname
+    )
+    INTO actual_check_definitions
+    FROM pg_constraint AS constraint_row
+    WHERE constraint_row.conrelid = 'storecalc.version_constraints'::regclass
+      AND constraint_row.contype = 'c';
+
+    IF actual_check_definitions IS DISTINCT FROM ARRAY[
+        'version_constraints_comparator_check:CHECK ((comparator = ANY (ARRAY[''less_than_or_equal''::text, ''greater_than_or_equal''::text])))',
+        'version_constraints_comparator_state_check:CHECK (((comparator <> ''greater_than_or_equal''::text) OR (value_state <> ''unlimited''::text)))',
+        'version_constraints_composition_behavior_check:CHECK ((composition_behavior = ''all_must_pass''::text))',
+        'version_constraints_constraint_type_check:CHECK ((constraint_type = ''order_aggregate''::text))',
+        'version_constraints_display_name_check:CHECK ((((char_length(display_name) >= 1) AND (char_length(display_name) <= 120)) AND (octet_length(display_name) <= 512) AND (display_name = btrim(display_name)) AND (display_name !~ ''[[:cntrl:]]''::text)))',
+        'version_constraints_limit_nullability_check:CHECK ((((value_state = ''known''::text) AND (limit_value IS NOT NULL) AND ((limit_value >= 0) AND (limit_value <= 1000000000))) OR ((value_state = ANY (ARRAY[''unlimited''::text, ''not_applicable''::text, ''unknown''::text, ''unsupported''::text])) AND (limit_value IS NULL))))',
+        'version_constraints_measure_type_check:CHECK ((measure_type = ANY (ARRAY[''total_quantity''::text, ''distinct_line_count''::text])))',
+        'version_constraints_priority_check:CHECK (((priority >= 0) AND (priority <= 1000000)))',
+        'version_constraints_scope_type_check:CHECK ((scope_type = ''order''::text))',
+        'version_constraints_stable_key_check:CHECK ((((char_length(stable_key) >= 1) AND (char_length(stable_key) <= 64)) AND (octet_length(stable_key) <= 64) AND (stable_key ~ ''^[a-z][a-z0-9]*([._-][a-z0-9]+)*$''::text)))',
+        'version_constraints_unit_code_check:CHECK ((unit_code = ''count''::text))',
+        'version_constraints_value_state_check:CHECK ((value_state = ANY (ARRAY[''known''::text, ''unlimited''::text, ''not_applicable''::text, ''unknown''::text, ''unsupported''::text])))'
+    ]::text[] THEN
+        RAISE EXCEPTION 'storecalc_order_constraints_postflight_constraint_definition_mismatch'
+            USING DETAIL = COALESCE(actual_check_definitions::text, 'NULL');
+    END IF;
+
+    SELECT array_agg(
+        format('%s:%s', relation.relname, pg_get_indexdef(relation.oid))
+        ORDER BY relation.relname
+    )
+    INTO actual_indexes
+    FROM pg_class AS relation
+    WHERE relation.relnamespace = 'storecalc'::regnamespace
+      AND relation.relkind = 'i'
+      AND relation.relname = ANY (
+          ARRAY[
+              'version_constraints_pkey',
+              'version_constraints_id_version_key',
+              'version_constraints_version_stable_key_key',
+              'version_constraints_version_resolution_idx'
+          ]
+      );
+
+    IF actual_indexes IS DISTINCT FROM ARRAY[
+        'version_constraints_id_version_key:CREATE UNIQUE INDEX version_constraints_id_version_key ON storecalc.version_constraints USING btree (id, version_id)',
+        'version_constraints_pkey:CREATE UNIQUE INDEX version_constraints_pkey ON storecalc.version_constraints USING btree (id)',
+        'version_constraints_version_resolution_idx:CREATE INDEX version_constraints_version_resolution_idx ON storecalc.version_constraints USING btree (version_id, priority, stable_key, id)',
+        'version_constraints_version_stable_key_key:CREATE UNIQUE INDEX version_constraints_version_stable_key_key ON storecalc.version_constraints USING btree (version_id, stable_key)'
+    ]::text[] THEN
+        RAISE EXCEPTION 'storecalc_order_constraints_postflight_index_mismatch';
+    END IF;
+
+    SELECT array_agg(
+        format(
+            '%s:%s.%s:%s:%s.%s:%s:%s',
+            constraint_row.conname,
+            source_namespace.nspname,
+            source_relation.relname,
+            ARRAY(
+                SELECT attribute.attname
+                FROM unnest(constraint_row.conkey) WITH ORDINALITY AS key(attnum, position)
+                JOIN pg_attribute AS attribute
+                  ON attribute.attrelid = constraint_row.conrelid
+                 AND attribute.attnum = key.attnum
+                ORDER BY key.position
+            ),
+            target_namespace.nspname,
+            target_relation.relname,
+            ARRAY(
+                SELECT attribute.attname
+                FROM unnest(constraint_row.confkey) WITH ORDINALITY AS key(attnum, position)
+                JOIN pg_attribute AS attribute
+                  ON attribute.attrelid = constraint_row.confrelid
+                 AND attribute.attnum = key.attnum
+                ORDER BY key.position
+            ),
+            constraint_row.confdeltype
+        )
+        ORDER BY constraint_row.conname
+    )
+    INTO actual_foreign_keys
+    FROM pg_constraint AS constraint_row
+    JOIN pg_class AS source_relation ON source_relation.oid = constraint_row.conrelid
+    JOIN pg_namespace AS source_namespace ON source_namespace.oid = source_relation.relnamespace
+    JOIN pg_class AS target_relation ON target_relation.oid = constraint_row.confrelid
+    JOIN pg_namespace AS target_namespace ON target_namespace.oid = target_relation.relnamespace
+    WHERE constraint_row.contype = 'f'
+      AND source_relation.oid = 'storecalc.version_constraints'::regclass;
+
+    IF actual_foreign_keys IS DISTINCT FROM ARRAY[
+        'version_constraints_version_id_fkey:storecalc.version_constraints:{version_id}:storecalc.template_versions:{id}:r'
+    ]::text[] THEN
+        RAISE EXCEPTION 'storecalc_order_constraints_postflight_foreign_key_mismatch';
+    END IF;
+
+    FOREACH object_name IN ARRAY new_tables LOOP
+        IF pg_get_userbyid(
+            (SELECT relowner FROM pg_class WHERE oid = object_name::regclass)
+        ) IS DISTINCT FROM migration_owner_role
+           OR EXISTS (
+               SELECT 1
+               FROM pg_class
+               WHERE oid = object_name::regclass
+                 AND (relpersistence <> 'p' OR relrowsecurity OR relforcerowsecurity)
+           )
+           OR EXISTS (
+               SELECT 1
+               FROM pg_policy
+               WHERE polrelid = object_name::regclass
+           ) THEN
+            RAISE EXCEPTION 'storecalc_order_constraints_postflight_table_security_mismatch';
+        END IF;
+    END LOOP;
+
+    FOREACH object_name IN ARRAY new_sequences LOOP
+        IF pg_get_userbyid(
+            (SELECT relowner FROM pg_class WHERE oid = object_name::regclass)
+        ) IS DISTINCT FROM migration_owner_role
+           OR pg_get_serial_sequence(
+               replace(object_name, '_id_seq', ''),
+               'id'
+           ) IS DISTINCT FROM object_name
+           OR NOT EXISTS (
+               SELECT 1
+               FROM pg_sequence
+               WHERE seqrelid = object_name::regclass
+                 AND seqstart = 1
+                 AND seqincrement = 1
+                 AND seqmax = 2147483647
+                 AND seqmin = 1
+                 AND seqcache = 1
+                 AND NOT seqcycle
+           ) THEN
+            RAISE EXCEPTION 'storecalc_order_constraints_postflight_sequence_mismatch';
+        END IF;
+    END LOOP;
+
+    SELECT array_agg(
+        format('%s:%s:%s:%s:%s', trigger_row.tgname, relation.relname, procedure.proname, trigger_row.tgenabled, trigger_row.tgtype)
+        ORDER BY trigger_row.tgname
+    )
+    INTO actual_triggers
+    FROM pg_trigger AS trigger_row
+    JOIN pg_class AS relation ON relation.oid = trigger_row.tgrelid
+    JOIN pg_proc AS procedure ON procedure.oid = trigger_row.tgfoid
+    WHERE trigger_row.tgname = ANY (
+        ARRAY[
+            'version_constraints_version_topology_lock_trigger',
+            'version_constraints_content_mutability_trigger'
+        ]
+    )
+      AND NOT trigger_row.tgisinternal
+      AND trigger_row.tgqual IS NULL;
+
+    IF actual_triggers IS DISTINCT FROM ARRAY[
+        'version_constraints_content_mutability_trigger:version_constraints:assert_version_content_mutable:O:31',
+        'version_constraints_version_topology_lock_trigger:version_constraints:lock_template_version_topology:O:30'
+    ]::text[]
+       OR (
+           SELECT count(*)
+           FROM pg_trigger AS trigger_row
+           JOIN pg_class AS relation ON relation.oid = trigger_row.tgrelid
+           WHERE relation.relnamespace = 'storecalc'::regnamespace
+             AND NOT trigger_row.tgisinternal
+       ) <> 36
+       OR (SELECT count(*) FROM pg_proc WHERE pronamespace = 'storecalc'::regnamespace) <> 14 THEN
+        RAISE EXCEPTION 'storecalc_order_constraints_postflight_trigger_mismatch';
+    END IF;
+
+    IF EXISTS (
+        SELECT 1
+        FROM (
+            SELECT acl.grantee
+            FROM pg_namespace AS namespace,
+                 LATERAL aclexplode(COALESCE(namespace.nspacl, acldefault('n', namespace.nspowner))) AS acl
+            WHERE namespace.nspname = 'storecalc'
+
+            UNION ALL
+
+            SELECT acl.grantee
+            FROM pg_class AS relation,
+                 LATERAL aclexplode(
+                     COALESCE(
+                         relation.relacl,
+                         acldefault(
+                             CASE WHEN relation.relkind = 'S' THEN 'S'::"char" ELSE 'r'::"char" END,
+                             relation.relowner
+                         )
+                     )
+                 ) AS acl
+            WHERE relation.relnamespace = 'storecalc'::regnamespace
+
+            UNION ALL
+
+            SELECT acl.grantee
+            FROM pg_proc AS procedure,
+                 LATERAL aclexplode(COALESCE(procedure.proacl, acldefault('f', procedure.proowner))) AS acl
+            WHERE procedure.pronamespace = 'storecalc'::regnamespace
+        ) AS object_grants
+        WHERE object_grants.grantee <> ALL (allowed_grantee_oids)
+    ) THEN
+        RAISE EXCEPTION 'storecalc_order_constraints_postflight_unexpected_grantee';
+    END IF;
+
+    FOREACH object_name IN ARRAY new_tables LOOP
+        IF has_table_privilege(web_role, object_name, 'SELECT')
+           OR has_table_privilege(web_role, object_name, 'INSERT')
+           OR has_table_privilege(web_role, object_name, 'UPDATE')
+           OR has_table_privilege(web_role, object_name, 'DELETE')
+           OR has_table_privilege(worker_role, object_name, 'SELECT')
+           OR has_table_privilege(worker_role, object_name, 'INSERT')
+           OR has_table_privilege(worker_role, object_name, 'UPDATE')
+           OR has_table_privilege(worker_role, object_name, 'DELETE')
+           OR NOT has_table_privilege(backup_role, object_name, 'SELECT')
+           OR has_table_privilege(backup_role, object_name, 'INSERT')
+           OR has_table_privilege(backup_role, object_name, 'UPDATE')
+           OR has_table_privilege(backup_role, object_name, 'DELETE') THEN
+            RAISE EXCEPTION 'storecalc_order_constraints_postflight_table_grant_mismatch';
+        END IF;
+    END LOOP;
+
+    FOREACH object_name IN ARRAY new_sequences LOOP
+        IF has_sequence_privilege(web_role, object_name, 'SELECT')
+           OR has_sequence_privilege(web_role, object_name, 'USAGE')
+           OR has_sequence_privilege(worker_role, object_name, 'SELECT')
+           OR has_sequence_privilege(worker_role, object_name, 'USAGE')
+           OR NOT has_sequence_privilege(backup_role, object_name, 'SELECT')
+           OR has_sequence_privilege(backup_role, object_name, 'USAGE')
+           OR has_sequence_privilege(backup_role, object_name, 'UPDATE') THEN
+            RAISE EXCEPTION 'storecalc_order_constraints_postflight_sequence_grant_mismatch';
+        END IF;
+    END LOOP;
+
+    SELECT array_agg(
+        format('%s:%s:%s:%s:%s', id, capability_key, schema_version, is_available, migration_key)
+        ORDER BY id
+    )
+    INTO actual_capabilities
+    FROM storecalc.schema_capabilities;
+
+    IF actual_capabilities IS DISTINCT FROM ARRAY[
+        '1:schema.foundation:1:t:0001_schema_foundation',
+        '2:public.directory:2:f:0003_program_assignments',
+        '3:anonymous.calculation:7:f:0010_warnings',
+        '4:saved.orders:0:f:0001_schema_foundation',
+        '5:public.contribution:0:f:0001_schema_foundation',
+        '6:evidence.upload:0:f:0001_schema_foundation',
+        '7:owner.support:0:f:0001_schema_foundation',
+        '8:scoped.profiles:0:f:0001_schema_foundation'
+    ]::text[]
+       OR EXISTS (
+           SELECT 1
+           FROM storecalc.schema_capabilities
+           WHERE capability_key <> 'schema.foundation'
+             AND verified_at IS NOT NULL
+       ) THEN
+        RAISE EXCEPTION 'storecalc_order_constraints_postflight_capability_or_seed_mismatch';
+    END IF;
+END
+$storecalc_order_constraints_postflight$;
+
+DO $storecalc_version_warnings_postflight$
+DECLARE
+    migration_owner_role text := current_setting('storecalc.migration_owner_role');
+    web_role text := current_setting('storecalc.web_role');
+    worker_role text := current_setting('storecalc.worker_role');
+    backup_role text := current_setting('storecalc.backup_role');
+    configured_roles text[] := ARRAY[
+        current_setting('storecalc.migration_owner_role'),
+        current_setting('storecalc.web_role'),
+        current_setting('storecalc.worker_role'),
+        current_setting('storecalc.backup_role')
+    ];
+    allowed_grantee_oids oid[];
+    object_name text;
+    actual_relations text[];
+    actual_columns text[];
+    actual_constraints text[];
+    actual_check_definitions text[];
+    actual_indexes text[];
+    actual_foreign_keys text[];
+    actual_triggers text[];
+    actual_capabilities text[];
+    new_tables constant text[] := ARRAY[
+        'storecalc.version_warnings'
+    ];
+    new_sequences constant text[] := ARRAY[
+        'storecalc.version_warnings_id_seq'
+    ];
+BEGIN
+    SELECT array_agg(oid ORDER BY oid)
+    INTO allowed_grantee_oids
+    FROM pg_roles
+    WHERE rolname = ANY (configured_roles);
+
+    SELECT array_agg(format('%s:%s', relname, relkind) ORDER BY relname)
+    INTO actual_relations
+    FROM pg_class
+    WHERE relnamespace = 'storecalc'::regnamespace
+      AND relname = ANY (
+          ARRAY[
+              'version_warnings',
+              'version_warnings_id_seq',
+              'version_warnings_pkey',
+              'version_warnings_id_version_key',
+              'version_warnings_template_identity_idx',
+              'version_warnings_item_identity_idx',
+              'version_warnings_version_resolution_idx'
+          ]
+      );
+
+    IF actual_relations IS DISTINCT FROM ARRAY[
+        'version_warnings:r',
+        'version_warnings_id_seq:S',
+        'version_warnings_id_version_key:i',
+        'version_warnings_item_identity_idx:i',
+        'version_warnings_pkey:i',
+        'version_warnings_template_identity_idx:i',
+        'version_warnings_version_resolution_idx:i'
+    ]::text[]
+       OR (SELECT count(*) FROM pg_class WHERE relnamespace = 'storecalc'::regnamespace) <> 140 THEN
+        RAISE EXCEPTION 'storecalc_version_warnings_postflight_relation_mismatch';
+    END IF;
+
+    SELECT array_agg(
+        format(
+            '%s:%s:%s:%s:%s:%s',
+            column_row.table_name,
+            column_row.column_name,
+            column_row.data_type,
+            column_row.is_nullable,
+            COALESCE(column_row.identity_generation, ''),
+            COALESCE(column_row.column_default, '')
+        )
+        ORDER BY column_row.ordinal_position
+    )
+    INTO actual_columns
+    FROM information_schema.columns AS column_row
+    WHERE column_row.table_schema = 'storecalc'
+      AND column_row.table_name = 'version_warnings';
+
+    IF actual_columns IS DISTINCT FROM ARRAY[
+        'version_warnings:id:integer:NO:BY DEFAULT:',
+        'version_warnings:version_id:integer:NO::',
+        'version_warnings:warning_code:text:NO::',
+        'version_warnings:severity:text:NO::',
+        'version_warnings:scope_type:text:NO::',
+        'version_warnings:category_version_id:integer:YES::',
+        'version_warnings:item_version_id:integer:YES::',
+        'version_warnings:message_key:text:NO::',
+        'version_warnings:bounded_details:jsonb:NO::''{}''::jsonb',
+        'version_warnings:created_at:timestamp with time zone:NO::transaction_timestamp()'
+    ]::text[] THEN
+        RAISE EXCEPTION 'storecalc_version_warnings_postflight_column_mismatch';
+    END IF;
+
+    SELECT array_agg(
+        format('%s:%s', constraint_row.conname, constraint_row.contype)
+        ORDER BY constraint_row.conname
+    )
+    INTO actual_constraints
+    FROM pg_constraint AS constraint_row
+    WHERE constraint_row.conrelid = 'storecalc.version_warnings'::regclass;
+
+    IF actual_constraints IS DISTINCT FROM ARRAY[
+        'version_warnings_bounded_details_check:c',
+        'version_warnings_id_version_key:u',
+        'version_warnings_item_version_fkey:f',
+        'version_warnings_message_key_check:c',
+        'version_warnings_pkey:p',
+        'version_warnings_scope_type_check:c',
+        'version_warnings_severity_check:c',
+        'version_warnings_target_check:c',
+        'version_warnings_version_id_fkey:f',
+        'version_warnings_warning_code_check:c'
+    ]::text[]
+       OR EXISTS (
+           SELECT 1
+           FROM pg_constraint
+           WHERE conrelid = 'storecalc.version_warnings'::regclass
+             AND (NOT convalidated OR condeferrable OR condeferred)
+       ) THEN
+        RAISE EXCEPTION 'storecalc_version_warnings_postflight_constraint_mismatch';
+    END IF;
+
+    SELECT array_agg(
+        format('%s:%s', constraint_row.conname, pg_get_constraintdef(constraint_row.oid))
+        ORDER BY constraint_row.conname
+    )
+    INTO actual_check_definitions
+    FROM pg_constraint AS constraint_row
+    WHERE constraint_row.conrelid = 'storecalc.version_warnings'::regclass
+      AND constraint_row.contype = 'c';
+
+    IF actual_check_definitions IS DISTINCT FROM ARRAY[
+        'version_warnings_bounded_details_check:CHECK ((bounded_details = ''{}''::jsonb))',
+        'version_warnings_message_key_check:CHECK ((((char_length(message_key) >= 3) AND (char_length(message_key) <= 128)) AND (octet_length(message_key) <= 128) AND (message_key ~ ''^[a-z][a-z0-9]*(\.[a-z][a-z0-9_]*)+$''::text)))',
+        'version_warnings_scope_type_check:CHECK ((scope_type = ANY (ARRAY[''template''::text, ''item''::text])))',
+        'version_warnings_severity_check:CHECK ((severity = ANY (ARRAY[''warning''::text, ''informational''::text])))',
+        'version_warnings_target_check:CHECK (((category_version_id IS NULL) AND (((scope_type = ''template''::text) AND (item_version_id IS NULL)) OR ((scope_type = ''item''::text) AND (item_version_id IS NOT NULL)))))',
+        'version_warnings_warning_code_check:CHECK ((((char_length(warning_code) >= 1) AND (char_length(warning_code) <= 64)) AND (octet_length(warning_code) <= 64) AND (warning_code ~ ''^[a-z][a-z0-9]*([._-][a-z0-9]+)*$''::text)))'
+    ]::text[] THEN
+        RAISE EXCEPTION 'storecalc_version_warnings_postflight_constraint_definition_mismatch'
+            USING DETAIL = COALESCE(actual_check_definitions::text, 'NULL');
+    END IF;
+
+    SELECT array_agg(
+        format('%s:%s', relation.relname, pg_get_indexdef(relation.oid))
+        ORDER BY relation.relname
+    )
+    INTO actual_indexes
+    FROM pg_class AS relation
+    WHERE relation.relnamespace = 'storecalc'::regnamespace
+      AND relation.relkind = 'i'
+      AND relation.relname = ANY (
+          ARRAY[
+              'version_warnings_pkey',
+              'version_warnings_id_version_key',
+              'version_warnings_template_identity_idx',
+              'version_warnings_item_identity_idx',
+              'version_warnings_version_resolution_idx'
+          ]
+      );
+
+    IF actual_indexes IS DISTINCT FROM ARRAY[
+        'version_warnings_id_version_key:CREATE UNIQUE INDEX version_warnings_id_version_key ON storecalc.version_warnings USING btree (id, version_id)',
+        'version_warnings_item_identity_idx:CREATE UNIQUE INDEX version_warnings_item_identity_idx ON storecalc.version_warnings USING btree (version_id, item_version_id, warning_code, severity, message_key) WHERE (scope_type = ''item''::text)',
+        'version_warnings_pkey:CREATE UNIQUE INDEX version_warnings_pkey ON storecalc.version_warnings USING btree (id)',
+        'version_warnings_template_identity_idx:CREATE UNIQUE INDEX version_warnings_template_identity_idx ON storecalc.version_warnings USING btree (version_id, warning_code, severity, message_key) WHERE (scope_type = ''template''::text)',
+        'version_warnings_version_resolution_idx:CREATE INDEX version_warnings_version_resolution_idx ON storecalc.version_warnings USING btree (version_id, scope_type, item_version_id, severity, warning_code, message_key, id)'
+    ]::text[] THEN
+        RAISE EXCEPTION 'storecalc_version_warnings_postflight_index_mismatch';
+    END IF;
+
+    SELECT array_agg(
+        format(
+            '%s:%s.%s:%s:%s.%s:%s:%s',
+            constraint_row.conname,
+            source_namespace.nspname,
+            source_relation.relname,
+            ARRAY(
+                SELECT attribute.attname
+                FROM unnest(constraint_row.conkey) WITH ORDINALITY AS key(attnum, position)
+                JOIN pg_attribute AS attribute
+                  ON attribute.attrelid = constraint_row.conrelid
+                 AND attribute.attnum = key.attnum
+                ORDER BY key.position
+            ),
+            target_namespace.nspname,
+            target_relation.relname,
+            ARRAY(
+                SELECT attribute.attname
+                FROM unnest(constraint_row.confkey) WITH ORDINALITY AS key(attnum, position)
+                JOIN pg_attribute AS attribute
+                  ON attribute.attrelid = constraint_row.confrelid
+                 AND attribute.attnum = key.attnum
+                ORDER BY key.position
+            ),
+            constraint_row.confdeltype
+        )
+        ORDER BY constraint_row.conname
+    )
+    INTO actual_foreign_keys
+    FROM pg_constraint AS constraint_row
+    JOIN pg_class AS source_relation ON source_relation.oid = constraint_row.conrelid
+    JOIN pg_namespace AS source_namespace ON source_namespace.oid = source_relation.relnamespace
+    JOIN pg_class AS target_relation ON target_relation.oid = constraint_row.confrelid
+    JOIN pg_namespace AS target_namespace ON target_namespace.oid = target_relation.relnamespace
+    WHERE constraint_row.contype = 'f'
+      AND constraint_row.conrelid = 'storecalc.version_warnings'::regclass;
+
+    IF actual_foreign_keys IS DISTINCT FROM ARRAY[
+        'version_warnings_item_version_fkey:storecalc.version_warnings:{item_version_id,version_id}:storecalc.version_items:{id,version_id}:r',
+        'version_warnings_version_id_fkey:storecalc.version_warnings:{version_id}:storecalc.template_versions:{id}:r'
+    ]::text[] THEN
+        RAISE EXCEPTION 'storecalc_version_warnings_postflight_foreign_key_mismatch';
+    END IF;
+
+    FOREACH object_name IN ARRAY new_tables LOOP
+        IF pg_get_userbyid(
+            (SELECT relowner FROM pg_class WHERE oid = object_name::regclass)
+        ) IS DISTINCT FROM migration_owner_role
+           OR EXISTS (
+               SELECT 1
+               FROM pg_class
+               WHERE oid = object_name::regclass
+                 AND (relpersistence <> 'p' OR relrowsecurity OR relforcerowsecurity)
+           )
+           OR EXISTS (
+               SELECT 1
+               FROM pg_policy
+               WHERE polrelid = object_name::regclass
+           ) THEN
+            RAISE EXCEPTION 'storecalc_version_warnings_postflight_table_security_mismatch';
+        END IF;
+    END LOOP;
+
+    FOREACH object_name IN ARRAY new_sequences LOOP
+        IF pg_get_userbyid(
+            (SELECT relowner FROM pg_class WHERE oid = object_name::regclass)
+        ) IS DISTINCT FROM migration_owner_role
+           OR pg_get_serial_sequence(
+               replace(object_name, '_id_seq', ''),
+               'id'
+           ) IS DISTINCT FROM object_name
+           OR NOT EXISTS (
+               SELECT 1
+               FROM pg_sequence
+               WHERE seqrelid = object_name::regclass
+                 AND seqstart = 1
+                 AND seqincrement = 1
+                 AND seqmax = 2147483647
+                 AND seqmin = 1
+                 AND seqcache = 1
+                 AND NOT seqcycle
+           ) THEN
+            RAISE EXCEPTION 'storecalc_version_warnings_postflight_sequence_mismatch';
+        END IF;
+    END LOOP;
+
+    SELECT array_agg(
+        format('%s:%s:%s:%s:%s', trigger_row.tgname, relation.relname, procedure.proname, trigger_row.tgenabled, trigger_row.tgtype)
+        ORDER BY trigger_row.tgname
+    )
+    INTO actual_triggers
+    FROM pg_trigger AS trigger_row
+    JOIN pg_class AS relation ON relation.oid = trigger_row.tgrelid
+    JOIN pg_proc AS procedure ON procedure.oid = trigger_row.tgfoid
+    WHERE trigger_row.tgname = ANY (
+        ARRAY[
+            'version_warnings_version_topology_lock_trigger',
+            'version_warnings_content_mutability_trigger'
+        ]
+    )
+      AND NOT trigger_row.tgisinternal
+      AND trigger_row.tgqual IS NULL;
+
+    IF actual_triggers IS DISTINCT FROM ARRAY[
+        'version_warnings_content_mutability_trigger:version_warnings:assert_version_content_mutable:O:31',
+        'version_warnings_version_topology_lock_trigger:version_warnings:lock_template_version_topology:O:30'
+    ]::text[]
+       OR (
+           SELECT count(*)
+           FROM pg_trigger AS trigger_row
+           JOIN pg_class AS relation ON relation.oid = trigger_row.tgrelid
+           WHERE relation.relnamespace = 'storecalc'::regnamespace
+             AND NOT trigger_row.tgisinternal
+       ) <> 36
+       OR (SELECT count(*) FROM pg_proc WHERE pronamespace = 'storecalc'::regnamespace) <> 14 THEN
+        RAISE EXCEPTION 'storecalc_version_warnings_postflight_trigger_mismatch';
+    END IF;
+
+    IF EXISTS (
+        SELECT 1
+        FROM (
+            SELECT acl.grantee
+            FROM pg_namespace AS namespace,
+                 LATERAL aclexplode(COALESCE(namespace.nspacl, acldefault('n', namespace.nspowner))) AS acl
+            WHERE namespace.nspname = 'storecalc'
+
+            UNION ALL
+
+            SELECT acl.grantee
+            FROM pg_class AS relation,
+                 LATERAL aclexplode(
+                     COALESCE(
+                         relation.relacl,
+                         acldefault(
+                             CASE WHEN relation.relkind = 'S' THEN 'S'::"char" ELSE 'r'::"char" END,
+                             relation.relowner
+                         )
+                     )
+                 ) AS acl
+            WHERE relation.relnamespace = 'storecalc'::regnamespace
+
+            UNION ALL
+
+            SELECT acl.grantee
+            FROM pg_proc AS procedure,
+                 LATERAL aclexplode(COALESCE(procedure.proacl, acldefault('f', procedure.proowner))) AS acl
+            WHERE procedure.pronamespace = 'storecalc'::regnamespace
+        ) AS object_grants
+        WHERE object_grants.grantee <> ALL (allowed_grantee_oids)
+    ) THEN
+        RAISE EXCEPTION 'storecalc_version_warnings_postflight_unexpected_grantee';
+    END IF;
+
+    FOREACH object_name IN ARRAY new_tables LOOP
+        IF has_table_privilege(web_role, object_name, 'SELECT')
+           OR has_table_privilege(web_role, object_name, 'INSERT')
+           OR has_table_privilege(web_role, object_name, 'UPDATE')
+           OR has_table_privilege(web_role, object_name, 'DELETE')
+           OR has_table_privilege(worker_role, object_name, 'SELECT')
+           OR has_table_privilege(worker_role, object_name, 'INSERT')
+           OR has_table_privilege(worker_role, object_name, 'UPDATE')
+           OR has_table_privilege(worker_role, object_name, 'DELETE')
+           OR NOT has_table_privilege(backup_role, object_name, 'SELECT')
+           OR has_table_privilege(backup_role, object_name, 'INSERT')
+           OR has_table_privilege(backup_role, object_name, 'UPDATE')
+           OR has_table_privilege(backup_role, object_name, 'DELETE') THEN
+            RAISE EXCEPTION 'storecalc_version_warnings_postflight_table_grant_mismatch';
+        END IF;
+    END LOOP;
+
+    FOREACH object_name IN ARRAY new_sequences LOOP
+        IF has_sequence_privilege(web_role, object_name, 'SELECT')
+           OR has_sequence_privilege(web_role, object_name, 'USAGE')
+           OR has_sequence_privilege(worker_role, object_name, 'SELECT')
+           OR has_sequence_privilege(worker_role, object_name, 'USAGE')
+           OR NOT has_sequence_privilege(backup_role, object_name, 'SELECT')
+           OR has_sequence_privilege(backup_role, object_name, 'USAGE')
+           OR has_sequence_privilege(backup_role, object_name, 'UPDATE') THEN
+            RAISE EXCEPTION 'storecalc_version_warnings_postflight_sequence_grant_mismatch';
+        END IF;
+    END LOOP;
+
+    SELECT array_agg(
+        format('%s:%s:%s:%s:%s', id, capability_key, schema_version, is_available, migration_key)
+        ORDER BY id
+    )
+    INTO actual_capabilities
+    FROM storecalc.schema_capabilities;
+
+    IF actual_capabilities IS DISTINCT FROM ARRAY[
+        '1:schema.foundation:1:t:0001_schema_foundation',
+        '2:public.directory:2:f:0003_program_assignments',
+        '3:anonymous.calculation:7:f:0010_warnings',
+        '4:saved.orders:0:f:0001_schema_foundation',
+        '5:public.contribution:0:f:0001_schema_foundation',
+        '6:evidence.upload:0:f:0001_schema_foundation',
+        '7:owner.support:0:f:0001_schema_foundation',
+        '8:scoped.profiles:0:f:0001_schema_foundation'
+    ]::text[]
+       OR EXISTS (
+           SELECT 1
+           FROM storecalc.schema_capabilities
+           WHERE capability_key <> 'schema.foundation'
+             AND verified_at IS NOT NULL
+       ) THEN
+        RAISE EXCEPTION 'storecalc_version_warnings_postflight_capability_or_seed_mismatch';
+    END IF;
+END
+$storecalc_version_warnings_postflight$;
+
+CREATE TABLE storecalc.evidence (
+    id integer GENERATED BY DEFAULT AS IDENTITY,
+    contributor_subject_id integer,
+    source_type text NOT NULL,
+    source_url text NOT NULL,
+    source_title text NOT NULL,
+    source_date date,
+    language_tag text,
+    metadata_visibility text NOT NULL,
+    privacy_state text NOT NULL,
+    redistribution_state text NOT NULL,
+    normalized_fingerprint text NOT NULL,
+    created_at timestamptz NOT NULL DEFAULT transaction_timestamp(),
+    withdrawn_at timestamptz,
+    lifecycle_generation integer NOT NULL DEFAULT 1,
+    CONSTRAINT evidence_pkey
+        PRIMARY KEY (id),
+    CONSTRAINT evidence_normalized_fingerprint_key
+        UNIQUE (normalized_fingerprint),
+    CONSTRAINT evidence_contributor_subject_id_fkey
+        FOREIGN KEY (contributor_subject_id)
+        REFERENCES storecalc.contributor_subjects(id)
+        ON DELETE RESTRICT,
+    CONSTRAINT evidence_source_type_check
+        CHECK (source_type = 'external_citation'),
+    CONSTRAINT evidence_source_url_check
+        CHECK (
+            char_length(source_url) BETWEEN 9 AND 2048
+            AND octet_length(source_url) <= 2048
+            AND source_url ~ '^https://[^[:space:][:cntrl:]]+$'
+            AND source_url ~ '^https://[^/@?#[:space:][:cntrl:]]+([/?#]|$)'
+            AND source_url !~ '^https://[^/?#]*@'
+        ),
+    CONSTRAINT evidence_source_title_check
+        CHECK (
+            char_length(source_title) BETWEEN 1 AND 300
+            AND octet_length(source_title) <= 1200
+            AND source_title = btrim(source_title)
+            AND source_title !~ '[[:cntrl:]]'
+        ),
+    CONSTRAINT evidence_language_tag_check
+        CHECK (
+            language_tag IS NULL
+            OR (
+                char_length(language_tag) BETWEEN 2 AND 35
+                AND octet_length(language_tag) <= 35
+                AND language_tag ~ '^[A-Za-z]{2,8}(-[A-Za-z0-9]{1,8})*$'
+            )
+        ),
+    CONSTRAINT evidence_metadata_visibility_check
+        CHECK (metadata_visibility IN ('private', 'public_citation')),
+    CONSTRAINT evidence_privacy_state_check
+        CHECK (
+            privacy_state IN (
+                'pending_review',
+                'metadata_safe',
+                'restricted',
+                'withdrawn'
+            )
+        ),
+    CONSTRAINT evidence_redistribution_state_check
+        CHECK (redistribution_state = 'metadata_only'),
+    CONSTRAINT evidence_normalized_fingerprint_check
+        CHECK (normalized_fingerprint ~ '^[a-f0-9]{64}$'),
+    CONSTRAINT evidence_withdrawal_state_check
+        CHECK (
+            (privacy_state = 'withdrawn') = (withdrawn_at IS NOT NULL)
+            AND (withdrawn_at IS NULL OR withdrawn_at >= created_at)
+        ),
+    CONSTRAINT evidence_lifecycle_generation_check
+        CHECK (lifecycle_generation = 1)
+);
+
+CREATE INDEX evidence_contributor_subject_idx
+    ON storecalc.evidence (contributor_subject_id, id)
+    WHERE contributor_subject_id IS NOT NULL;
+
+CREATE INDEX evidence_review_state_idx
+    ON storecalc.evidence (privacy_state, metadata_visibility, id);
+
+CREATE TABLE storecalc.evidence_groups (
+    id integer GENERATED BY DEFAULT AS IDENTITY,
+    grouping_type text NOT NULL,
+    canonical_fingerprint text NOT NULL,
+    independence_state text NOT NULL,
+    created_at timestamptz NOT NULL DEFAULT transaction_timestamp(),
+    superseded_at timestamptz,
+    CONSTRAINT evidence_groups_pkey
+        PRIMARY KEY (id),
+    CONSTRAINT evidence_groups_canonical_fingerprint_key
+        UNIQUE (canonical_fingerprint),
+    CONSTRAINT evidence_groups_grouping_type_check
+        CHECK (grouping_type = 'source_lineage'),
+    CONSTRAINT evidence_groups_canonical_fingerprint_check
+        CHECK (canonical_fingerprint ~ '^[a-f0-9]{64}$'),
+    CONSTRAINT evidence_groups_independence_state_check
+        CHECK (
+            independence_state IN (
+                'unreviewed',
+                'accepted',
+                'disputed',
+                'superseded'
+            )
+        ),
+    CONSTRAINT evidence_groups_supersession_state_check
+        CHECK (
+            (independence_state = 'superseded') =
+                (superseded_at IS NOT NULL)
+            AND (superseded_at IS NULL OR superseded_at >= created_at)
+        )
+);
+
+CREATE INDEX evidence_groups_state_idx
+    ON storecalc.evidence_groups (independence_state, id);
+
+CREATE TABLE storecalc.version_source_evidence (
+    version_id integer NOT NULL,
+    evidence_id integer NOT NULL,
+    relationship_type text NOT NULL,
+    source_group_id integer NOT NULL,
+    created_at timestamptz NOT NULL DEFAULT transaction_timestamp(),
+    CONSTRAINT version_source_evidence_pkey
+        PRIMARY KEY (version_id, evidence_id),
+    CONSTRAINT version_source_evidence_version_id_fkey
+        FOREIGN KEY (version_id)
+        REFERENCES storecalc.template_versions(id)
+        ON DELETE RESTRICT,
+    CONSTRAINT version_source_evidence_evidence_id_fkey
+        FOREIGN KEY (evidence_id)
+        REFERENCES storecalc.evidence(id)
+        ON DELETE RESTRICT,
+    CONSTRAINT version_source_evidence_source_group_id_fkey
+        FOREIGN KEY (source_group_id)
+        REFERENCES storecalc.evidence_groups(id)
+        ON DELETE RESTRICT,
+    CONSTRAINT version_source_evidence_relationship_type_check
+        CHECK (relationship_type = 'supports_catalog')
+);
+
+CREATE INDEX version_source_evidence_evidence_idx
+    ON storecalc.version_source_evidence (evidence_id, version_id);
+
+CREATE INDEX version_source_evidence_group_idx
+    ON storecalc.version_source_evidence (source_group_id, version_id);
+
+CREATE FUNCTION storecalc.forbid_evidence_identity_mutation()
+RETURNS trigger
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = pg_catalog, storecalc
+AS $storecalc_evidence_identity_immutable_function$
+BEGIN
+    RAISE EXCEPTION 'storecalc_evidence_identity_immutable'
+        USING ERRCODE = '55000';
+END
+$storecalc_evidence_identity_immutable_function$;
+
+CREATE FUNCTION storecalc.assert_version_source_evidence_eligible()
+RETURNS trigger
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = pg_catalog, storecalc
+AS $storecalc_version_source_evidence_eligible_function$
+DECLARE
+    evidence_eligible boolean;
+    group_eligible boolean;
+BEGIN
+    SELECT true
+    INTO evidence_eligible
+    FROM storecalc.evidence
+    WHERE id = NEW.evidence_id
+      AND privacy_state = 'metadata_safe'
+      AND redistribution_state = 'metadata_only'
+      AND withdrawn_at IS NULL
+    FOR KEY SHARE;
+
+    IF NOT FOUND OR evidence_eligible IS DISTINCT FROM true THEN
+        RAISE EXCEPTION 'storecalc_version_source_evidence_ineligible'
+            USING ERRCODE = '55000';
+    END IF;
+
+    SELECT true
+    INTO group_eligible
+    FROM storecalc.evidence_groups
+    WHERE id = NEW.source_group_id
+      AND grouping_type = 'source_lineage'
+      AND independence_state = 'accepted'
+      AND superseded_at IS NULL
+    FOR KEY SHARE;
+
+    IF NOT FOUND OR group_eligible IS DISTINCT FROM true THEN
+        RAISE EXCEPTION 'storecalc_version_source_group_ineligible'
+            USING ERRCODE = '55000';
+    END IF;
+
+    RETURN NEW;
+END
+$storecalc_version_source_evidence_eligible_function$;
+
+CREATE TRIGGER evidence_identity_immutable_trigger
+BEFORE UPDATE OR DELETE ON storecalc.evidence
+FOR EACH ROW
+EXECUTE FUNCTION storecalc.forbid_evidence_identity_mutation();
+
+CREATE TRIGGER evidence_groups_identity_immutable_trigger
+BEFORE UPDATE OR DELETE ON storecalc.evidence_groups
+FOR EACH ROW
+EXECUTE FUNCTION storecalc.forbid_evidence_identity_mutation();
+
+CREATE TRIGGER version_source_evidence_version_topology_lock_trigger
+BEFORE INSERT OR UPDATE OR DELETE ON storecalc.version_source_evidence
+FOR EACH STATEMENT
+EXECUTE FUNCTION storecalc.lock_template_version_topology();
+
+CREATE TRIGGER version_source_evidence_content_mutability_trigger
+BEFORE INSERT OR UPDATE OR DELETE ON storecalc.version_source_evidence
+FOR EACH ROW
+EXECUTE FUNCTION storecalc.assert_version_content_mutable();
+
+CREATE TRIGGER version_source_evidence_eligibility_trigger
+BEFORE INSERT OR UPDATE ON storecalc.version_source_evidence
+FOR EACH ROW
+EXECUTE FUNCTION storecalc.assert_version_source_evidence_eligible();
+
+REVOKE ALL ON TABLE
+    storecalc.evidence,
+    storecalc.evidence_groups,
+    storecalc.version_source_evidence
+FROM PUBLIC;
+REVOKE ALL ON SEQUENCE
+    storecalc.evidence_id_seq,
+    storecalc.evidence_groups_id_seq
+FROM PUBLIC;
+REVOKE ALL ON FUNCTION
+    storecalc.forbid_evidence_identity_mutation(),
+    storecalc.assert_version_source_evidence_eligible()
+FROM PUBLIC;
+
+DO $storecalc_source_evidence_grants$
+DECLARE
+    backup_role text := current_setting('storecalc.backup_role');
+BEGIN
+    EXECUTE format(
+        'GRANT SELECT ON TABLE storecalc.evidence, storecalc.evidence_groups, storecalc.version_source_evidence TO %I',
+        backup_role
+    );
+    EXECUTE format(
+        'GRANT SELECT ON SEQUENCE storecalc.evidence_id_seq, storecalc.evidence_groups_id_seq TO %I',
+        backup_role
+    );
+END
+$storecalc_source_evidence_grants$;
+
+DO $storecalc_source_evidence_capability$
+BEGIN
+    UPDATE storecalc.schema_capabilities
+    SET schema_version = 8,
+        migration_key = '0011_source_evidence',
+        updated_at = transaction_timestamp()
+    WHERE capability_key = 'anonymous.calculation'
+      AND schema_version = 7
+      AND NOT is_available
+      AND verified_at IS NULL
+      AND migration_key = '0010_warnings';
+
+    IF NOT FOUND THEN
+        RAISE EXCEPTION 'storecalc_source_evidence_capability_precondition_failed';
+    END IF;
+END
+$storecalc_source_evidence_capability$;
+
+DO $storecalc_source_evidence_postflight$
+DECLARE
+    migration_owner_role text := current_setting('storecalc.migration_owner_role');
+    web_role text := current_setting('storecalc.web_role');
+    worker_role text := current_setting('storecalc.worker_role');
+    backup_role text := current_setting('storecalc.backup_role');
+    configured_roles text[] := ARRAY[
+        current_setting('storecalc.migration_owner_role'),
+        current_setting('storecalc.web_role'),
+        current_setting('storecalc.worker_role'),
+        current_setting('storecalc.backup_role')
+    ];
+    allowed_grantee_oids oid[];
+    object_name text;
+    actual_relations text[];
+    actual_columns text[];
+    actual_constraints text[];
+    actual_check_definitions text[];
+    actual_indexes text[];
+    actual_foreign_keys text[];
+    actual_triggers text[];
+    actual_capabilities text[];
+    new_tables constant text[] := ARRAY[
+        'storecalc.evidence',
+        'storecalc.evidence_groups',
+        'storecalc.version_source_evidence'
+    ];
+    new_sequences constant text[] := ARRAY[
+        'storecalc.evidence_id_seq',
+        'storecalc.evidence_groups_id_seq'
+    ];
+BEGIN
+    SELECT array_agg(oid ORDER BY oid)
+    INTO allowed_grantee_oids
+    FROM pg_roles
+    WHERE rolname = ANY (configured_roles);
+
+    SELECT array_agg(format('%s:%s', relname, relkind) ORDER BY relname)
+    INTO actual_relations
+    FROM pg_class
+    WHERE relnamespace = 'storecalc'::regnamespace
+      AND relname = ANY (
+          ARRAY[
+              'evidence',
+              'evidence_id_seq',
+              'evidence_pkey',
+              'evidence_normalized_fingerprint_key',
+              'evidence_contributor_subject_idx',
+              'evidence_review_state_idx',
+              'evidence_groups',
+              'evidence_groups_id_seq',
+              'evidence_groups_pkey',
+              'evidence_groups_canonical_fingerprint_key',
+              'evidence_groups_state_idx',
+              'version_source_evidence',
+              'version_source_evidence_pkey',
+              'version_source_evidence_evidence_idx',
+              'version_source_evidence_group_idx'
+          ]
+      );
+
+    IF actual_relations IS DISTINCT FROM ARRAY[
+        'evidence:r',
+        'evidence_contributor_subject_idx:i',
+        'evidence_groups:r',
+        'evidence_groups_canonical_fingerprint_key:i',
+        'evidence_groups_id_seq:S',
+        'evidence_groups_pkey:i',
+        'evidence_groups_state_idx:i',
+        'evidence_id_seq:S',
+        'evidence_normalized_fingerprint_key:i',
+        'evidence_pkey:i',
+        'evidence_review_state_idx:i',
+        'version_source_evidence:r',
+        'version_source_evidence_evidence_idx:i',
+        'version_source_evidence_group_idx:i',
+        'version_source_evidence_pkey:i'
+    ]::text[]
+       OR (SELECT count(*) FROM pg_class WHERE relnamespace = 'storecalc'::regnamespace) <> 155 THEN
+        RAISE EXCEPTION 'storecalc_source_evidence_postflight_relation_mismatch';
+    END IF;
+
+    SELECT array_agg(
+        format(
+            '%s:%s:%s:%s:%s:%s',
+            column_row.table_name,
+            column_row.column_name,
+            column_row.data_type,
+            column_row.is_nullable,
+            COALESCE(column_row.identity_generation, ''),
+            COALESCE(column_row.column_default, '')
+        )
+        ORDER BY column_row.table_name, column_row.ordinal_position
+    )
+    INTO actual_columns
+    FROM information_schema.columns AS column_row
+    WHERE column_row.table_schema = 'storecalc'
+      AND column_row.table_name = ANY (
+          ARRAY['evidence', 'evidence_groups', 'version_source_evidence']
+      );
+
+    IF actual_columns IS DISTINCT FROM ARRAY[
+        'evidence:id:integer:NO:BY DEFAULT:',
+        'evidence:contributor_subject_id:integer:YES::',
+        'evidence:source_type:text:NO::',
+        'evidence:source_url:text:NO::',
+        'evidence:source_title:text:NO::',
+        'evidence:source_date:date:YES::',
+        'evidence:language_tag:text:YES::',
+        'evidence:metadata_visibility:text:NO::',
+        'evidence:privacy_state:text:NO::',
+        'evidence:redistribution_state:text:NO::',
+        'evidence:normalized_fingerprint:text:NO::',
+        'evidence:created_at:timestamp with time zone:NO::transaction_timestamp()',
+        'evidence:withdrawn_at:timestamp with time zone:YES::',
+        'evidence:lifecycle_generation:integer:NO::1',
+        'evidence_groups:id:integer:NO:BY DEFAULT:',
+        'evidence_groups:grouping_type:text:NO::',
+        'evidence_groups:canonical_fingerprint:text:NO::',
+        'evidence_groups:independence_state:text:NO::',
+        'evidence_groups:created_at:timestamp with time zone:NO::transaction_timestamp()',
+        'evidence_groups:superseded_at:timestamp with time zone:YES::',
+        'version_source_evidence:version_id:integer:NO::',
+        'version_source_evidence:evidence_id:integer:NO::',
+        'version_source_evidence:relationship_type:text:NO::',
+        'version_source_evidence:source_group_id:integer:NO::',
+        'version_source_evidence:created_at:timestamp with time zone:NO::transaction_timestamp()'
+    ]::text[] THEN
+        RAISE EXCEPTION 'storecalc_source_evidence_postflight_column_mismatch';
+    END IF;
+
+    SELECT array_agg(
+        format('%s:%s:%s', relation.relname, constraint_row.conname, constraint_row.contype)
+        ORDER BY relation.relname, constraint_row.conname
+    )
+    INTO actual_constraints
+    FROM pg_constraint AS constraint_row
+    JOIN pg_class AS relation ON relation.oid = constraint_row.conrelid
+    WHERE relation.relnamespace = 'storecalc'::regnamespace
+      AND relation.relname = ANY (
+          ARRAY['evidence', 'evidence_groups', 'version_source_evidence']
+      );
+
+    IF actual_constraints IS DISTINCT FROM ARRAY[
+        'evidence:evidence_contributor_subject_id_fkey:f',
+        'evidence:evidence_language_tag_check:c',
+        'evidence:evidence_lifecycle_generation_check:c',
+        'evidence:evidence_metadata_visibility_check:c',
+        'evidence:evidence_normalized_fingerprint_check:c',
+        'evidence:evidence_normalized_fingerprint_key:u',
+        'evidence:evidence_pkey:p',
+        'evidence:evidence_privacy_state_check:c',
+        'evidence:evidence_redistribution_state_check:c',
+        'evidence:evidence_source_title_check:c',
+        'evidence:evidence_source_type_check:c',
+        'evidence:evidence_source_url_check:c',
+        'evidence:evidence_withdrawal_state_check:c',
+        'evidence_groups:evidence_groups_canonical_fingerprint_check:c',
+        'evidence_groups:evidence_groups_canonical_fingerprint_key:u',
+        'evidence_groups:evidence_groups_grouping_type_check:c',
+        'evidence_groups:evidence_groups_independence_state_check:c',
+        'evidence_groups:evidence_groups_pkey:p',
+        'evidence_groups:evidence_groups_supersession_state_check:c',
+        'version_source_evidence:version_source_evidence_evidence_id_fkey:f',
+        'version_source_evidence:version_source_evidence_pkey:p',
+        'version_source_evidence:version_source_evidence_relationship_type_check:c',
+        'version_source_evidence:version_source_evidence_source_group_id_fkey:f',
+        'version_source_evidence:version_source_evidence_version_id_fkey:f'
+    ]::text[]
+       OR EXISTS (
+           SELECT 1
+           FROM pg_constraint AS constraint_row
+           JOIN pg_class AS relation ON relation.oid = constraint_row.conrelid
+           WHERE relation.relnamespace = 'storecalc'::regnamespace
+             AND relation.relname = ANY (
+                 ARRAY['evidence', 'evidence_groups', 'version_source_evidence']
+             )
+             AND (NOT constraint_row.convalidated OR constraint_row.condeferrable OR constraint_row.condeferred)
+       ) THEN
+        RAISE EXCEPTION 'storecalc_source_evidence_postflight_constraint_mismatch';
+    END IF;
+
+    SELECT array_agg(
+        format(
+            '%s:%s:%s',
+            relation.relname,
+            constraint_row.conname,
+            pg_get_constraintdef(constraint_row.oid)
+        )
+        ORDER BY relation.relname, constraint_row.conname
+    )
+    INTO actual_check_definitions
+    FROM pg_constraint AS constraint_row
+    JOIN pg_class AS relation ON relation.oid = constraint_row.conrelid
+    WHERE relation.relnamespace = 'storecalc'::regnamespace
+      AND relation.relname = ANY (
+          ARRAY['evidence', 'evidence_groups', 'version_source_evidence']
+      )
+      AND constraint_row.contype = 'c';
+
+    IF actual_check_definitions IS DISTINCT FROM ARRAY[
+        'evidence:evidence_language_tag_check:CHECK (((language_tag IS NULL) OR (((char_length(language_tag) >= 2) AND (char_length(language_tag) <= 35)) AND (octet_length(language_tag) <= 35) AND (language_tag ~ ''^[A-Za-z]{2,8}(-[A-Za-z0-9]{1,8})*$''::text))))',
+        'evidence:evidence_lifecycle_generation_check:CHECK ((lifecycle_generation = 1))',
+        'evidence:evidence_metadata_visibility_check:CHECK ((metadata_visibility = ANY (ARRAY[''private''::text, ''public_citation''::text])))',
+        'evidence:evidence_normalized_fingerprint_check:CHECK ((normalized_fingerprint ~ ''^[a-f0-9]{64}$''::text))',
+        'evidence:evidence_privacy_state_check:CHECK ((privacy_state = ANY (ARRAY[''pending_review''::text, ''metadata_safe''::text, ''restricted''::text, ''withdrawn''::text])))',
+        'evidence:evidence_redistribution_state_check:CHECK ((redistribution_state = ''metadata_only''::text))',
+        'evidence:evidence_source_title_check:CHECK ((((char_length(source_title) >= 1) AND (char_length(source_title) <= 300)) AND (octet_length(source_title) <= 1200) AND (source_title = btrim(source_title)) AND (source_title !~ ''[[:cntrl:]]''::text)))',
+        'evidence:evidence_source_type_check:CHECK ((source_type = ''external_citation''::text))',
+        'evidence:evidence_source_url_check:CHECK ((((char_length(source_url) >= 9) AND (char_length(source_url) <= 2048)) AND (octet_length(source_url) <= 2048) AND (source_url ~ ''^https://[^[:space:][:cntrl:]]+$''::text) AND (source_url ~ ''^https://[^/@?#[:space:][:cntrl:]]+([/?#]|$)''::text) AND (source_url !~ ''^https://[^/?#]*@''::text)))',
+        'evidence:evidence_withdrawal_state_check:CHECK ((((privacy_state = ''withdrawn''::text) = (withdrawn_at IS NOT NULL)) AND ((withdrawn_at IS NULL) OR (withdrawn_at >= created_at))))',
+        'evidence_groups:evidence_groups_canonical_fingerprint_check:CHECK ((canonical_fingerprint ~ ''^[a-f0-9]{64}$''::text))',
+        'evidence_groups:evidence_groups_grouping_type_check:CHECK ((grouping_type = ''source_lineage''::text))',
+        'evidence_groups:evidence_groups_independence_state_check:CHECK ((independence_state = ANY (ARRAY[''unreviewed''::text, ''accepted''::text, ''disputed''::text, ''superseded''::text])))',
+        'evidence_groups:evidence_groups_supersession_state_check:CHECK ((((independence_state = ''superseded''::text) = (superseded_at IS NOT NULL)) AND ((superseded_at IS NULL) OR (superseded_at >= created_at))))',
+        'version_source_evidence:version_source_evidence_relationship_type_check:CHECK ((relationship_type = ''supports_catalog''::text))'
+    ]::text[] THEN
+        RAISE EXCEPTION 'storecalc_source_evidence_postflight_constraint_definition_mismatch'
+            USING DETAIL = COALESCE(actual_check_definitions::text, 'NULL');
+    END IF;
+
+    SELECT array_agg(
+        format('%s:%s', relation.relname, pg_get_indexdef(relation.oid))
+        ORDER BY relation.relname
+    )
+    INTO actual_indexes
+    FROM pg_class AS relation
+    WHERE relation.relnamespace = 'storecalc'::regnamespace
+      AND relation.relkind = 'i'
+      AND relation.relname = ANY (
+          ARRAY[
+              'evidence_pkey',
+              'evidence_normalized_fingerprint_key',
+              'evidence_contributor_subject_idx',
+              'evidence_review_state_idx',
+              'evidence_groups_pkey',
+              'evidence_groups_canonical_fingerprint_key',
+              'evidence_groups_state_idx',
+              'version_source_evidence_pkey',
+              'version_source_evidence_evidence_idx',
+              'version_source_evidence_group_idx'
+          ]
+      );
+
+    IF actual_indexes IS DISTINCT FROM ARRAY[
+        'evidence_contributor_subject_idx:CREATE INDEX evidence_contributor_subject_idx ON storecalc.evidence USING btree (contributor_subject_id, id) WHERE (contributor_subject_id IS NOT NULL)',
+        'evidence_groups_canonical_fingerprint_key:CREATE UNIQUE INDEX evidence_groups_canonical_fingerprint_key ON storecalc.evidence_groups USING btree (canonical_fingerprint)',
+        'evidence_groups_pkey:CREATE UNIQUE INDEX evidence_groups_pkey ON storecalc.evidence_groups USING btree (id)',
+        'evidence_groups_state_idx:CREATE INDEX evidence_groups_state_idx ON storecalc.evidence_groups USING btree (independence_state, id)',
+        'evidence_normalized_fingerprint_key:CREATE UNIQUE INDEX evidence_normalized_fingerprint_key ON storecalc.evidence USING btree (normalized_fingerprint)',
+        'evidence_pkey:CREATE UNIQUE INDEX evidence_pkey ON storecalc.evidence USING btree (id)',
+        'evidence_review_state_idx:CREATE INDEX evidence_review_state_idx ON storecalc.evidence USING btree (privacy_state, metadata_visibility, id)',
+        'version_source_evidence_evidence_idx:CREATE INDEX version_source_evidence_evidence_idx ON storecalc.version_source_evidence USING btree (evidence_id, version_id)',
+        'version_source_evidence_group_idx:CREATE INDEX version_source_evidence_group_idx ON storecalc.version_source_evidence USING btree (source_group_id, version_id)',
+        'version_source_evidence_pkey:CREATE UNIQUE INDEX version_source_evidence_pkey ON storecalc.version_source_evidence USING btree (version_id, evidence_id)'
+    ]::text[] THEN
+        RAISE EXCEPTION 'storecalc_source_evidence_postflight_index_mismatch';
+    END IF;
+
+    SELECT array_agg(
+        format(
+            '%s:%s.%s:%s:%s.%s:%s:%s',
+            constraint_row.conname,
+            source_namespace.nspname,
+            source_relation.relname,
+            ARRAY(
+                SELECT attribute.attname
+                FROM unnest(constraint_row.conkey) WITH ORDINALITY AS key(attnum, position)
+                JOIN pg_attribute AS attribute
+                  ON attribute.attrelid = constraint_row.conrelid
+                 AND attribute.attnum = key.attnum
+                ORDER BY key.position
+            ),
+            target_namespace.nspname,
+            target_relation.relname,
+            ARRAY(
+                SELECT attribute.attname
+                FROM unnest(constraint_row.confkey) WITH ORDINALITY AS key(attnum, position)
+                JOIN pg_attribute AS attribute
+                  ON attribute.attrelid = constraint_row.confrelid
+                 AND attribute.attnum = key.attnum
+                ORDER BY key.position
+            ),
+            constraint_row.confdeltype
+        )
+        ORDER BY constraint_row.conname
+    )
+    INTO actual_foreign_keys
+    FROM pg_constraint AS constraint_row
+    JOIN pg_class AS source_relation ON source_relation.oid = constraint_row.conrelid
+    JOIN pg_namespace AS source_namespace ON source_namespace.oid = source_relation.relnamespace
+    JOIN pg_class AS target_relation ON target_relation.oid = constraint_row.confrelid
+    JOIN pg_namespace AS target_namespace ON target_namespace.oid = target_relation.relnamespace
+    WHERE constraint_row.contype = 'f'
+      AND source_relation.relnamespace = 'storecalc'::regnamespace
+      AND source_relation.relname = ANY (
+          ARRAY['evidence', 'version_source_evidence']
+      );
+
+    IF actual_foreign_keys IS DISTINCT FROM ARRAY[
+        'evidence_contributor_subject_id_fkey:storecalc.evidence:{contributor_subject_id}:storecalc.contributor_subjects:{id}:r',
+        'version_source_evidence_evidence_id_fkey:storecalc.version_source_evidence:{evidence_id}:storecalc.evidence:{id}:r',
+        'version_source_evidence_source_group_id_fkey:storecalc.version_source_evidence:{source_group_id}:storecalc.evidence_groups:{id}:r',
+        'version_source_evidence_version_id_fkey:storecalc.version_source_evidence:{version_id}:storecalc.template_versions:{id}:r'
+    ]::text[] THEN
+        RAISE EXCEPTION 'storecalc_source_evidence_postflight_foreign_key_mismatch';
+    END IF;
+
+    FOREACH object_name IN ARRAY new_tables LOOP
+        IF pg_get_userbyid(
+            (SELECT relowner FROM pg_class WHERE oid = object_name::regclass)
+        ) IS DISTINCT FROM migration_owner_role
+           OR EXISTS (
+               SELECT 1
+               FROM pg_class
+               WHERE oid = object_name::regclass
+                 AND (relpersistence <> 'p' OR relrowsecurity OR relforcerowsecurity)
+           )
+           OR EXISTS (
+               SELECT 1
+               FROM pg_policy
+               WHERE polrelid = object_name::regclass
+           ) THEN
+            RAISE EXCEPTION 'storecalc_source_evidence_postflight_table_security_mismatch';
+        END IF;
+    END LOOP;
+
+    FOREACH object_name IN ARRAY new_sequences LOOP
+        IF pg_get_userbyid(
+            (SELECT relowner FROM pg_class WHERE oid = object_name::regclass)
+        ) IS DISTINCT FROM migration_owner_role
+           OR pg_get_serial_sequence(
+               replace(object_name, '_id_seq', ''),
+               'id'
+           ) IS DISTINCT FROM object_name
+           OR NOT EXISTS (
+               SELECT 1
+               FROM pg_sequence
+               WHERE seqrelid = object_name::regclass
+                 AND seqstart = 1
+                 AND seqincrement = 1
+                 AND seqmax = 2147483647
+                 AND seqmin = 1
+                 AND seqcache = 1
+                 AND NOT seqcycle
+           ) THEN
+            RAISE EXCEPTION 'storecalc_source_evidence_postflight_sequence_mismatch';
+        END IF;
+    END LOOP;
+
+    SELECT array_agg(
+        format('%s:%s:%s:%s:%s', trigger_row.tgname, relation.relname, procedure.proname, trigger_row.tgenabled, trigger_row.tgtype)
+        ORDER BY trigger_row.tgname
+    )
+    INTO actual_triggers
+    FROM pg_trigger AS trigger_row
+    JOIN pg_class AS relation ON relation.oid = trigger_row.tgrelid
+    JOIN pg_proc AS procedure ON procedure.oid = trigger_row.tgfoid
+    WHERE trigger_row.tgname = ANY (
+        ARRAY[
+            'evidence_identity_immutable_trigger',
+            'evidence_groups_identity_immutable_trigger',
+            'version_source_evidence_version_topology_lock_trigger',
+            'version_source_evidence_content_mutability_trigger',
+            'version_source_evidence_eligibility_trigger'
+        ]
+    )
+      AND NOT trigger_row.tgisinternal
+      AND trigger_row.tgqual IS NULL;
+
+    IF actual_triggers IS DISTINCT FROM ARRAY[
+        'evidence_groups_identity_immutable_trigger:evidence_groups:forbid_evidence_identity_mutation:O:27',
+        'evidence_identity_immutable_trigger:evidence:forbid_evidence_identity_mutation:O:27',
+        'version_source_evidence_content_mutability_trigger:version_source_evidence:assert_version_content_mutable:O:31',
+        'version_source_evidence_eligibility_trigger:version_source_evidence:assert_version_source_evidence_eligible:O:23',
+        'version_source_evidence_version_topology_lock_trigger:version_source_evidence:lock_template_version_topology:O:30'
+    ]::text[]
+       OR (
+           SELECT count(*)
+           FROM pg_trigger AS trigger_row
+           JOIN pg_class AS relation ON relation.oid = trigger_row.tgrelid
+           WHERE relation.relnamespace = 'storecalc'::regnamespace
+             AND NOT trigger_row.tgisinternal
+       ) <> 41
+       OR (SELECT count(*) FROM pg_proc WHERE pronamespace = 'storecalc'::regnamespace) <> 16
+       OR NOT EXISTS (
+           SELECT 1
+           FROM pg_proc AS procedure
+           JOIN pg_language AS language ON language.oid = procedure.prolang
+           WHERE procedure.oid = 'storecalc.forbid_evidence_identity_mutation()'::regprocedure
+             AND language.lanname = 'plpgsql'
+             AND procedure.prorettype = 'trigger'::regtype
+             AND procedure.pronargs = 0
+             AND procedure.prosecdef
+             AND procedure.provolatile = 'v'
+             AND procedure.proconfig = ARRAY['search_path=pg_catalog, storecalc']
+             AND pg_get_userbyid(procedure.proowner) = migration_owner_role
+             AND md5(procedure.prosrc) = 'ebf743b2d03208d0df7380007e9a2174'
+       )
+       OR NOT EXISTS (
+           SELECT 1
+           FROM pg_proc AS procedure
+           JOIN pg_language AS language ON language.oid = procedure.prolang
+           WHERE procedure.oid = 'storecalc.assert_version_source_evidence_eligible()'::regprocedure
+             AND language.lanname = 'plpgsql'
+             AND procedure.prorettype = 'trigger'::regtype
+             AND procedure.pronargs = 0
+             AND procedure.prosecdef
+             AND procedure.provolatile = 'v'
+             AND procedure.proconfig = ARRAY['search_path=pg_catalog, storecalc']
+             AND pg_get_userbyid(procedure.proowner) = migration_owner_role
+             AND md5(procedure.prosrc) = 'e3f684e20087926812811534788ae045'
+       ) THEN
+        RAISE EXCEPTION 'storecalc_source_evidence_postflight_function_or_trigger_mismatch';
+    END IF;
+
+    IF EXISTS (
+        SELECT 1
+        FROM (
+            SELECT acl.grantee
+            FROM pg_namespace AS namespace,
+                 LATERAL aclexplode(COALESCE(namespace.nspacl, acldefault('n', namespace.nspowner))) AS acl
+            WHERE namespace.nspname = 'storecalc'
+
+            UNION ALL
+
+            SELECT acl.grantee
+            FROM pg_class AS relation,
+                 LATERAL aclexplode(
+                     COALESCE(
+                         relation.relacl,
+                         acldefault(
+                             CASE WHEN relation.relkind = 'S' THEN 'S'::"char" ELSE 'r'::"char" END,
+                             relation.relowner
+                         )
+                     )
+                 ) AS acl
+            WHERE relation.relnamespace = 'storecalc'::regnamespace
+
+            UNION ALL
+
+            SELECT acl.grantee
+            FROM pg_proc AS procedure,
+                 LATERAL aclexplode(COALESCE(procedure.proacl, acldefault('f', procedure.proowner))) AS acl
+            WHERE procedure.pronamespace = 'storecalc'::regnamespace
+        ) AS object_grants
+        WHERE object_grants.grantee <> ALL (allowed_grantee_oids)
+    ) THEN
+        RAISE EXCEPTION 'storecalc_source_evidence_postflight_unexpected_grantee';
+    END IF;
+
+    FOREACH object_name IN ARRAY new_tables LOOP
+        IF has_table_privilege(web_role, object_name, 'SELECT')
+           OR has_table_privilege(web_role, object_name, 'INSERT')
+           OR has_table_privilege(web_role, object_name, 'UPDATE')
+           OR has_table_privilege(web_role, object_name, 'DELETE')
+           OR has_table_privilege(worker_role, object_name, 'SELECT')
+           OR has_table_privilege(worker_role, object_name, 'INSERT')
+           OR has_table_privilege(worker_role, object_name, 'UPDATE')
+           OR has_table_privilege(worker_role, object_name, 'DELETE')
+           OR NOT has_table_privilege(backup_role, object_name, 'SELECT')
+           OR has_table_privilege(backup_role, object_name, 'INSERT')
+           OR has_table_privilege(backup_role, object_name, 'UPDATE')
+           OR has_table_privilege(backup_role, object_name, 'DELETE') THEN
+            RAISE EXCEPTION 'storecalc_source_evidence_postflight_table_grant_mismatch';
+        END IF;
+    END LOOP;
+
+    FOREACH object_name IN ARRAY new_sequences LOOP
+        IF has_sequence_privilege(web_role, object_name, 'SELECT')
+           OR has_sequence_privilege(web_role, object_name, 'USAGE')
+           OR has_sequence_privilege(worker_role, object_name, 'SELECT')
+           OR has_sequence_privilege(worker_role, object_name, 'USAGE')
+           OR NOT has_sequence_privilege(backup_role, object_name, 'SELECT')
+           OR has_sequence_privilege(backup_role, object_name, 'USAGE')
+           OR has_sequence_privilege(backup_role, object_name, 'UPDATE') THEN
+            RAISE EXCEPTION 'storecalc_source_evidence_postflight_sequence_grant_mismatch';
+        END IF;
+    END LOOP;
+
+    IF has_function_privilege(
+        web_role,
+        'storecalc.forbid_evidence_identity_mutation()',
+        'EXECUTE'
+    ) OR has_function_privilege(
+        worker_role,
+        'storecalc.forbid_evidence_identity_mutation()',
+        'EXECUTE'
+    ) OR has_function_privilege(
+        backup_role,
+        'storecalc.forbid_evidence_identity_mutation()',
+        'EXECUTE'
+    ) OR has_function_privilege(
+        web_role,
+        'storecalc.assert_version_source_evidence_eligible()',
+        'EXECUTE'
+    ) OR has_function_privilege(
+        worker_role,
+        'storecalc.assert_version_source_evidence_eligible()',
+        'EXECUTE'
+    ) OR has_function_privilege(
+        backup_role,
+        'storecalc.assert_version_source_evidence_eligible()',
+        'EXECUTE'
+    ) THEN
+        RAISE EXCEPTION 'storecalc_source_evidence_postflight_function_grant_mismatch';
+    END IF;
+
+    SELECT array_agg(
+        format('%s:%s:%s:%s:%s', id, capability_key, schema_version, is_available, migration_key)
+        ORDER BY id
+    )
+    INTO actual_capabilities
+    FROM storecalc.schema_capabilities;
+
+    IF actual_capabilities IS DISTINCT FROM ARRAY[
+        '1:schema.foundation:1:t:0001_schema_foundation',
+        '2:public.directory:2:f:0003_program_assignments',
+        '3:anonymous.calculation:8:f:0011_source_evidence',
+        '4:saved.orders:0:f:0001_schema_foundation',
+        '5:public.contribution:0:f:0001_schema_foundation',
+        '6:evidence.upload:0:f:0001_schema_foundation',
+        '7:owner.support:0:f:0001_schema_foundation',
+        '8:scoped.profiles:0:f:0001_schema_foundation'
+    ]::text[]
+       OR EXISTS (
+           SELECT 1
+           FROM storecalc.schema_capabilities
+           WHERE capability_key <> 'schema.foundation'
+             AND verified_at IS NOT NULL
+       ) THEN
+        RAISE EXCEPTION 'storecalc_source_evidence_postflight_capability_or_seed_mismatch';
+    END IF;
+END
+$storecalc_source_evidence_postflight$;
+
+COMMIT;
