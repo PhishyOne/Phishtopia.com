@@ -2721,7 +2721,7 @@ BEGIN
         FROM pg_constraint
         WHERE conrelid = 'storecalc.version_constraints'::regclass
           AND conname = 'version_constraints_limit_nullability_check'
-          AND pg_get_constraintdef(oid) = 'CHECK ((((value_state = ''known''::text) AND (limit_value IS NOT NULL) AND (limit_value >= 0) AND (limit_value <= 1000000000)) OR ((value_state = ANY (ARRAY[''unlimited''::text, ''not_applicable''::text, ''unknown''::text, ''unsupported''::text])) AND (limit_value IS NULL))))'
+          AND pg_get_constraintdef(oid) = 'CHECK ((((value_state = ''known''::text) AND (limit_value IS NOT NULL) AND ((limit_value >= 0) AND (limit_value <= 1000000000))) OR ((value_state = ANY (ARRAY[''unlimited''::text, ''not_applicable''::text, ''unknown''::text, ''unsupported''::text])) AND (limit_value IS NULL))))'
     ) OR NOT EXISTS (
         SELECT 1
         FROM pg_constraint
