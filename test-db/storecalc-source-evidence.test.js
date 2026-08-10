@@ -1226,12 +1226,12 @@ test(
       );
       await expectRejected(
         runMigrationSql(client, evidenceVerifySql),
-        "storecalc_source_evidence_postflight_trigger_mismatch",
+        "storecalc_source_evidence_postflight_function_or_trigger_mismatch",
         "P0001",
       );
       await expectRejected(
         runMigrationSql(client, evidenceDownSql),
-        "storecalc_source_evidence_postflight_trigger_mismatch",
+        "storecalc_source_evidence_postflight_function_or_trigger_mismatch",
         "P0001",
       );
       await runAsRole(client, ROLE_SETTINGS.migration_owner_role, () =>

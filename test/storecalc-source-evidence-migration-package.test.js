@@ -293,6 +293,18 @@ test("StoreCalc source-evidence verifier preserves exact inheritance", () => {
     databaseAcceptance,
     /"storecalc_version_warnings_postflight_relation_mismatch"/,
   );
+  assert.equal(
+    (
+      databaseAcceptance.match(
+        /"storecalc_source_evidence_postflight_function_or_trigger_mismatch"/g,
+      ) ?? []
+    ).length,
+    2,
+  );
+  assert.doesNotMatch(
+    databaseAcceptance,
+    /"storecalc_source_evidence_postflight_trigger_mismatch"/,
+  );
 });
 
 test("StoreCalc evidence lifecycle expansion remains explicit", () => {
