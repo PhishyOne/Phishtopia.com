@@ -45,7 +45,7 @@
     {
       "path": "migrations/storecalc/0011_source_evidence/down.sql",
       "purpose": "fail-closed never-used rollback to the catalog-warning baseline",
-      "sha256": "f898542e93e187c5b253cada11ac6aa616659a56853a3f861b73fbb2dd9dac77"
+      "sha256": "9a7f48f2c000108d09a1fe25740e8534d42493b438c452115df0a208109fe72f"
     },
     {
       "path": "migrations/storecalc/0011_source_evidence/up.sql",
@@ -55,10 +55,10 @@
     {
       "path": "migrations/storecalc/0011_source_evidence/verify.sql",
       "purpose": "exact inherited and source-evidence verification",
-      "sha256": "68fdb70607d39abe9a726adce30e0fc8f0ee415a798a91fbbd51644e45a9aa63"
+      "sha256": "9b067d5b4f464b6e66d0a11b87d0e785348f78b467f82fe6bf685dc0b6e2cd41"
     }
   ],
-  "bundleSha256": "6a7eab0c6cc647a706459d48018fafd17ee4b84e71622e05edcf1337ba8e4039",
+  "bundleSha256": "c9f7df0c12ea0b4b9703c4a9470f86f21fb9557b2db862e86a05333237e1eaba",
   "expectedDefinitions": {
     "schema": "storecalc",
     "ownerClass": "migration_owner",

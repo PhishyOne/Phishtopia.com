@@ -612,7 +612,7 @@ BEGIN
     IF actual_capabilities IS DISTINCT FROM ARRAY[
         '1:schema.foundation:1:t:0001_schema_foundation',
         '2:public.directory:2:f:0003_program_assignments',
-        '3:anonymous.calculation:7:f:0010_warnings',
+        '3:anonymous.calculation:8:f:0011_source_evidence',
         '4:saved.orders:0:f:0001_schema_foundation',
         '5:public.contribution:0:f:0001_schema_foundation',
         '6:evidence.upload:0:f:0001_schema_foundation',
@@ -1070,7 +1070,7 @@ BEGIN
     IF actual_capabilities IS DISTINCT FROM ARRAY[
         '1:schema.foundation:1:t:0001_schema_foundation',
         '2:public.directory:2:f:0003_program_assignments',
-        '3:anonymous.calculation:7:f:0010_warnings',
+        '3:anonymous.calculation:8:f:0011_source_evidence',
         '4:saved.orders:0:f:0001_schema_foundation',
         '5:public.contribution:0:f:0001_schema_foundation',
         '6:evidence.upload:0:f:0001_schema_foundation',
@@ -1570,7 +1570,7 @@ BEGIN
     IF actual_capabilities IS DISTINCT FROM ARRAY[
         '1:schema.foundation:1:t:0001_schema_foundation',
         '2:public.directory:2:f:0003_program_assignments',
-        '3:anonymous.calculation:7:f:0010_warnings',
+        '3:anonymous.calculation:8:f:0011_source_evidence',
         '4:saved.orders:0:f:0001_schema_foundation',
         '5:public.contribution:0:f:0001_schema_foundation',
         '6:evidence.upload:0:f:0001_schema_foundation',
@@ -2014,7 +2014,7 @@ BEGIN
     IF actual_capabilities IS DISTINCT FROM ARRAY[
         '1:schema.foundation:1:t:0001_schema_foundation',
         '2:public.directory:2:f:0003_program_assignments',
-        '3:anonymous.calculation:7:f:0010_warnings',
+        '3:anonymous.calculation:8:f:0011_source_evidence',
         '4:saved.orders:0:f:0001_schema_foundation',
         '5:public.contribution:0:f:0001_schema_foundation',
         '6:evidence.upload:0:f:0001_schema_foundation',
@@ -2413,7 +2413,7 @@ BEGIN
     IF actual_capabilities IS DISTINCT FROM ARRAY[
         '1:schema.foundation:1:t:0001_schema_foundation',
         '2:public.directory:2:f:0003_program_assignments',
-        '3:anonymous.calculation:7:f:0010_warnings',
+        '3:anonymous.calculation:8:f:0011_source_evidence',
         '4:saved.orders:0:f:0001_schema_foundation',
         '5:public.contribution:0:f:0001_schema_foundation',
         '6:evidence.upload:0:f:0001_schema_foundation',
@@ -2806,7 +2806,7 @@ BEGIN
     IF actual_capabilities IS DISTINCT FROM ARRAY[
         '1:schema.foundation:1:t:0001_schema_foundation',
         '2:public.directory:2:f:0003_program_assignments',
-        '3:anonymous.calculation:7:f:0010_warnings',
+        '3:anonymous.calculation:8:f:0011_source_evidence',
         '4:saved.orders:0:f:0001_schema_foundation',
         '5:public.contribution:0:f:0001_schema_foundation',
         '6:evidence.upload:0:f:0001_schema_foundation',
@@ -3189,7 +3189,7 @@ BEGIN
     IF actual_capabilities IS DISTINCT FROM ARRAY[
         '1:schema.foundation:1:t:0001_schema_foundation',
         '2:public.directory:2:f:0003_program_assignments',
-        '3:anonymous.calculation:7:f:0010_warnings',
+        '3:anonymous.calculation:8:f:0011_source_evidence',
         '4:saved.orders:0:f:0001_schema_foundation',
         '5:public.contribution:0:f:0001_schema_foundation',
         '6:evidence.upload:0:f:0001_schema_foundation',
