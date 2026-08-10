@@ -257,16 +257,22 @@ test("StoreCalc source-evidence verifier preserves exact inheritance", () => {
   assert.match(upSql, /<> 155/);
   assert.match(upSql, /8:f:0011_source_evidence/);
 
-  assert.match(verifySql, /<> 155/);
+  assert.equal((verifySql.match(/<> 155\b/g) ?? []).length, 8);
+  assert.equal((verifySql.match(/<> 41\b/g) ?? []).length, 8);
+  assert.equal((verifySql.match(/<> 16\b/g) ?? []).length, 8);
   assert.match(verifySql, /8:f:0011_source_evidence/);
-  assert.match(verifySql, /<> 140/);
+  assert.doesNotMatch(verifySql, /<> (?:140|36|14)\b/);
   assert.match(verifySql, /7:f:0010_warnings/);
   assert.doesNotMatch(verifySql, /<> 133/);
   assert.doesNotMatch(verifySql, /6:f:0009_constraints/);
 
-  assert.match(downSql, /<> 155/);
+  assert.equal((downSql.match(/<> 155\b/g) ?? []).length, 8);
+  assert.equal((downSql.match(/<> 41\b/g) ?? []).length, 8);
+  assert.equal((downSql.match(/<> 16\b/g) ?? []).length, 8);
   assert.match(downSql, /8:f:0011_source_evidence/);
-  assert.match(downSql, /<> 140/);
+  assert.equal((downSql.match(/<> 140\b/g) ?? []).length, 7);
+  assert.equal((downSql.match(/<> 36\b/g) ?? []).length, 7);
+  assert.equal((downSql.match(/<> 14\b/g) ?? []).length, 7);
   assert.match(downSql, /7:f:0010_warnings/);
 
   assert.equal(

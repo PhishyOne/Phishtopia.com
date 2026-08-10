@@ -158,7 +158,7 @@ BEGIN
            SELECT count(*)
            FROM pg_class
            WHERE relnamespace = 'storecalc'::regnamespace
-       ) <> 140 THEN
+       ) <> 155 THEN
         RAISE EXCEPTION 'storecalc_template_postflight_relation_mismatch';
     END IF;
 
@@ -458,7 +458,7 @@ BEGIN
         RAISE EXCEPTION 'storecalc_template_postflight_trigger_mismatch';
     END IF;
 
-    IF (SELECT count(*) FROM pg_proc WHERE pronamespace = 'storecalc'::regnamespace) <> 14
+    IF (SELECT count(*) FROM pg_proc WHERE pronamespace = 'storecalc'::regnamespace) <> 16
        OR NOT EXISTS (
            SELECT 1
            FROM pg_proc AS procedure
@@ -521,7 +521,7 @@ BEGIN
         JOIN pg_class AS relation ON relation.oid = trigger_row.tgrelid
         WHERE relation.relnamespace = 'storecalc'::regnamespace
           AND NOT trigger_row.tgisinternal
-    ) <> 36 THEN
+    ) <> 41 THEN
         RAISE EXCEPTION 'storecalc_template_verify_trigger_inventory_mismatch';
     END IF;
 
@@ -964,8 +964,8 @@ BEGIN
            JOIN pg_class AS relation ON relation.oid = trigger_row.tgrelid
            WHERE relation.relnamespace = 'storecalc'::regnamespace
              AND NOT trigger_row.tgisinternal
-       ) <> 36
-       OR (SELECT count(*) FROM pg_proc WHERE pronamespace = 'storecalc'::regnamespace) <> 14
+       ) <> 41
+       OR (SELECT count(*) FROM pg_proc WHERE pronamespace = 'storecalc'::regnamespace) <> 16
        OR NOT EXISTS (
            SELECT 1
            FROM pg_proc AS procedure
@@ -993,7 +993,7 @@ BEGIN
              AND pg_get_userbyid(procedure.proowner) = migration_owner_role
              AND md5(procedure.prosrc) = '11c51b40a9603a7e43e158e323e696d9'
        )
-       OR (SELECT count(*) FROM pg_class WHERE relnamespace = 'storecalc'::regnamespace) <> 140 THEN
+       OR (SELECT count(*) FROM pg_class WHERE relnamespace = 'storecalc'::regnamespace) <> 155 THEN
         RAISE EXCEPTION 'storecalc_template_version_postflight_function_or_trigger_mismatch';
     END IF;
 
@@ -1164,7 +1164,7 @@ BEGIN
         'version_items_version_item_key:i',
         'version_items_version_sort_idx:i'
     ]::text[]
-       OR (SELECT count(*) FROM pg_class WHERE relnamespace = 'storecalc'::regnamespace) <> 140 THEN
+       OR (SELECT count(*) FROM pg_class WHERE relnamespace = 'storecalc'::regnamespace) <> 155 THEN
         RAISE EXCEPTION 'storecalc_version_content_postflight_relation_mismatch';
     END IF;
 
@@ -1461,8 +1461,8 @@ BEGIN
            JOIN pg_class AS relation ON relation.oid = trigger_row.tgrelid
            WHERE relation.relnamespace = 'storecalc'::regnamespace
              AND NOT trigger_row.tgisinternal
-       ) <> 36
-       OR (SELECT count(*) FROM pg_proc WHERE pronamespace = 'storecalc'::regnamespace) <> 14
+       ) <> 41
+       OR (SELECT count(*) FROM pg_proc WHERE pronamespace = 'storecalc'::regnamespace) <> 16
        OR NOT EXISTS (
            SELECT 1
            FROM pg_proc AS procedure
@@ -1657,7 +1657,7 @@ BEGIN
         'version_spending_buckets_version_sort_idx:i',
         'version_spending_buckets_version_stable_key_key:i'
     ]::text[]
-       OR (SELECT count(*) FROM pg_class WHERE relnamespace = 'storecalc'::regnamespace) <> 140 THEN
+       OR (SELECT count(*) FROM pg_class WHERE relnamespace = 'storecalc'::regnamespace) <> 155 THEN
         RAISE EXCEPTION 'storecalc_spending_buckets_postflight_relation_mismatch';
     END IF;
 
@@ -1935,8 +1935,8 @@ BEGIN
            JOIN pg_class AS relation ON relation.oid = trigger_row.tgrelid
            WHERE relation.relnamespace = 'storecalc'::regnamespace
              AND NOT trigger_row.tgisinternal
-       ) <> 36
-       OR (SELECT count(*) FROM pg_proc WHERE pronamespace = 'storecalc'::regnamespace) <> 14 THEN
+       ) <> 41
+       OR (SELECT count(*) FROM pg_proc WHERE pronamespace = 'storecalc'::regnamespace) <> 16 THEN
         RAISE EXCEPTION 'storecalc_spending_buckets_postflight_trigger_mismatch';
     END IF;
 
@@ -2092,7 +2092,7 @@ BEGIN
         'version_tax_rules_template_priority_key:i',
         'version_tax_rules_version_resolution_idx:i'
     ]::text[]
-       OR (SELECT count(*) FROM pg_class WHERE relnamespace = 'storecalc'::regnamespace) <> 140 THEN
+       OR (SELECT count(*) FROM pg_class WHERE relnamespace = 'storecalc'::regnamespace) <> 155 THEN
         RAISE EXCEPTION 'storecalc_tax_rules_postflight_relation_mismatch';
     END IF;
 
@@ -2334,8 +2334,8 @@ BEGIN
            JOIN pg_class AS relation ON relation.oid = trigger_row.tgrelid
            WHERE relation.relnamespace = 'storecalc'::regnamespace
              AND NOT trigger_row.tgisinternal
-       ) <> 36
-       OR (SELECT count(*) FROM pg_proc WHERE pronamespace = 'storecalc'::regnamespace) <> 14 THEN
+       ) <> 41
+       OR (SELECT count(*) FROM pg_proc WHERE pronamespace = 'storecalc'::regnamespace) <> 16 THEN
         RAISE EXCEPTION 'storecalc_tax_rules_postflight_trigger_mismatch';
     END IF;
 
@@ -2488,7 +2488,7 @@ BEGIN
         'version_constraints_version_resolution_idx:i',
         'version_constraints_version_stable_key_key:i'
     ]::text[]
-       OR (SELECT count(*) FROM pg_class WHERE relnamespace = 'storecalc'::regnamespace) <> 140 THEN
+       OR (SELECT count(*) FROM pg_class WHERE relnamespace = 'storecalc'::regnamespace) <> 155 THEN
         RAISE EXCEPTION 'storecalc_order_constraints_postflight_relation_mismatch';
     END IF;
 
@@ -2727,8 +2727,8 @@ BEGIN
            JOIN pg_class AS relation ON relation.oid = trigger_row.tgrelid
            WHERE relation.relnamespace = 'storecalc'::regnamespace
              AND NOT trigger_row.tgisinternal
-       ) <> 36
-       OR (SELECT count(*) FROM pg_proc WHERE pronamespace = 'storecalc'::regnamespace) <> 14 THEN
+       ) <> 41
+       OR (SELECT count(*) FROM pg_proc WHERE pronamespace = 'storecalc'::regnamespace) <> 16 THEN
         RAISE EXCEPTION 'storecalc_order_constraints_postflight_trigger_mismatch';
     END IF;
 
@@ -2883,7 +2883,7 @@ BEGIN
         'version_warnings_template_identity_idx:i',
         'version_warnings_version_resolution_idx:i'
     ]::text[]
-       OR (SELECT count(*) FROM pg_class WHERE relnamespace = 'storecalc'::regnamespace) <> 140 THEN
+       OR (SELECT count(*) FROM pg_class WHERE relnamespace = 'storecalc'::regnamespace) <> 155 THEN
         RAISE EXCEPTION 'storecalc_version_warnings_postflight_relation_mismatch';
     END IF;
 
@@ -3110,8 +3110,8 @@ BEGIN
            JOIN pg_class AS relation ON relation.oid = trigger_row.tgrelid
            WHERE relation.relnamespace = 'storecalc'::regnamespace
              AND NOT trigger_row.tgisinternal
-       ) <> 36
-       OR (SELECT count(*) FROM pg_proc WHERE pronamespace = 'storecalc'::regnamespace) <> 14 THEN
+       ) <> 41
+       OR (SELECT count(*) FROM pg_proc WHERE pronamespace = 'storecalc'::regnamespace) <> 16 THEN
         RAISE EXCEPTION 'storecalc_version_warnings_postflight_trigger_mismatch';
     END IF;
 
