@@ -55,10 +55,12 @@ caller; it grants no role access and is not imported by any route.
 
 The service:
 
-- begins one bounded repeatable-read transaction, holds the shared side of the
+- begins one bounded read-committed transaction, holds the shared side of the
   StoreCalc migration advisory lock, requires the exact closed 0011 capability
   generation, and acquires the existing `template_versions`
-  share-row-exclusive topology lock before reading;
+  share-row-exclusive topology lock before reading; read committed is required
+  so an in-flight mutation that held the topology lock can commit before the
+  service takes its first content snapshot;
 - checks every child count against the pure-content bounds before loading rows;
 - extracts stable category/item keys and every canonical V1 domain with
   explicit PostgreSQL-to-JavaScript casts, including `bigint` values as

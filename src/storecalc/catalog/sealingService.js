@@ -8,7 +8,11 @@ import { HASH_ALGORITHM } from "../calculation/core.js";
 const MAX_POSTGRES_INTEGER = 2_147_483_647;
 const COUNT_PATTERN = /^(?:0|[1-9][0-9]*)$/;
 
-const BEGIN_SQL = "BEGIN ISOLATION LEVEL REPEATABLE READ";
+// READ COMMITTED is deliberate: the migration/advisory queries run before the
+// topology lock and must not pin a snapshot while an in-flight content mutation
+// finishes. Once the topology lock is held, every mutable canonical input is
+// stable for the rest of the transaction.
+const BEGIN_SQL = "BEGIN ISOLATION LEVEL READ COMMITTED";
 const TIMEOUTS_SQL = `
     /* storecalc:catalog-seal:timeouts */
     SELECT

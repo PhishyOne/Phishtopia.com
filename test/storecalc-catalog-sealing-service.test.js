@@ -293,6 +293,10 @@ test("StoreCalc atomically extracts and seals the exact canonical database catal
     assert.equal(result.templateId, TEMPLATE_ID);
     assert.ok(Object.isFrozen(result));
     assert.ok(Object.isFrozen(result.catalog));
+    assert.equal(
+        client.calls[0].sql,
+        "BEGIN ISOLATION LEVEL READ COMMITTED"
+    );
     assert.deepEqual(
         client.calls.map(call => call.marker ?? call.transaction),
         [
