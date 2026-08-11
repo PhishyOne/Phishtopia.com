@@ -35,7 +35,7 @@ the associated feature remains disabled by its gate.
 | SC-DAT-003 | `date`, `timestamptz`, IANA timezone fields | Server-local context-date resolver | Timezone, valid-time, and system-time tests |
 | SC-DAT-004 | Original and normalized bounded text fields | Unicode/code validation and escaped output | Unicode, bidi, byte/code-point, and search rebuild tests |
 | SC-DAT-005 | Core relationships use FKs; JSONB has schema/size checks | Versioned payload validators | Unknown-schema and oversized-payload rejection |
-| SC-DAT-006 | Schema/canonicalization/hash columns and uniqueness | Canonical serializer | Stable fixtures and stale-diff/hash tests |
+| SC-DAT-006 | Schema/canonicalization/hash columns and uniqueness | Pure canonical serializer plus locked database extractor/sealer | Golden SQL/JavaScript hash parity and stale-diff/type/hash tests |
 | SC-DAT-007 | Explicit value-state/nullability checks | Calculator fails closed on unknown/unsupported | Zero-vs-unknown-vs-unlimited tests |
 
 ## Database and accounts
@@ -87,12 +87,12 @@ the associated feature remains disabled by its gate.
 |---|---|---|---|
 | SC-CAT-001 | Template scope/owner and fork composite FKs/cycle guard | Authorized copy/fork service | Private-source, self/cycle, and provenance-deletion tests |
 | SC-CAT-002 | Stable keys and append-only identity events | Reviewed identity decision service | Fuzzy/SKU non-auto-match; split/merge/reversal history |
-| SC-CAT-003 | Same-template ancestry; sealed header trigger; hash fields | Seal service allocates version under lock | Cross-template base, cycle, concurrent number, and sealed-update tests |
+| SC-CAT-003 | Same-template ancestry; sealed header trigger; hash fields | Seal service locks one existing draft, extracts all canonical children, and compare-and-sets its hash | Cross-template base, cycle, concurrent number/seal/mutation, hash parity, and sealed-update tests |
 | SC-CAT-004 | Same-template/version composite FKs and value/bounded-integer-quantity checks | Version item validator | Cross-version category, negative/zero/step, and unknown-price tests |
 | SC-CAT-005 | Same-version membership FKs and bucket state checks | Parallel bucket calculator | Multi-bucket, excluded, unknown-limit, and non-summing tests |
 | SC-CAT-006 | Scope null-pattern, same-version FKs, rate/rounding checks | One-effective-tax resolver | Ambiguous/stacked/inclusive/rounding-scope fixtures |
 | SC-CAT-007 | Typed measure/comparator/unit/composition checks | Capability-aware constraint calculator | Quantity/count/weight/unit and unsupported-period tests |
-| SC-CAT-008 | Warnings/source evidence sealed; later evidence append-only | Warning/evidence services | Hash inclusion and later-evidence non-mutation tests |
+| SC-CAT-008 | Warnings/source evidence sealed; later evidence append-only | Warning/evidence services plus seal-time evidence revalidation | Hash inclusion, ineligible-source rollback, and later-evidence non-mutation tests |
 | SC-CAT-009 | Same-template publication FK; non-overlap; append-only events; assessment uniqueness | Serialized publication and confidence services preserve blocking component state | Concurrent/overlap/backdate, critical-component, and projection-rebuild tests |
 | SC-CAT-010 | Exactly-one explicit target FK; translation binds source hash/version and state | Translation review/rendering service | Wrong-target lineage, source-change staleness, and canonical-fact invariance |
 
@@ -143,7 +143,7 @@ the associated feature remains disabled by its gate.
 | SC-SEC-006 | Key/version references and least-privilege grants | TLS, managed-secret, rotation/revocation procedures | Encrypted backup restore and secret-rotation rehearsal |
 | SC-STM-001 | Event tables, expected state/generation, projection constraints | Locked transition services | Invalid/skipped/repeated/backward transition matrix |
 | SC-STM-002 | Core edge checks and append-only intervals | Named reversal workflows only | Per-state-machine acceptance and direct DB tests |
-| SC-STM-003 | Row/advisory locks plus unique final defenses | Transaction services use fixed lock order | Concurrent promotion, merge, completion, deletion, hold, migration tests |
+| SC-STM-003 | Row/advisory locks plus unique final defenses | Transaction services use fixed lock order; catalog sealing takes the shared migration lock before the version topology lock | Concurrent seal/mutation, promotion, merge, completion, deletion, hold, and migration tests |
 
 ## Notifications, async, deletion, and routes
 

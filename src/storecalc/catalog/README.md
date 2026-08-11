@@ -47,7 +47,40 @@ into the catalog document.
   truth, but publication, resolution, and calculation must separately reject
   unsupported capabilities.
 
-This package does not read database rows, perform the sealing transaction,
-create evidence records, judge source independence, publish a version, resolve
-facility applicability, activate a route, or authorize production execution.
-Those remain separately reviewed slices.
+## Atomic database sealing
+
+`sealCatalogVersion` is the single database transition for this content shape.
+It requires a dedicated `pg.Pool` connection supplied by an already authorized
+caller; it grants no role access and is not imported by any route.
+
+The service:
+
+- begins one bounded repeatable-read transaction, holds the shared side of the
+  StoreCalc migration advisory lock, requires the exact closed 0011 capability
+  generation, and acquires the existing `template_versions`
+  share-row-exclusive topology lock before reading;
+- checks every child count against the pure-content bounds before loading rows;
+- extracts stable category/item keys and every canonical V1 domain with
+  explicit PostgreSQL-to-JavaScript casts, including `bigint` values as
+  base-10 strings and dates as calendar strings;
+- rechecks source-evidence and independence-group eligibility at seal time;
+- passes only the reconstructed document to `sealCatalogVersionContent`;
+- compare-and-sets that same draft header to the resulting SHA-256 hash; and
+- rolls the transaction back on missing, stale, malformed, ineligible,
+  unsupported, type-drifted, or concurrently superseded state.
+
+Every catalog child mutation uses the same topology lock. A mutation already
+holding it finishes before extraction; a mutation that starts after sealing
+owns it waits and is then rejected by the sealed-content guard. Two sealing
+attempts serialize, and only the first can transition the draft.
+
+No new database object is required for this slice: migrations 0005 through
+0011 already provide the one-way header transition, immutable child guards,
+and shared lock. Adding a second SQL canonicalizer or an otherwise unused
+stored procedure would create another source of truth without improving the
+transaction.
+
+This package still does not create evidence records, decide source
+independence, publish a version, resolve facility applicability, activate a
+route, grant runtime access, or authorize production execution. Those remain
+separately reviewed slices.
