@@ -74,10 +74,10 @@ the associated feature remains disabled by its gate.
 | Requirement | DB / schema control | Service, route, worker, authorization | Verification / operations |
 |---|---|---|---|
 | SC-APP-001 | Program scope/owner checks; no facility owner FK | Program visibility service | One program assigned to multiple facilities |
-| SC-APP-002 | Assignment composite keys and non-overlap enforcement | Audience/date assignment resolver | Overlap, ambiguity, and independent-facility tests |
-| SC-APP-003 | Exact-version/publication null-pattern and same-parent FKs | Scoped applicability resolver | Older-version-at-one-facility and lineage tests |
+| SC-APP-002 | Assignment composite keys and non-overlap enforcement | Public resolver requires exact facility/program/audience/date and never guesses among programs | Overlap, ambiguity, date-boundary, and independent-facility tests |
+| SC-APP-003 | Exact-version/publication null-pattern and same-parent FKs | Public resolver returns exact version/publication lineage; scoped-profile composition remains deferred | Older-version-at-one-facility and lineage tests |
 | SC-APP-004 | Append-only applicability proposal/review/evidence events | Applicability contribution routes and confidence service | Content/applicability independence and correction-history tests |
-| SC-APP-005 | Resolution inputs/components/hashes persist | Single deterministic resolver with viewer scope | Ambiguous, withdrawn, invisible, unsupported, and date fixtures |
+| SC-APP-005 | Resolution inputs/components/hashes persist | Bounded public base-version resolver returns exact inputs, intervals, lineage, contract, capabilities, and hash; viewer-scoped composition/persistence remains deferred | Ambiguous, withdrawn, invisible, unsupported, and date fixtures |
 | SC-APP-006 | Immutable profile versions/deltas and compatibility range | Domain-specific composition service | Incompatible/conflicting profile and unsupported-gate tests |
 | SC-APP-007 | Immutable resolved rows, visibility intersection, dependency graph | Dependency-aware cache/resolution service | Private-component cache leak, withdrawal, and cycle tests |
 
