@@ -76,6 +76,37 @@ holding it finishes before extraction; a mutation that starts after sealing
 owns it waits and is then rejected by the sealed-content guard. Two sealing
 attempts serialize, and only the first can transition the draft.
 
+## Public facility/date version resolution
+
+`resolvePublicCatalogVersion` is the first read-only database resolver over the
+0012 publication/applicability schema. It accepts exact facility, program, and
+template IDs plus one audience key and explicit calendar context date. It does
+not infer a program from a facility name, prefer the newest row, or use the
+browser clock.
+
+One bounded PostgreSQL statement joins the public active facility, program,
+and template to a supported assignment and one open supported applicability
+claim. Both valid-date intervals must contain the requested context date. The
+selected target must be either the claim's exact sealed version or the exact
+sealed version named by its publication row. A closed publication row remains
+valid lineage for an applicability claim that deliberately retained that
+historical version; the result reports whether that publication is still the
+global current row instead of silently switching the facility.
+
+The query loads at most two candidates from one statement snapshot. Zero
+returns an immutable unavailable result, one returns the exact assignment,
+applicability, publication/version, interval, contract, capability, and content
+hash metadata, and two fail as ambiguous. Future-effective versions,
+unsupported calculator capabilities, noncanonical capability arrays, schema
+generation drift, malformed hashes/types, private or inactive parents, and
+disputed or closed applicability all fail closed.
+
+This slice intentionally resolves only the immutable base catalog version. It
+does not reconstruct content, compose scoped profiles, persist a resolved
+configuration, derive a facility-local date, authorize a viewer, or calculate
+an order. The exact 0012 capability remains unavailable and unverified, and no
+runtime route imports the service.
+
 No new database object is required for this slice: migrations 0005 through
 0011 already provide the one-way header transition, immutable child guards,
 and shared lock. Adding a second SQL canonicalizer or an otherwise unused
@@ -83,6 +114,6 @@ stored procedure would create another source of truth without improving the
 transaction.
 
 This package still does not create evidence records, decide source
-independence, publish a version, resolve facility applicability, activate a
-route, grant runtime access, or authorize production execution. Those remain
-separately reviewed slices.
+independence, transition publication/applicability state, load or compose a
+resolved calculation configuration, activate a route, grant runtime access,
+or authorize production execution. Those remain separately reviewed slices.
