@@ -107,6 +107,26 @@ configuration, derive a facility-local date, authorize a viewer, or calculate
 an order. The exact 0012 capability remains unavailable and unverified, and no
 runtime route imports the service.
 
+## Pure zero-profile configuration projection
+
+`projectCatalogVersionContent` is the deterministic seam between one already
+verified `storecalc.catalog-content.v1` document and the existing calculation
+core's sealed `storecalc.resolved-configuration.v1` input. It has no database,
+clock, network, route, registry, or environment dependency.
+
+For every item, tax selection is most-specific first (`item`, then `category`,
+then `template`) and highest-priority within that exact scope. The projector
+never stacks tax rules and refuses to invent a tax-free result when no rule
+matches. It carries exact item values, memberships, buckets, warnings, and
+all-must-pass constraints into the calculation shape, rejects capabilities the
+engine does not support, and seals the output through the authoritative
+calculation core. Source array order cannot affect the resolved hash.
+
+The caller supplies one exact lineage-based configuration key. This projector
+does not derive that key, load database rows, select a version, compose scoped
+profiles, persist/cache a resolved configuration, authorize a viewer, register
+public data, or mount the calculator. Those remain separate reviewed slices.
+
 No new database object is required for this slice: migrations 0005 through
 0011 already provide the one-way header transition, immutable child guards,
 and shared lock. Adding a second SQL canonicalizer or an otherwise unused
@@ -114,6 +134,7 @@ stored procedure would create another source of truth without improving the
 transaction.
 
 This package still does not create evidence records, decide source
-independence, transition publication/applicability state, load or compose a
-resolved calculation configuration, activate a route, grant runtime access,
-or authorize production execution. Those remain separately reviewed slices.
+independence, transition publication/applicability state, load catalog content
+from the database, compose scoped profiles, persist a resolved configuration,
+activate a route, grant runtime access, or authorize production execution.
+Those remain separately reviewed slices.

@@ -77,7 +77,7 @@ the associated feature remains disabled by its gate.
 | SC-APP-002 | Assignment composite keys and non-overlap enforcement | Public resolver requires exact facility/program/audience/date and never guesses among programs | Overlap, ambiguity, date-boundary, and independent-facility tests |
 | SC-APP-003 | Exact-version/publication null-pattern and same-parent FKs | Public resolver returns exact version/publication lineage; scoped-profile composition remains deferred | Older-version-at-one-facility and lineage tests |
 | SC-APP-004 | Append-only applicability proposal/review/evidence events | Applicability contribution routes and confidence service | Content/applicability independence and correction-history tests |
-| SC-APP-005 | Resolution inputs/components/hashes persist | Bounded public base-version resolver returns exact inputs, intervals, lineage, contract, capabilities, and hash; viewer-scoped composition/persistence remains deferred | Ambiguous, withdrawn, invisible, unsupported, and date fixtures |
+| SC-APP-005 | Resolution inputs/components/hashes persist | Bounded public base-version resolver returns exact lineage; pure zero-profile projector turns verified catalog content into one sealed calculation configuration; database loading, viewer-scoped composition, and persistence remain deferred | Ambiguous, withdrawn, invisible, unsupported, date, projection-order, and hash fixtures |
 | SC-APP-006 | Immutable profile versions/deltas and compatibility range | Domain-specific composition service | Incompatible/conflicting profile and unsupported-gate tests |
 | SC-APP-007 | Immutable resolved rows, visibility intersection, dependency graph | Dependency-aware cache/resolution service | Private-component cache leak, withdrawal, and cycle tests |
 
@@ -90,7 +90,7 @@ the associated feature remains disabled by its gate.
 | SC-CAT-003 | Same-template ancestry; sealed header trigger; hash fields | Seal service locks one existing draft, extracts all canonical children, and compare-and-sets its hash | Cross-template base, cycle, concurrent number/seal/mutation, hash parity, and sealed-update tests |
 | SC-CAT-004 | Same-template/version composite FKs and value/bounded-integer-quantity checks | Version item validator | Cross-version category, negative/zero/step, and unknown-price tests |
 | SC-CAT-005 | Same-version membership FKs and bucket state checks | Parallel bucket calculator | Multi-bucket, excluded, unknown-limit, and non-summing tests |
-| SC-CAT-006 | Scope null-pattern, same-version FKs, rate/rounding checks | One-effective-tax resolver | Ambiguous/stacked/inclusive/rounding-scope fixtures |
+| SC-CAT-006 | Scope null-pattern, same-version FKs, rate/rounding checks | Pure projector resolves one effective treatment by item/category/template specificity then priority and never stacks or invents tax-free state | Missing, specificity, priority, stacked, inclusive, and rounding-scope fixtures |
 | SC-CAT-007 | Typed measure/comparator/unit/composition checks | Capability-aware constraint calculator | Quantity/count/weight/unit and unsupported-period tests |
 | SC-CAT-008 | Warnings/source evidence sealed; later evidence append-only | Warning/evidence services plus seal-time evidence revalidation | Hash inclusion, ineligible-source rollback, and later-evidence non-mutation tests |
 | SC-CAT-009 | Same-template publication FK; non-overlap; append-only events; assessment uniqueness | Serialized publication and confidence services preserve blocking component state | Concurrent/overlap/backdate, critical-component, and projection-rebuild tests |
@@ -102,7 +102,7 @@ the associated feature remains disabled by its gate.
 |---|---|---|---|
 | SC-CAL-001 | Engine/version metadata stored | One pure core used by every caller | Caller parity and no clock/DB/network dependency tests |
 | SC-CAL-002 | Persist exact output/snapshot fields; unsupported fee capability cannot imply zero | Server accepts inputs, never totals | Client-total tampering, unsupported-fee, and full-output contract tests |
-| SC-CAL-003 | Composition vocabulary checked | Deterministic rule compositor | Random rule-order and equal-specificity conflict tests |
+| SC-CAL-003 | Composition vocabulary checked | Pure zero-profile projector deterministically maps tax, memberships, warnings, buckets, and all-must-pass constraints; profile composition remains deferred | Random source-order, specificity/priority, missing-treatment, and unsupported-profile tests |
 | SC-CAL-004 | Required-capability metadata | Resolver/calculator/publication fail closed | Capability mismatch and honest unsupported-state tests |
 | SC-CAL-005 | Context date/timezone/source stored | Server timezone default and explicit recalc flow | Browser-clock, future, historical, and resumed-draft tests |
 | SC-CAL-006 | Nullable nonnegative private funds with currency checks | Separate affordability calculation | Null, negative-input rejection, negative remaining, privacy, and no-FX tests |
