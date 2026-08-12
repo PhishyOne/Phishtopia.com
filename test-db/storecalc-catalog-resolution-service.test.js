@@ -734,7 +734,7 @@ test(
         async () => {
           await client.query(
             "UPDATE storecalc.schema_capabilities " +
-              "SET schema_version = 10, migration_key = 'future_test_schema' " +
+              "SET schema_version = 10, migration_key = '9999_future_test_schema' " +
               "WHERE capability_key = 'anonymous.calculation'",
           );
         },
