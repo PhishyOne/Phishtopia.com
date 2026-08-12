@@ -1,0 +1,140 @@
+{
+  "formatVersion": 1,
+  "migrationKey": "0012_catalog_publication_applicability",
+  "baseMigrationKey": "0011_source_evidence",
+  "contractRequirements": [
+    "SC-FND-002",
+    "SC-FND-004",
+    "SC-DAT-003",
+    "SC-DAT-007",
+    "SC-DB-001",
+    "SC-DB-002",
+    "SC-DB-003",
+    "SC-DB-004",
+    "SC-APP-001",
+    "SC-APP-002",
+    "SC-APP-003",
+    "SC-APP-005",
+    "SC-CAT-003",
+    "SC-CAT-009",
+    "SC-CAL-004",
+    "SC-SEC-001",
+    "SC-STM-001",
+    "SC-STM-002",
+    "SC-STM-003",
+    "SC-OPS-001",
+    "SC-OPS-002",
+    "SC-OPS-003",
+    "SC-OPS-004",
+    "SC-DEF-002"
+  ],
+  "advisoryLockKey": "7356507374803211041",
+  "timeouts": {
+    "lock": "3s",
+    "statement": "30s"
+  },
+  "files": [
+    {
+      "path": "migrations/storecalc/0012_catalog_publication_applicability/down.sql",
+      "purpose": "fail-closed never-used rollback to the sealed source-evidence baseline",
+      "sha256": "c8610ca1d68c8bc26129ee9bd09990f76f454599a0e3b30859e61932b826d1b0"
+    },
+    {
+      "path": "migrations/storecalc/0012_catalog_publication_applicability/README.md",
+      "purpose": "scope, bitemporal history, lock order, rollback, deferral, and production boundary",
+      "sha256": "bd7609d330ca45d2027e9423a13b6c93dae724d2a5f8d87c565125f271e6890f"
+    },
+    {
+      "path": "migrations/storecalc/0012_catalog_publication_applicability/up.sql",
+      "purpose": "forward sealed publication and facility applicability migration",
+      "sha256": "ecb169634b01ddb163db42049df9df4659127259fbeb3e57a81200a3a40f2632"
+    },
+    {
+      "path": "migrations/storecalc/0012_catalog_publication_applicability/verify.sql",
+      "purpose": "exact inherited, publication, applicability, lock, grant, and capability verification",
+      "sha256": "d85f87c7d23736c73ab2a28897c8004672e79379dffdf127d4a3f57b6cc5280c"
+    }
+  ],
+  "bundleSha256": "9a6e9f2159e7916867bb2a1e5825da97796be8dd9d642c4388a2896beb9d9d4b",
+  "expectedDefinitions": {
+    "schema": "storecalc",
+    "ownerClass": "migration_owner",
+    "tables": [
+      "template_publications",
+      "assignment_template_applicability"
+    ],
+    "identitySequences": [
+      "template_publications_id_seq",
+      "assignment_template_applicability_id_seq"
+    ],
+    "functions": [
+      "lock_catalog_resolution_topology()",
+      "assert_template_publication_coherent()",
+      "assert_assignment_template_applicability_coherent()"
+    ],
+    "triggers": [
+      "program_facility_assignments_catalog_resolution_lock_trigger",
+      "template_publications_topology_lock_trigger",
+      "template_publications_coherence_trigger",
+      "assignment_template_applicability_topology_lock_trigger",
+      "assignment_template_applicability_coherence_trigger"
+    ],
+    "vocabulary": {
+      "selectionModes": [
+        "exact_version",
+        "publication"
+      ],
+      "applicabilityStates": [
+        "supported",
+        "disputed"
+      ],
+      "actorTypes": [
+        "contributor",
+        "owner",
+        "system"
+      ],
+      "lockOrder": [
+        "template_versions",
+        "program_facility_assignments",
+        "template_publications",
+        "assignment_template_applicability"
+      ]
+    },
+    "runtimeGrants": {
+      "web": [
+        "SCHEMA USAGE",
+        "schema_capabilities SELECT"
+      ],
+      "worker": [
+        "SCHEMA USAGE",
+        "schema_capabilities SELECT"
+      ],
+      "backup": [
+        "SCHEMA USAGE",
+        "NEW TABLE SELECT",
+        "NEW SEQUENCE SELECT"
+      ],
+      "public": []
+    },
+    "capability": {
+      "key": "anonymous.calculation",
+      "schemaVersion": 9,
+      "available": false,
+      "verified": false
+    }
+  },
+  "deferred": [
+    "publication and applicability transition services",
+    "publication and applicability review, evidence, and state events",
+    "deterministic facility-date resolver",
+    "scoped profiles and composition",
+    "calculation and order integration",
+    "real publication and applicability rows",
+    "runtime catalog grants and routes",
+    "production migration execution"
+  ],
+  "productionExecution": {
+    "allowed": false,
+    "reason": "SC-OPS-002 rehearsal and an independently reviewed SC-OPS-004 execution path are still required."
+  }
+}
