@@ -1,9 +1,11 @@
 from __future__ import annotations
 
+import os
 import subprocess
 import tempfile
 import unittest
 from pathlib import Path
+from types import SimpleNamespace
 from unittest import mock
 
 import worker.platform as platform_module
@@ -33,6 +35,11 @@ class ReleaseStatusTests(unittest.TestCase):
             mock.patch.object(platform_module, "APP_CURRENT", current),
             mock.patch.object(platform_module, "APP_RELEASES", releases),
             mock.patch.object(platform_module, "APP_DEPLOY_LOG", log),
+            mock.patch.object(
+                platform_module.pwd,
+                "getpwnam",
+                return_value=SimpleNamespace(pw_uid=os.getuid()),
+            ),
         ):
             return platform.release_status()
 
