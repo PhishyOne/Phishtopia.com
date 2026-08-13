@@ -194,10 +194,10 @@ stored procedure would create another source of truth without improving the
 transaction.
 
 This package still does not create evidence records, decide source
-independence, transition applicability state, compose scoped profiles, persist
-a resolved configuration, calculate an order, activate a route, grant runtime
-access, or authorize production execution. Apart from the narrowly bounded
-template-publication service below, write orchestration remains deferred.
+independence, compose scoped profiles, persist a resolved configuration,
+calculate an order, activate a route, grant runtime access, or authorize
+production execution. Apart from the narrowly bounded publication and
+applicability services below, write orchestration remains deferred.
 
 ## Inactive template-publication transitions
 
@@ -223,5 +223,34 @@ Rollback uncertainty destroys the pooled connection. The service deliberately
 does not authorize the owner subject, create an applicability claim, publish
 real data, add a route or grant, compose profiles, persist/cache a resolved
 configuration, calculate an order, or activate StoreCalc. Its future caller
-must establish authorization before invocation. Applicability transitions and
-all runtime/production work remain separate reviewed slices.
+must establish authorization before invocation. All runtime and production
+work remains separate reviewed slices.
+
+## Inactive catalog-applicability transitions
+
+`transitionCatalogApplicability` owns bounded creation and exact correction of
+assignment/template applicability over the existing 0012 schema. A creation
+supplies no replacement ID. A correction names the exact open applicability
+row observed by the caller; the service closes only that row and inserts its
+replacement in one transaction. This preserves the schema's intended model in
+which several current, non-overlapping valid-date intervals may coexist rather
+than treating applicability as one globally current row.
+
+The service accepts either one exact sealed version or one historical
+publication selection. It verifies active assignment, program, facility, and
+template lineage; bounds the requested validity interval to its assignment;
+and requires supported or disputed state. Corrections retain the exact
+assignment/template lineage and reject closed, stale, cross-lineage, or no-op
+replacement requests. The 0012 exclusion constraint remains authoritative for
+overlap, including concurrent creation and correction races.
+
+The transaction uses the same shared migration lock, exact capability check,
+timeouts, and fixed topology-lock order as publication. Closing the named row
+is compare-and-swap guarded by its lifecycle generation; a concurrent loser
+fails closed before insert. The return value is frozen bounded lineage
+metadata, and rollback uncertainty destroys the pooled connection.
+
+This inactive owner-called service does not establish authorization, propose
+or review evidence, decide source independence, publish real data, add a route
+or grant, compose profiles, persist/cache a resolved configuration, calculate
+an order, or activate StoreCalc.

@@ -6,6 +6,10 @@ import path from "node:path";
 import pg from "pg";
 
 import {
+  StoreCalcCatalogApplicabilityError,
+  transitionCatalogApplicability,
+} from "../src/storecalc/catalog/applicabilityService.js";
+import {
   publishCatalogVersion,
   StoreCalcCatalogPublicationError,
 } from "../src/storecalc/catalog/publicationService.js";
@@ -1106,6 +1110,176 @@ test(
           fulfilled[0].value.publication.versionId,
         );
         assert.equal(serviceRows[1].lifecycle_generation, 1);
+
+        const currentServicePublicationId =
+          fulfilled[0].value.publication.id;
+        const firstApplicability = await transitionCatalogApplicability(
+          servicePool,
+          {
+            assignmentId: fixture.assignmentOne,
+            programId: fixture.programByName["Publication Program"],
+            facilityId:
+              fixture.facilityByName["Publication Facility One"],
+            templateId: serviceTemplate,
+            selection: {
+              mode: "exact_version",
+              targetId: fixture.serviceVersionOne,
+            },
+            validFrom: "2026-01-01",
+            validThrough: "2026-06-30",
+            applicabilityState: "supported",
+            replacesApplicabilityId: null,
+            actorSubjectId: fixture.subjectId,
+            reasonCode: "reviewed_initial_applicability",
+          },
+        );
+        const secondApplicability = await transitionCatalogApplicability(
+          servicePool,
+          {
+            assignmentId: fixture.assignmentOne,
+            programId: fixture.programByName["Publication Program"],
+            facilityId:
+              fixture.facilityByName["Publication Facility One"],
+            templateId: serviceTemplate,
+            selection: {
+              mode: "exact_version",
+              targetId: fixture.serviceVersionTwo,
+            },
+            validFrom: "2026-07-01",
+            validThrough: "2026-12-31",
+            applicabilityState: "supported",
+            replacesApplicabilityId: null,
+            actorSubjectId: fixture.subjectId,
+            reasonCode: "reviewed_later_interval",
+          },
+        );
+        assert.notEqual(
+          firstApplicability.applicability.id,
+          secondApplicability.applicability.id,
+        );
+
+        const corrections = await Promise.allSettled([
+          transitionCatalogApplicability(servicePool, {
+            assignmentId: fixture.assignmentOne,
+            programId: fixture.programByName["Publication Program"],
+            facilityId:
+              fixture.facilityByName["Publication Facility One"],
+            templateId: serviceTemplate,
+            selection: {
+              mode: "exact_version",
+              targetId: fixture.serviceVersionTwo,
+            },
+            validFrom: "2026-01-01",
+            validThrough: "2026-06-30",
+            applicabilityState: "supported",
+            replacesApplicabilityId: firstApplicability.applicability.id,
+            actorSubjectId: fixture.subjectId,
+            reasonCode: "reviewed_correction",
+          }),
+          transitionCatalogApplicability(servicePool, {
+            assignmentId: fixture.assignmentOne,
+            programId: fixture.programByName["Publication Program"],
+            facilityId:
+              fixture.facilityByName["Publication Facility One"],
+            templateId: serviceTemplate,
+            selection: {
+              mode: "publication",
+              targetId: currentServicePublicationId,
+            },
+            validFrom: "2026-01-01",
+            validThrough: "2026-06-30",
+            applicabilityState: "supported",
+            replacesApplicabilityId: firstApplicability.applicability.id,
+            actorSubjectId: fixture.subjectId,
+            reasonCode: "reviewed_correction",
+          }),
+        ]);
+        const correctionWinners = corrections.filter(
+          (result) => result.status === "fulfilled",
+        );
+        const correctionLosers = corrections.filter(
+          (result) => result.status === "rejected",
+        );
+        assert.equal(correctionWinners.length, 1);
+        assert.equal(correctionLosers.length, 1);
+        assert.ok(
+          correctionLosers[0].reason instanceof
+            StoreCalcCatalogApplicabilityError,
+        );
+        assert.equal(
+          correctionLosers[0].reason.code,
+          "CURRENT_APPLICABILITY_CHANGED",
+        );
+
+        const overlappingCreates = await Promise.allSettled([
+          transitionCatalogApplicability(servicePool, {
+            assignmentId: fixture.assignmentTwo,
+            programId: fixture.programByName["Publication Program"],
+            facilityId:
+              fixture.facilityByName["Publication Facility Two"],
+            templateId: serviceTemplate,
+            selection: {
+              mode: "exact_version",
+              targetId: fixture.serviceVersionOne,
+            },
+            validFrom: "2026-01-01",
+            validThrough: "2026-12-31",
+            applicabilityState: "supported",
+            replacesApplicabilityId: null,
+            actorSubjectId: fixture.subjectId,
+            reasonCode: "reviewed_applicability",
+          }),
+          transitionCatalogApplicability(servicePool, {
+            assignmentId: fixture.assignmentTwo,
+            programId: fixture.programByName["Publication Program"],
+            facilityId:
+              fixture.facilityByName["Publication Facility Two"],
+            templateId: serviceTemplate,
+            selection: {
+              mode: "publication",
+              targetId: currentServicePublicationId,
+            },
+            validFrom: "2026-06-01",
+            validThrough: "2026-12-31",
+            applicabilityState: "supported",
+            replacesApplicabilityId: null,
+            actorSubjectId: fixture.subjectId,
+            reasonCode: "reviewed_applicability",
+          }),
+        ]);
+        const overlapWinners = overlappingCreates.filter(
+          (result) => result.status === "fulfilled",
+        );
+        const overlapLosers = overlappingCreates.filter(
+          (result) => result.status === "rejected",
+        );
+        assert.equal(overlapWinners.length, 1);
+        assert.equal(overlapLosers.length, 1);
+        assert.equal(overlapLosers[0].reason.code, "23P01");
+
+        const applicabilityRows = (
+          await client.query(
+            "SELECT assignment_id, id, ended_at, lifecycle_generation " +
+              "FROM storecalc.assignment_template_applicability " +
+              "WHERE template_id = $1 ORDER BY assignment_id, id",
+            [serviceTemplate],
+          )
+        ).rows;
+        const assignmentOneRows = applicabilityRows.filter(
+          (row) => row.assignment_id === fixture.assignmentOne,
+        );
+        const assignmentTwoRows = applicabilityRows.filter(
+          (row) => row.assignment_id === fixture.assignmentTwo,
+        );
+        assert.equal(assignmentOneRows.length, 3);
+        assert.equal(
+          assignmentOneRows.filter((row) => row.ended_at === null).length,
+          2,
+        );
+        assert.equal(assignmentOneRows[0].lifecycle_generation, 2);
+        assert.ok(assignmentOneRows[0].ended_at instanceof Date);
+        assert.equal(assignmentTwoRows.length, 1);
+        assert.equal(assignmentTwoRows[0].ended_at, null);
       } finally {
         await servicePool.end();
       }
