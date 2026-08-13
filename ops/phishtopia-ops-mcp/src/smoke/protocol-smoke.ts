@@ -6,6 +6,7 @@ import { InMemoryTransport } from "@modelcontextprotocol/sdk/inMemory.js";
 import type { CommandRunner } from "../command.js";
 import { READ_ONLY_ANNOTATIONS, TOOL_NAMES } from "../constants.js";
 import { PhishtopiaOps, type HealthClient } from "../google.js";
+import type { ReleaseStatusClient } from "../release-status-client.js";
 import { createServer } from "../server.js";
 
 const client = new Client({
@@ -22,7 +23,26 @@ const health: HealthClient = {
     return { statusCode: 200, tlsValid: true };
   },
 };
-const server = createServer(new PhishtopiaOps(runner, health));
+const commit = "a".repeat(40);
+const releaseStatus: ReleaseStatusClient = {
+  async getReleaseStatus() {
+    return {
+      status: "ok",
+      checkedAt: "2026-08-13T20:20:00.000Z",
+      resource: "application_release",
+      observations: [
+        { name: "deployed_commit", value: commit },
+        { name: "last_logged_commit", value: commit },
+        { name: "commit_matches_log", value: "true" },
+      ],
+    };
+  },
+};
+const server = createServer(
+  new PhishtopiaOps(runner, health),
+  undefined,
+  releaseStatus,
+);
 const [clientTransport, serverTransport] = InMemoryTransport.createLinkedPair();
 
 try {
@@ -54,6 +74,14 @@ try {
     arguments: {},
   });
   assert.equal(health.isError, undefined);
+  const release = await client.callTool({
+    name: "get_release_status",
+    arguments: {},
+  });
+  assert.equal(release.isError, undefined);
+  const releaseContent = release.structuredContent as
+    { observations?: Array<{ value: string }> } | undefined;
+  assert.equal(releaseContent?.observations?.[0]?.value, commit);
   process.stdout.write("protocol_smoke=passed\n");
 } finally {
   await client.close();

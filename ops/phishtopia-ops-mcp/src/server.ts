@@ -3,6 +3,7 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import type { CloudflareDnsStatusClient } from "./cloudflare.js";
 import { READ_ONLY_ANNOTATIONS, TOOL_NAMES } from "./constants.js";
 import type { PhishtopiaOps } from "./google.js";
+import type { ReleaseStatusClient } from "./release-status-client.js";
 import {
   NoArgsSchema,
   SecretMetadataInputSchema,
@@ -18,6 +19,8 @@ export const TOOL_DEFINITIONS = {
     "Read-only TLS-validated HTTP 200 check for the fixed public health endpoint.",
   get_vm_status:
     "Read-only Compute Engine instance metadata status for the fixed Phishtopia VM.",
+  get_release_status:
+    "Read-only exact application release identity and sanitized fixed deployment-log correlation; raw log content is never returned.",
   get_backup_status:
     "Read-only private backup-bucket metadata and latest automated backup verification metadata.",
   get_monitoring_status:
@@ -76,18 +79,23 @@ function noArgTool(
 export function createServer(
   ops: PhishtopiaOps,
   cloudflare?: CloudflareDnsStatusClient,
+  releaseStatus?: ReleaseStatusClient,
 ): McpServer {
   const server = new McpServer(
     { name: "phishtopia-ops-mcp", version: "0.4.0" },
     {
       instructions:
-        "Ten read-only observer tools query fixed Phishtopia resources. Outputs are bounded and sanitized; credentials, raw logs, user data, arbitrary commands, paths, URLs, SQL, write operations, and HTTP proxying are never exposed. The Cloudflare observer may read only the fixed DNS token and returns only strictly validated zone and record status. Mutating jobs are submitted only through the separately authenticated external controller.",
+        "Eleven read-only observer tools query fixed Phishtopia resources. Outputs are bounded and sanitized; credentials, raw logs, user data, arbitrary commands, paths, URLs, SQL, write operations, and HTTP proxying are never exposed. The release observer returns only validated commit identities and fixed deployment-log correlation. The Cloudflare observer may read only the fixed DNS token and returns only strictly validated zone and record status. Mutating jobs are submitted only through the separately authenticated external controller.",
     },
   );
 
   noArgTool(server, "get_production_summary", () => ops.getProductionSummary());
   noArgTool(server, "get_public_health", () => ops.getPublicHealth());
   noArgTool(server, "get_vm_status", () => ops.getVmStatus());
+  noArgTool(server, "get_release_status", async () => {
+    if (!releaseStatus) throw new Error("release_observer_unavailable");
+    return await releaseStatus.getReleaseStatus();
+  });
   noArgTool(server, "get_backup_status", () => ops.getBackupStatus());
   noArgTool(server, "get_monitoring_status", () => ops.getMonitoringStatus());
   noArgTool(server, "get_cloud_run_status", () => ops.getCloudRunStatus());

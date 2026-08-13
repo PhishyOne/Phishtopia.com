@@ -1,6 +1,6 @@
 # Phishtopia Ops MCP
 
-Private Phishtopia operations control plane for Issue #15. The ChatGPT-facing MCP server remains an unprivileged stdio process behind the Secure MCP Tunnel and exposes ten read-only observers. A separate root worker persists durable jobs and executes only fixed, independently validated operations.
+Private Phishtopia operations control plane for Issue #15. The ChatGPT-facing MCP server remains an unprivileged stdio process behind the Secure MCP Tunnel and exposes eleven read-only observers. A separate root worker persists durable jobs and executes only fixed, independently validated operations.
 
 ## ChatGPT tool contract
 
@@ -9,6 +9,7 @@ The MCP contract is deliberately read-only:
 - `get_production_summary`
 - `get_public_health`
 - `get_vm_status`
+- `get_release_status`
 - `get_backup_status`
 - `get_monitoring_status`
 - `get_cloud_run_status`
@@ -17,7 +18,9 @@ The MCP contract is deliberately read-only:
 - `get_secret_metadata`
 - `get_cloudflare_dns_status`
 
-All ten use read-only annotations. The Cloudflare observer may read only the fixed DNS token and returns only strictly validated zone and record status; it never returns the token. `start_job`, `get_job_status`, and `cancel_job` are intentionally absent from the ChatGPT tool list so the private app remains read-only.
+All eleven use read-only annotations. `get_release_status` reports the exact active application commit and correlates it with commit-shaped identifiers in only the final 64 KiB of the fixed deployment log. It returns enums, timestamps, commit identifiers, and a match boolean—not raw log text. The Cloudflare observer may read only the fixed DNS token and returns only strictly validated zone and record status; it never returns the token. `start_job`, `get_job_status`, and `cancel_job` are intentionally absent from the ChatGPT tool list so the private app remains read-only.
+
+The release observer requires both the root worker and the private MCP tunnel to run a release containing this contract. The existing `upgrade_ops_release` action advances only the persistent worker release and deliberately leaves the recovered tunnel pinned. Therefore merging this code—or upgrading only the worker—does not make the eleventh tool live. Tunnel activation remains a separate controlled, rollback-capable operations step.
 
 ## External controller
 

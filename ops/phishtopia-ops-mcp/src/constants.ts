@@ -24,6 +24,7 @@ export const TOOL_NAMES = [
   "get_production_summary",
   "get_public_health",
   "get_vm_status",
+  "get_release_status",
   "get_backup_status",
   "get_monitoring_status",
   "get_cloud_run_status",

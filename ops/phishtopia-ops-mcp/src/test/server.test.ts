@@ -14,7 +14,7 @@ test("the exported ChatGPT tool surface is exact and read-only", () => {
     destructiveHint: false,
     openWorldHint: false,
   });
-  assert.equal(TOOL_NAMES.length, 10);
+  assert.equal(TOOL_NAMES.length, 11);
   assert.equal(
     TOOL_NAMES.filter((name) => name === "get_cloudflare_dns_status").length,
     1,

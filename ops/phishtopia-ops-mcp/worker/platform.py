@@ -24,6 +24,7 @@ import time
 import urllib.error
 import urllib.parse
 import urllib.request
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Callable
 
@@ -53,6 +54,7 @@ OPS_NPM = Path("/opt/phishtopia-ops-runtime/node/bin/npm")
 OPS_NODE = Path("/opt/phishtopia-ops-runtime/node/bin/node")
 OPS_NPM_CLI = Path("/opt/phishtopia-ops-runtime/node/lib/node_modules/npm/bin/npm-cli.js")
 APP_CURRENT = Path("/home/codespace/phishtopia")
+APP_DEPLOY_LOG = Path("/home/codespace/phishtopia-deploy.log")
 APP_RELEASES = Path("/opt/phishtopia-app-releases")
 RELEASE_MANIFEST = STATE_ROOT / "releases.json"
 WORKER_REEXEC_FLAG = STATE_ROOT / "worker-reexec-requested"
@@ -74,6 +76,7 @@ OPS_PYTHON_TEST_COMMAND = (
     "-p",
     "test_*.py",
 )
+DEPLOY_LOG_TAIL_BYTES = 65_536
 
 
 class PlatformError(RuntimeError):
@@ -367,6 +370,50 @@ class RealPlatform:
 
     def bind_guard(self, guard: Callable[[], None] | None) -> None:
         self._guard = guard
+
+    def release_status(self) -> dict[str, Any]:
+        checked_at = self._utc_timestamp(time.time())
+        try:
+            deployed_commit, release_source = self._checkout_commit(APP_CURRENT)
+        except PlatformError:
+            return {
+                "status": "unavailable",
+                "checkedAt": checked_at,
+                "resource": "application_release",
+                "observations": [
+                    {"name": "release_status", "value": "unavailable"},
+                    {"name": "deployment_log_status", "value": "not_checked"},
+                ],
+            }
+
+        log = self._deployment_log_summary(APP_DEPLOY_LOG, deployed_commit)
+        log_status = str(log["status"])
+        return {
+            "status": "ok" if log_status == "matched" else "degraded",
+            "checkedAt": checked_at,
+            "resource": "application_release",
+            "observations": [
+                {"name": "deployed_commit", "value": deployed_commit},
+                {"name": "release_source", "value": release_source},
+                {"name": "deployment_log_status", "value": log_status},
+                {
+                    "name": "last_logged_commit",
+                    "value": str(log["last_commit"]),
+                },
+                {
+                    "name": "commit_matches_log",
+                    "value": "true" if log["matches"] is True else "false",
+                },
+                {
+                    "name": "deployment_log_updated_at",
+                    "value": str(log["updated_at"]),
+                },
+                {
+                    "name": "bounded_tail_bytes",
+                    "value": str(log["tail_bytes"]),
+                },
+            ],
+        }
 
     @staticmethod
     def _at_failure_stage(stage: str, operation: Callable[[], Any]) -> Any:
@@ -2863,6 +2910,127 @@ class RealPlatform:
         if not re.fullmatch(r"[0-9a-f]{40}", value):
             raise PlatformError("invalid_app_commit")
         return value
+
+    @staticmethod
+    def _checkout_commit(path: Path) -> tuple[str, str]:
+        try:
+            resolved = path.resolve(strict=True)
+        except OSError as error:
+            raise PlatformError("app_checkout_unavailable") from error
+        if (
+            path == APP_CURRENT
+            and path.is_symlink()
+            and resolved.parent == APP_RELEASES
+            and re.fullmatch(r"[0-9a-f]{40}", resolved.name)
+            and resolved.is_dir()
+        ):
+            return resolved.name, "verified_release"
+        if resolved != path or path.is_symlink() or not resolved.is_dir():
+            raise PlatformError("app_checkout_unsafe")
+        try:
+            value = subprocess.run(
+                ["/usr/bin/git", "-C", str(resolved), "rev-parse", "HEAD"],
+                check=True,
+                stdin=subprocess.DEVNULL,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.DEVNULL,
+                timeout=10,
+                env={
+                    "PATH": "/usr/bin:/bin",
+                    "HOME": "/root",
+                    "NO_COLOR": "1",
+                },
+            ).stdout.decode("ascii").strip()
+        except (UnicodeDecodeError, subprocess.SubprocessError, OSError) as error:
+            raise PlatformError("app_checkout_commit_unavailable") from error
+        if re.fullmatch(r"[0-9a-f]{40}", value) is None:
+            raise PlatformError("invalid_app_checkout_commit")
+        return value, "git_checkout"
+
+    @staticmethod
+    def _deployment_log_summary(path: Path, deployed_commit: str) -> dict[str, Any]:
+        unavailable = {
+            "status": "unavailable",
+            "last_commit": "unknown",
+            "matches": False,
+            "updated_at": "unknown",
+            "tail_bytes": 0,
+        }
+        if re.fullmatch(r"[0-9a-f]{40}", deployed_commit) is None:
+            return unavailable
+        try:
+            before = path.lstat()
+            allowed_uids = {0}
+            try:
+                allowed_uids.add(pwd.getpwnam("codespace").pw_uid)
+            except KeyError:
+                pass
+            if (
+                not stat.S_ISREG(before.st_mode)
+                or before.st_uid not in allowed_uids
+                or before.st_mode & 0o022
+            ):
+                return {**unavailable, "status": "unsafe"}
+            no_follow = getattr(os, "O_NOFOLLOW", None)
+            if no_follow is None:
+                return {**unavailable, "status": "unsafe"}
+            descriptor = os.open(
+                path,
+                os.O_RDONLY | no_follow,
+            )
+            try:
+                opened = os.fstat(descriptor)
+                if (
+                    opened.st_dev != before.st_dev
+                    or opened.st_ino != before.st_ino
+                    or not stat.S_ISREG(opened.st_mode)
+                    or opened.st_uid not in allowed_uids
+                    or opened.st_mode & 0o022
+                ):
+                    return {**unavailable, "status": "unsafe"}
+                offset = max(0, opened.st_size - DEPLOY_LOG_TAIL_BYTES)
+                os.lseek(descriptor, offset, os.SEEK_SET)
+                tail = os.read(descriptor, DEPLOY_LOG_TAIL_BYTES + 1)
+                after = os.fstat(descriptor)
+            finally:
+                os.close(descriptor)
+        except OSError:
+            return unavailable
+        if (
+            len(tail) > DEPLOY_LOG_TAIL_BYTES
+            or after.st_dev != opened.st_dev
+            or after.st_ino != opened.st_ino
+            or after.st_size != opened.st_size
+            or after.st_mtime_ns != opened.st_mtime_ns
+            or after.st_ctime_ns != opened.st_ctime_ns
+            or after.st_mode != opened.st_mode
+            or after.st_uid != opened.st_uid
+        ):
+            return {**unavailable, "status": "changed"}
+        commits = re.findall(
+            rb"(?<![0-9a-f])[0-9a-f]{40}(?![0-9a-f])",
+            tail,
+        )
+        last_commit = commits[-1].decode("ascii") if commits else "unknown"
+        matches = last_commit == deployed_commit
+        return {
+            "status": "matched" if matches else ("mismatch" if commits else "no_commit"),
+            "last_commit": last_commit,
+            "matches": matches,
+            "updated_at": RealPlatform._utc_timestamp(opened.st_mtime),
+            "tail_bytes": len(tail),
+        }
+
+    @staticmethod
+    def _utc_timestamp(value: float) -> str:
+        try:
+            return (
+                datetime.fromtimestamp(value, timezone.utc)
+                .isoformat(timespec="milliseconds")
+                .replace("+00:00", "Z")
+            )
+        except (OSError, OverflowError, ValueError):
+            return "unknown"
 
     @staticmethod
     def _replace_env_value(data: bytes, key: str, value: str) -> bytes:
