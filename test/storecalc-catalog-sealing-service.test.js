@@ -8,6 +8,7 @@ import {
     CATALOG_CONTENT_BOUNDS
 } from "../src/storecalc/catalog/content.js";
 import {
+    loadSealedCatalogVersionContent,
     sealCatalogVersion,
     StoreCalcCatalogSealingError
 } from "../src/storecalc/catalog/sealingService.js";
@@ -161,6 +162,8 @@ function buildDatabaseResponses() {
     };
 
     return {
+        "load-migration-lock": [{ acquired: true }],
+        "load-migration-unlock": [{ unlocked: true }],
         capability: [
             {
                 schema_version: 8,
@@ -247,7 +250,8 @@ class FakeClient {
                         : []
             };
         }
-        const rows = this.responses[queryMarker];
+        const responseKey = queryMarker === "load-header" ? "header" : queryMarker;
+        const rows = this.responses[responseKey];
         assert.ok(rows, `unexpected query marker: ${queryMarker}`);
         return { rows, rowCount: rows.length };
     }
@@ -270,6 +274,25 @@ function buildPool(mutator = () => {}, options = {}) {
         }
     };
     return { pool, client, responses };
+}
+
+function buildLoadPool(mutator = () => {}, options = {}) {
+    const expected = buildSyntheticCatalogContent();
+    return buildPool(responses => {
+        responses.capability[0] = {
+            schema_version: 9,
+            is_available: false,
+            verified_at: null,
+            migration_key: "0012_catalog_publication_applicability"
+        };
+        Object.assign(responses.header[0], {
+            content_state: "sealed",
+            hash_algorithm: "sha256",
+            content_hash: expected.contentHash,
+            sealed_at: new Date("2026-08-13T00:00:00.000Z")
+        });
+        mutator(responses);
+    }, options);
 }
 
 async function expectSealingError(action, code, causeCode = undefined) {
@@ -323,6 +346,183 @@ test("StoreCalc atomically extracts and seals the exact canonical database catal
     assert.deepEqual(update.parameters, [VERSION_ID, "sha256", expected.contentHash]);
     assert.equal(client.released, true);
     assert.equal(client.releaseError, undefined);
+});
+
+test("StoreCalc loads one exact sealed catalog in a read-only repeatable snapshot", async () => {
+    const { pool, client } = buildLoadPool();
+    const expected = buildSyntheticCatalogContent();
+
+    const result = await loadSealedCatalogVersionContent(pool, {
+        versionId: VERSION_ID,
+        templateId: TEMPLATE_ID,
+        contentHash: expected.contentHash
+    });
+
+    assert.deepEqual(result.catalog, expected);
+    assert.deepEqual(result, {
+        versionId: VERSION_ID,
+        templateId: TEMPLATE_ID,
+        contentHash: expected.contentHash,
+        catalog: expected
+    });
+    assert.ok(Object.isFrozen(result));
+    assert.ok(Object.isFrozen(result.catalog));
+    assert.equal(
+        client.calls[1].sql,
+        "BEGIN ISOLATION LEVEL REPEATABLE READ READ ONLY"
+    );
+    assert.deepEqual(
+        client.calls.map(call => call.marker ?? call.transaction),
+        [
+            "load-migration-lock",
+            "BEGIN",
+            "timeouts",
+            "capability",
+            "load-header",
+            "counts",
+            "categories",
+            "items",
+            "buckets",
+            "memberships",
+            "tax-rules",
+            "constraints",
+            "warnings",
+            "source-evidence",
+            "COMMIT",
+            "load-migration-unlock"
+        ]
+    );
+    assert.equal(
+        client.calls.some(call => ["lock", "update"].includes(call.marker)),
+        false
+    );
+    assert.equal(client.released, true);
+    assert.equal(client.releaseError, undefined);
+});
+
+test("StoreCalc validates exact sealed-load lineage before opening or reading", async () => {
+    const expected = buildSyntheticCatalogContent();
+    const { pool } = buildLoadPool();
+    for (const value of [
+        undefined,
+        null,
+        {},
+        {
+            versionId: VERSION_ID,
+            templateId: TEMPLATE_ID,
+            contentHash: expected.contentHash,
+            extra: true
+        },
+        {
+            versionId: 0,
+            templateId: TEMPLATE_ID,
+            contentHash: expected.contentHash
+        },
+        {
+            versionId: VERSION_ID,
+            templateId: 0,
+            contentHash: expected.contentHash
+        },
+        {
+            versionId: VERSION_ID,
+            templateId: TEMPLATE_ID,
+            contentHash: "not-a-sha256-hash"
+        }
+    ]) {
+        await assert.rejects(
+            () => loadSealedCatalogVersionContent(pool, value),
+            error => error instanceof StoreCalcCatalogSealingError
+        );
+    }
+    assert.equal(pool.connectCalls, 0);
+});
+
+test("StoreCalc sealed loading rejects capability, lineage, and hash drift", async () => {
+    const expected = buildSyntheticCatalogContent();
+    for (const [mutator, code] of [
+        [
+            responses => {
+                responses.capability[0].schema_version = 10;
+                responses.capability[0].migration_key = "9999_future_test_schema";
+            },
+            "SCHEMA_CAPABILITY_UNSUPPORTED"
+        ],
+        [
+            responses => (responses.header[0].content_state = "draft"),
+            "VERSION_NOT_SEALED"
+        ],
+        [
+            responses => (responses.header[0].template_id = TEMPLATE_ID + 1),
+            "CATALOG_LINEAGE_INVALID"
+        ],
+        [
+            responses => (responses.header[0].content_hash = "0".repeat(64)),
+            "VERSION_SEALED_HASH_STATE_INVALID"
+        ],
+        [
+            responses => (responses.items[0].display_name = "Hostile drift"),
+            "CATALOG_CONTENT_HASH_MISMATCH"
+        ],
+        [
+            responses => (responses["source-evidence"][0].withdrawn_at = new Date()),
+            "SOURCE_EVIDENCE_INELIGIBLE"
+        ]
+    ]) {
+        const { pool, client } = buildLoadPool(mutator);
+        await expectSealingError(
+            () => loadSealedCatalogVersionContent(pool, {
+                versionId: VERSION_ID,
+                templateId: TEMPLATE_ID,
+                contentHash: expected.contentHash
+            }),
+            code
+        );
+        assert.equal(client.calls.at(-2).transaction, "ROLLBACK");
+        assert.equal(client.calls.at(-1).marker, "load-migration-unlock");
+    }
+});
+
+test("StoreCalc sealed loading fails closed before snapshot when migration locking is unavailable", async () => {
+    const expected = buildSyntheticCatalogContent();
+    const { pool, client } = buildLoadPool(responses => {
+        responses["load-migration-lock"][0].acquired = false;
+    });
+
+    await expectSealingError(
+        () => loadSealedCatalogVersionContent(pool, {
+            versionId: VERSION_ID,
+            templateId: TEMPLATE_ID,
+            contentHash: expected.contentHash
+        }),
+        "MIGRATION_LOCK_UNAVAILABLE"
+    );
+    assert.deepEqual(
+        client.calls.map(call => call.marker ?? call.transaction),
+        ["load-migration-lock"]
+    );
+    assert.equal(client.released, true);
+    assert.equal(client.releaseError, undefined);
+});
+
+test("StoreCalc destroys a pooled connection if its session migration lock cannot be released", async () => {
+    const expected = buildSyntheticCatalogContent();
+    const { pool, client } = buildLoadPool(responses => {
+        responses["load-migration-unlock"][0].unlocked = false;
+    });
+
+    await expectSealingError(
+        () => loadSealedCatalogVersionContent(pool, {
+            versionId: VERSION_ID,
+            templateId: TEMPLATE_ID,
+            contentHash: expected.contentHash
+        }),
+        "SESSION_LOCK_RELEASE_FAILED"
+    );
+    assert.equal(client.released, true);
+    assert.match(
+        client.releaseError.message,
+        /storecalc_catalog_loading_connection_uncertain/
+    );
 });
 
 test("StoreCalc rejects invalid service inputs before opening a connection", async () => {
@@ -503,7 +703,10 @@ test("StoreCalc sealing remains outside every current runtime route", () => {
         readFileSync(path.join(ROOT, relativePath), "utf8")
     );
     for (const source of runtimeSources) {
-        assert.doesNotMatch(source, /sealingService|sealCatalogVersion/);
+        assert.doesNotMatch(
+            source,
+            /sealingService|sealCatalogVersion|loadSealedCatalogVersionContent/
+        );
     }
 
     const serviceSource = readFileSync(

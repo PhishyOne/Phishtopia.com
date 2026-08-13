@@ -7,12 +7,14 @@ import { HASH_ALGORITHM } from "../calculation/core.js";
 
 const MAX_POSTGRES_INTEGER = 2_147_483_647;
 const COUNT_PATTERN = /^(?:0|[1-9][0-9]*)$/;
+const HASH_PATTERN = /^[a-f0-9]{64}$/;
 
 // READ COMMITTED is deliberate: the migration/advisory queries run before the
 // topology lock and must not pin a snapshot while an in-flight content mutation
 // finishes. Once the topology lock is held, every mutable canonical input is
 // stable for the rest of the transaction.
 const BEGIN_SQL = "BEGIN ISOLATION LEVEL READ COMMITTED";
+const LOAD_BEGIN_SQL = "BEGIN ISOLATION LEVEL REPEATABLE READ READ ONLY";
 const TIMEOUTS_SQL = `
     /* storecalc:catalog-seal:timeouts */
     SELECT
@@ -23,6 +25,14 @@ const TIMEOUTS_SQL = `
 const MIGRATION_LOCK_SQL = `
     /* storecalc:catalog-seal:migration-lock */
     SELECT pg_advisory_xact_lock_shared(7356507374803211041)
+`;
+const LOAD_MIGRATION_LOCK_SQL = `
+    /* storecalc:catalog-seal:load-migration-lock */
+    SELECT pg_try_advisory_lock_shared(7356507374803211041) AS acquired
+`;
+const LOAD_MIGRATION_UNLOCK_SQL = `
+    /* storecalc:catalog-seal:load-migration-unlock */
+    SELECT pg_advisory_unlock_shared(7356507374803211041) AS unlocked
 `;
 const LOCK_SQL = `
     /* storecalc:catalog-seal:lock */
@@ -60,6 +70,31 @@ const HEADER_SQL = `
       ON template_row.id = version_row.template_id
     WHERE version_row.id = $1
     FOR UPDATE OF version_row
+`;
+const SEALED_HEADER_SQL = `
+    /* storecalc:catalog-seal:load-header */
+    SELECT
+        version_row.id,
+        version_row.template_id,
+        version_row.content_state,
+        version_row.currency_code,
+        version_row.currency_exponent,
+        to_char(version_row.source_effective_date, 'YYYY-MM-DD')
+            AS source_effective_date,
+        to_char(version_row.source_published_date, 'YYYY-MM-DD')
+            AS source_published_date,
+        version_row.calculation_contract_version,
+        version_row.required_capabilities,
+        version_row.content_schema_version,
+        version_row.canonicalization_version,
+        version_row.hash_algorithm,
+        version_row.content_hash,
+        version_row.sealed_at,
+        template_row.status AS template_status
+    FROM storecalc.template_versions AS version_row
+    JOIN storecalc.templates AS template_row
+      ON template_row.id = version_row.template_id
+    WHERE version_row.id = $1
 `;
 const COUNTS_SQL = `
     /* storecalc:catalog-seal:counts */
@@ -326,6 +361,45 @@ function assertVersionId(versionId) {
     }
 }
 
+function isPlainObject(value) {
+    if (!value || typeof value !== "object" || Array.isArray(value)) {
+        return false;
+    }
+    const prototype = Object.getPrototypeOf(value);
+    return prototype === Object.prototype || prototype === null;
+}
+
+function normalizeLoadRequest(value) {
+    if (
+        !isPlainObject(value) ||
+        Object.keys(value).length !== 3 ||
+        !Object.hasOwn(value, "versionId") ||
+        !Object.hasOwn(value, "templateId") ||
+        !Object.hasOwn(value, "contentHash")
+    ) {
+        fail("LOAD_INPUT_INVALID", "$.load");
+    }
+    assertVersionId(value.versionId);
+    if (
+        !Number.isSafeInteger(value.templateId) ||
+        value.templateId < 1 ||
+        value.templateId > MAX_POSTGRES_INTEGER
+    ) {
+        fail("TEMPLATE_ID_INVALID", "$.templateId");
+    }
+    if (
+        typeof value.contentHash !== "string" ||
+        !HASH_PATTERN.test(value.contentHash)
+    ) {
+        fail("CONTENT_HASH_INVALID", "$.contentHash");
+    }
+    return Object.freeze({
+        versionId: value.versionId,
+        templateId: value.templateId,
+        contentHash: value.contentHash
+    });
+}
+
 function rowsFrom(result, path) {
     if (!result || !Array.isArray(result.rows)) {
         fail("DATABASE_RESULT_INVALID", path);
@@ -391,7 +465,7 @@ function assertRowCount(rows, expected, path) {
     if (rows.length !== expected) fail("CATALOG_ROW_COUNT_DRIFT", path);
 }
 
-function normalizeHeader(row, versionId) {
+function normalizeHeaderContract(row, versionId) {
     const id = requireInteger(row.id, "$.database.header.id");
     if (id !== versionId) fail("VERSION_ID_DRIFT", "$.database.header.id");
 
@@ -399,25 +473,6 @@ function normalizeHeader(row, versionId) {
         row.template_id,
         "$.database.header.templateId"
     );
-    const contentState = requireString(
-        row.content_state,
-        "$.database.header.contentState"
-    );
-    if (contentState !== "draft") fail("VERSION_NOT_DRAFT", "$.versionId");
-    if (
-        row.hash_algorithm !== null ||
-        row.content_hash !== null ||
-        row.sealed_at !== null
-    ) {
-        fail("VERSION_DRAFT_HASH_STATE_INVALID", "$.database.header");
-    }
-    const templateStatus = requireString(
-        row.template_status,
-        "$.database.header.templateStatus"
-    );
-    if (!new Set(["draft", "active"]).has(templateStatus)) {
-        fail("TEMPLATE_NOT_SEALABLE", "$.database.header.templateStatus");
-    }
     if (!Array.isArray(row.required_capabilities)) {
         fail("DATABASE_TYPE_DRIFT", "$.database.header.requiredCapabilities");
     }
@@ -483,6 +538,53 @@ function normalizeHeader(row, versionId) {
     };
 }
 
+function normalizeHeader(row, versionId) {
+    const header = normalizeHeaderContract(row, versionId);
+    const contentState = requireString(
+        row.content_state,
+        "$.database.header.contentState"
+    );
+    if (contentState !== "draft") fail("VERSION_NOT_DRAFT", "$.versionId");
+    if (
+        row.hash_algorithm !== null ||
+        row.content_hash !== null ||
+        row.sealed_at !== null
+    ) {
+        fail("VERSION_DRAFT_HASH_STATE_INVALID", "$.database.header");
+    }
+    const templateStatus = requireString(
+        row.template_status,
+        "$.database.header.templateStatus"
+    );
+    if (!new Set(["draft", "active"]).has(templateStatus)) {
+        fail("TEMPLATE_NOT_SEALABLE", "$.database.header.templateStatus");
+    }
+    return header;
+}
+
+function normalizeLoadedHeader(row, request) {
+    const header = normalizeHeaderContract(row, request.versionId);
+    if (header.templateId !== request.templateId) {
+        fail("CATALOG_LINEAGE_INVALID", "$.database.header.templateId");
+    }
+    if (
+        requireString(row.content_state, "$.database.header.contentState") !==
+        "sealed"
+    ) {
+        fail("VERSION_NOT_SEALED", "$.versionId");
+    }
+    if (
+        requireString(row.hash_algorithm, "$.database.header.hashAlgorithm") !==
+            HASH_ALGORITHM ||
+        requireString(row.content_hash, "$.database.header.contentHash") !==
+            request.contentHash ||
+        row.sealed_at === null
+    ) {
+        fail("VERSION_SEALED_HASH_STATE_INVALID", "$.database.header");
+    }
+    return { ...header, contentHash: request.contentHash };
+}
+
 function assertSchemaCapability(result) {
     const rows = rowsFrom(result, "$.database.capability");
     if (rows.length !== 1) {
@@ -503,6 +605,31 @@ function assertSchemaCapability(result) {
             row.migration_key,
             "$.database.capability.migrationKey"
         ) !== "0011_source_evidence"
+    ) {
+        fail("SCHEMA_CAPABILITY_UNSUPPORTED", "$.database.capability");
+    }
+}
+
+function assertLoadSchemaCapability(result) {
+    const rows = rowsFrom(result, "$.database.capability");
+    if (rows.length !== 1) {
+        fail("SCHEMA_CAPABILITY_UNSUPPORTED", "$.database.capability");
+    }
+    const row = rows[0];
+    if (
+        requireInteger(
+            row.schema_version,
+            "$.database.capability.schemaVersion"
+        ) !== 9 ||
+        requireBoolean(
+            row.is_available,
+            "$.database.capability.isAvailable"
+        ) !== false ||
+        row.verified_at !== null ||
+        requireString(
+            row.migration_key,
+            "$.database.capability.migrationKey"
+        ) !== "0012_catalog_publication_applicability"
     ) {
         fail("SCHEMA_CAPABILITY_UNSUPPORTED", "$.database.capability");
     }
@@ -980,5 +1107,117 @@ export async function sealCatalogVersion(pool, { versionId } = {}) {
                 ? new Error("storecalc_catalog_sealing_connection_uncertain")
                 : undefined
         );
+    }
+}
+
+export async function loadSealedCatalogVersionContent(pool, value) {
+    assertDatabasePool(pool);
+    const request = normalizeLoadRequest(value);
+
+    const client = await pool.connect();
+    if (
+        !client ||
+        typeof client.query !== "function" ||
+        typeof client.release !== "function"
+    ) {
+        fail("DATABASE_CLIENT_INVALID", "$.database");
+    }
+
+    let transactionOpen = false;
+    let destroyConnection = false;
+    let sessionLockHeld = false;
+    let operationFailed = false;
+    try {
+        const lock = oneRow(
+            await client.query(LOAD_MIGRATION_LOCK_SQL),
+            "$.database.migrationLock"
+        );
+        if (!requireBoolean(lock.acquired, "$.database.migrationLock.acquired")) {
+            fail("MIGRATION_LOCK_UNAVAILABLE", "$.database.migrationLock");
+        }
+        sessionLockHeld = true;
+        await client.query(LOAD_BEGIN_SQL);
+        transactionOpen = true;
+        await client.query(TIMEOUTS_SQL);
+        assertLoadSchemaCapability(await client.query(CAPABILITY_SQL));
+
+        const headerRows = rowsFrom(
+            await client.query(SEALED_HEADER_SQL, [request.versionId]),
+            "$.database.header"
+        );
+        if (headerRows.length === 0) fail("VERSION_NOT_FOUND", "$.versionId");
+        if (headerRows.length !== 1) {
+            fail("DATABASE_RESULT_INVALID", "$.database.header");
+        }
+        const header = normalizeLoadedHeader(headerRows[0], request);
+        const counts = normalizeCounts(
+            oneRow(
+                await client.query(COUNTS_SQL, [request.versionId]),
+                "$.database.counts"
+            )
+        );
+        const content = await queryCatalogRows(
+            client,
+            request.versionId,
+            counts,
+            header
+        );
+        const catalog = sealCanonicalContent(content);
+        if (catalog.contentHash !== header.contentHash) {
+            fail("CATALOG_CONTENT_HASH_MISMATCH", "$.database.header.contentHash");
+        }
+
+        await client.query("COMMIT");
+        transactionOpen = false;
+        return Object.freeze({
+            versionId: header.id,
+            templateId: header.templateId,
+            contentHash: catalog.contentHash,
+            catalog
+        });
+    } catch (error) {
+        operationFailed = true;
+        if (transactionOpen) {
+            try {
+                await client.query("ROLLBACK");
+            } catch (rollbackError) {
+                destroyConnection = true;
+                fail(
+                    "TRANSACTION_ROLLBACK_FAILED",
+                    "$.database",
+                    new AggregateError([error, rollbackError])
+                );
+            }
+        }
+        throw error;
+    } finally {
+        let cleanupFailed = false;
+        if (sessionLockHeld) {
+            try {
+                const unlock = oneRow(
+                    await client.query(LOAD_MIGRATION_UNLOCK_SQL),
+                    "$.database.migrationUnlock"
+                );
+                if (
+                    !requireBoolean(
+                        unlock.unlocked,
+                        "$.database.migrationUnlock.unlocked"
+                    )
+                ) {
+                    cleanupFailed = true;
+                }
+            } catch {
+                cleanupFailed = true;
+            }
+        }
+        destroyConnection ||= cleanupFailed;
+        client.release(
+            destroyConnection
+                ? new Error("storecalc_catalog_loading_connection_uncertain")
+                : undefined
+        );
+        if (cleanupFailed && !operationFailed) {
+            fail("SESSION_LOCK_RELEASE_FAILED", "$.database.migrationUnlock");
+        }
     }
 }
