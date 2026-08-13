@@ -155,8 +155,37 @@ lineage-drifted, unsupported-schema, or hash-mismatched state fails closed.
 
 This loader does not resolve applicability, derive a configuration key,
 project or calculate an order, compose profiles, persist/cache a configuration,
-grant a runtime role, or mount a route. A later orchestration slice must keep
-resolution and loading in one reviewed request boundary before anonymous use.
+grant a runtime role, or mount a route.
+
+## Inactive catalog-request orchestration
+
+`orchestrateCatalogRequest` composes the reviewed public resolver, exact sealed
+loader, and pure zero-profile projector behind one inactive request boundary.
+It accepts only the resolver's existing facility, program, template, audience,
+and explicit context-date input. An unavailable resolution returns immediately
+without acquiring a loader connection or projecting content.
+
+A resolved request binds the loader to the resolver's exact version ID,
+template ID, and catalog-content hash. The service verifies the exact resolver
+and loader result shapes, rejects lineage or hash drift, verifies the loaded
+catalog again, and derives one bounded configuration key from a versioned
+SHA-256 digest of immutable assignment/applicability/selection lineage plus the
+catalog-content hash. Mutable `publicationIsCurrent` status and the context date
+are reported but cannot churn the key for otherwise identical lineage.
+
+The projected configuration is verified through the authoritative calculation
+core before return. The result contains that sealed configuration plus bounded
+resolver, projection, context, interval, lineage, and catalog-header metadata;
+it never returns the raw loaded catalog document. A strict dependency factory
+exists only as a test seam for ordering, short-circuit, and drift fixtures; the
+default export is permanently bound to the reviewed resolver and loader.
+
+This slice creates no transaction spanning the two services. Safety comes from
+the resolver selecting immutable exact lineage and the loader refusing any
+version/template/hash mismatch while holding its existing read-only snapshot
+and migration lock. It does not authorize a viewer, compose profiles, persist
+or cache a configuration, calculate an order, grant a runtime role, or mount a
+route.
 
 No new database object is required for this slice: migrations 0005 through
 0011 already provide the one-way header transition, immutable child guards,
@@ -166,6 +195,6 @@ transaction.
 
 This package still does not create evidence records, decide source
 independence, transition publication/applicability state, orchestrate
-resolution through projection, compose scoped profiles, persist a resolved
-configuration, activate a route, grant runtime access, or authorize production
-execution. Those remain separately reviewed slices.
+publication/applicability writes, compose scoped profiles, persist a resolved
+configuration, calculate an order, activate a route, grant runtime access, or
+authorize production execution. Those remain separately reviewed slices.
