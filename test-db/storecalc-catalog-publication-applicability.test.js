@@ -5,6 +5,11 @@ import { fileURLToPath } from "node:url";
 import path from "node:path";
 import pg from "pg";
 
+import {
+  publishCatalogVersion,
+  StoreCalcCatalogPublicationError,
+} from "../src/storecalc/catalog/publicationService.js";
+
 const ROOT = fileURLToPath(new URL("..", import.meta.url));
 const migrationPath = (key) => path.join(ROOT, "migrations", "storecalc", key);
 const DATABASE_NAME = "storecalc_migration_test";
@@ -944,6 +949,7 @@ test(
               "($1, 'public', NULL, 'Primary Publication Template', 'active', $3), " +
               "($1, 'public', NULL, 'Concurrent Publication Template', 'active', $3), " +
               "($1, 'public', NULL, 'Assignment Lock Template', 'active', $3), " +
+              "($1, 'public', NULL, 'Service Publication Template', 'active', $3), " +
               "($2, 'public', NULL, 'Other Program Template', 'active', $3) " +
               "RETURNING id, name",
             [
@@ -981,6 +987,21 @@ test(
             versionNumber: 1,
             createdBySubjectId: subjectId,
           });
+          const serviceVersionOne = await insertVersion(client, {
+            templateId: templateByName["Service Publication Template"],
+            versionNumber: 1,
+            createdBySubjectId: subjectId,
+          });
+          const serviceVersionTwo = await insertVersion(client, {
+            templateId: templateByName["Service Publication Template"],
+            versionNumber: 2,
+            createdBySubjectId: subjectId,
+          });
+          const serviceVersionThree = await insertVersion(client, {
+            templateId: templateByName["Service Publication Template"],
+            versionNumber: 3,
+            createdBySubjectId: subjectId,
+          });
           const otherVersion = await insertVersion(client, {
             templateId: templateByName["Other Program Template"],
             versionNumber: 1,
@@ -991,7 +1012,10 @@ test(
           await sealVersion(client, versionTwo, "2");
           await sealVersion(client, concurrentVersion, "3");
           await sealVersion(client, lockVersion, "4");
-          await sealVersion(client, otherVersion, "5");
+          await sealVersion(client, serviceVersionOne, "5");
+          await sealVersion(client, serviceVersionTwo, "6");
+          await sealVersion(client, serviceVersionThree, "7");
+          await sealVersion(client, otherVersion, "8");
 
           return {
             subjectId,
@@ -1007,10 +1031,84 @@ test(
             draftVersion,
             concurrentVersion,
             lockVersion,
+            serviceVersionOne,
+            serviceVersionTwo,
+            serviceVersionThree,
             otherVersion,
           };
         },
       );
+
+      const servicePool = new pg.Pool({
+        connectionString,
+        ssl: false,
+        max: 3,
+      });
+      try {
+        const serviceTemplate =
+          fixture.templateByName["Service Publication Template"];
+        const first = await publishCatalogVersion(servicePool, {
+          templateId: serviceTemplate,
+          versionId: fixture.serviceVersionOne,
+          expectedCurrentPublicationId: null,
+          actorSubjectId: fixture.subjectId,
+          reasonCode: "reviewed_initial_publication",
+        });
+        assert.equal(first.replacedPublicationId, null);
+        assert.equal(first.publication.versionId, fixture.serviceVersionOne);
+
+        const replacements = await Promise.allSettled([
+          publishCatalogVersion(servicePool, {
+            templateId: serviceTemplate,
+            versionId: fixture.serviceVersionTwo,
+            expectedCurrentPublicationId: first.publication.id,
+            actorSubjectId: fixture.subjectId,
+            reasonCode: "reviewed_replacement",
+          }),
+          publishCatalogVersion(servicePool, {
+            templateId: serviceTemplate,
+            versionId: fixture.serviceVersionThree,
+            expectedCurrentPublicationId: first.publication.id,
+            actorSubjectId: fixture.subjectId,
+            reasonCode: "reviewed_replacement",
+          }),
+        ]);
+        const fulfilled = replacements.filter(
+          (result) => result.status === "fulfilled",
+        );
+        const rejected = replacements.filter(
+          (result) => result.status === "rejected",
+        );
+        assert.equal(fulfilled.length, 1);
+        assert.equal(rejected.length, 1);
+        assert.ok(rejected[0].reason instanceof StoreCalcCatalogPublicationError);
+        assert.equal(rejected[0].reason.code, "CURRENT_PUBLICATION_CHANGED");
+        assert.equal(
+          fulfilled[0].value.replacedPublicationId,
+          first.publication.id,
+        );
+
+        const serviceRows = (
+          await client.query(
+            "SELECT id, version_id, ended_at, lifecycle_generation " +
+              "FROM storecalc.template_publications " +
+              "WHERE template_id = $1 ORDER BY id",
+            [serviceTemplate],
+          )
+        ).rows;
+        assert.equal(serviceRows.length, 2);
+        assert.equal(serviceRows[0].id, first.publication.id);
+        assert.ok(serviceRows[0].ended_at instanceof Date);
+        assert.equal(serviceRows[0].lifecycle_generation, 2);
+        assert.equal(serviceRows[1].ended_at, null);
+        assert.equal(
+          serviceRows[1].version_id,
+          fulfilled[0].value.publication.versionId,
+        );
+        assert.equal(serviceRows[1].lifecycle_generation, 1);
+      } finally {
+        await servicePool.end();
+      }
 
       await runAsRole(client, ROLE_SETTINGS.migration_owner_role, async () => {
         const primaryTemplate =
