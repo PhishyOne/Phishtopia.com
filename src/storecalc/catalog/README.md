@@ -194,7 +194,34 @@ stored procedure would create another source of truth without improving the
 transaction.
 
 This package still does not create evidence records, decide source
-independence, transition publication/applicability state, orchestrate
-publication/applicability writes, compose scoped profiles, persist a resolved
-configuration, calculate an order, activate a route, grant runtime access, or
-authorize production execution. Those remain separately reviewed slices.
+independence, transition applicability state, compose scoped profiles, persist
+a resolved configuration, calculate an order, activate a route, grant runtime
+access, or authorize production execution. Apart from the narrowly bounded
+template-publication service below, write orchestration remains deferred.
+
+## Inactive template-publication transitions
+
+`publishCatalogVersion` owns the first bounded write service over the existing
+0012 publication table. It accepts one exact active template, one exact sealed
+version, the caller's expected current publication ID (or `null` for an initial
+publication), one owner subject ID, and one bounded reason code. The expected
+current ID is a compare-and-swap boundary: a concurrent or stale caller cannot
+silently replace a publication it did not observe.
+
+The service opens one bounded read-committed transaction, applies transaction
+timeouts, takes the shared StoreCalc migration advisory lock, acquires the
+existing catalog-resolution topology locks in their fixed order, and requires
+the exact closed 0012 capability generation. It then verifies the target's
+version/template/program lineage and active sealed state. A replacement closes
+the exact current row once and inserts the new open row at the same database
+transaction timestamp; an initial publication inserts without a close. The
+0012 triggers independently recheck sealed lineage, active parents,
+non-overlap, immutable history, and lock order.
+
+The return value contains only frozen bounded publication lineage metadata.
+Rollback uncertainty destroys the pooled connection. The service deliberately
+does not authorize the owner subject, create an applicability claim, publish
+real data, add a route or grant, compose profiles, persist/cache a resolved
+configuration, calculate an order, or activate StoreCalc. Its future caller
+must establish authorization before invocation. Applicability transitions and
+all runtime/production work remain separate reviewed slices.

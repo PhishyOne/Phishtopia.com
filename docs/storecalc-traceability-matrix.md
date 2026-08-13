@@ -93,7 +93,7 @@ the associated feature remains disabled by its gate.
 | SC-CAT-006 | Scope null-pattern, same-version FKs, rate/rounding checks | Pure projector resolves one effective treatment by item/category/template specificity then priority and never stacks or invents tax-free state | Missing, specificity, priority, stacked, inclusive, and rounding-scope fixtures |
 | SC-CAT-007 | Typed measure/comparator/unit/composition checks | Capability-aware constraint calculator | Quantity/count/weight/unit and unsupported-period tests |
 | SC-CAT-008 | Warnings/source evidence sealed; later evidence append-only | Warning/evidence services plus seal-time evidence revalidation | Hash inclusion, ineligible-source rollback, and later-evidence non-mutation tests |
-| SC-CAT-009 | Same-template publication FK; non-overlap; append-only events; assessment uniqueness | Serialized publication and confidence services preserve blocking component state | Concurrent/overlap/backdate, critical-component, and projection-rebuild tests |
+| SC-CAT-009 | Same-template publication FK; non-overlap; append-only events; assessment uniqueness | Inactive owner-called template-publication service atomically creates an initial publication or compare-and-swaps the exact current row to one sealed replacement; applicability and confidence transitions remain deferred | Initial/replacement, stale-current, concurrent serialization, overlap/backdate, critical-component, and projection-rebuild tests |
 | SC-CAT-010 | Exactly-one explicit target FK; translation binds source hash/version and state | Translation review/rendering service | Wrong-target lineage, source-change staleness, and canonical-fact invariance |
 
 ## Calculation and orders
