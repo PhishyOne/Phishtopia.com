@@ -6,6 +6,7 @@ import path from "node:path";
 import pg from "pg";
 
 import {
+  loadSealedCatalogVersionContent,
   sealCatalogVersion,
   StoreCalcCatalogSealingError,
 } from "../src/storecalc/catalog/sealingService.js";
@@ -563,7 +564,7 @@ async function waitForTopologyLock(client) {
 }
 
 test(
-  "StoreCalc database extraction and sealing are canonical, serialized, fail-closed, and runtime-isolated",
+  "StoreCalc database sealing and exact sealed loading are canonical, serialized, fail-closed, and runtime-isolated",
   { timeout: 90_000 },
   async () => {
     const connectionString = assertDisposableTarget();
@@ -840,6 +841,50 @@ test(
           ),
           "utf8",
         ),
+      );
+
+      for (const filename of ["up.sql", "verify.sql"]) {
+        await runMigrationSql(
+          client,
+          readFileSync(
+            path.join(
+              ROOT,
+              "migrations",
+              "storecalc",
+              "0012_catalog_publication_applicability",
+              filename,
+            ),
+            "utf8",
+          ),
+        );
+      }
+
+      const loaded = await loadSealedCatalogVersionContent(migrationPool, {
+        versionId: first.versionId,
+        templateId: fixture.templateId,
+        contentHash: GOLDEN_HASH,
+      });
+      assert.equal(loaded.versionId, first.versionId);
+      assert.equal(loaded.templateId, fixture.templateId);
+      assert.equal(loaded.contentHash, GOLDEN_HASH);
+      assert.deepEqual(loaded.catalog, expected);
+      await expectSealingError(
+        () =>
+          loadSealedCatalogVersionContent(migrationPool, {
+            versionId: first.versionId,
+            templateId: fixture.templateId,
+            contentHash: "0".repeat(64),
+          }),
+        "VERSION_SEALED_HASH_STATE_INVALID",
+      );
+      await assert.rejects(
+        () =>
+          loadSealedCatalogVersionContent(webPool, {
+            versionId: first.versionId,
+            templateId: fixture.templateId,
+            contentHash: GOLDEN_HASH,
+          }),
+        (error) => error.code === "42501",
       );
     } finally {
       await migrationPool.end().catch(() => null);

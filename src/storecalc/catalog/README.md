@@ -127,6 +127,37 @@ does not derive that key, load database rows, select a version, compose scoped
 profiles, persist/cache a resolved configuration, authorize a viewer, register
 public data, or mount the calculator. Those remain separate reviewed slices.
 
+## Exact sealed-content loading
+
+`loadSealedCatalogVersionContent` fills the database-loading gap between the
+facility/date resolver and the pure projector. Its caller must provide the
+exact version ID, template ID, and SHA-256 content hash already obtained from
+trusted resolution; the loader never chooses a version or substitutes a newer
+publication.
+
+The service uses one dedicated PostgreSQL connection. Before opening its
+read-only, repeatable-read transaction, it takes the shared session side of the
+StoreCalc migration advisory lock; an active migration causes an immediate
+fail-closed result rather than a wait followed by a stale snapshot. The lock
+freezes the reviewed schema generation while the transaction checks the exact
+closed 0012 capability, verifies the sealed header and caller-supplied lineage,
+enforces all catalog row bounds, and reconstructs every canonical content
+domain. Sealed catalog child rows are already database-immutable, while the
+repeatable snapshot keeps mutable source-evidence eligibility coherent across
+the bounded multi-statement read. The session lock is explicitly released
+before the pooled connection is returned; uncertain cleanup destroys that
+connection instead of leaking the lock to another request.
+
+The reconstructed document is passed through the authoritative catalog
+canonicalizer. Its computed hash must equal both the sealed database header and
+the caller's expected hash. Missing, draft, withdrawn, type-drifted,
+lineage-drifted, unsupported-schema, or hash-mismatched state fails closed.
+
+This loader does not resolve applicability, derive a configuration key,
+project or calculate an order, compose profiles, persist/cache a configuration,
+grant a runtime role, or mount a route. A later orchestration slice must keep
+resolution and loading in one reviewed request boundary before anonymous use.
+
 No new database object is required for this slice: migrations 0005 through
 0011 already provide the one-way header transition, immutable child guards,
 and shared lock. Adding a second SQL canonicalizer or an otherwise unused
@@ -134,7 +165,7 @@ stored procedure would create another source of truth without improving the
 transaction.
 
 This package still does not create evidence records, decide source
-independence, transition publication/applicability state, load catalog content
-from the database, compose scoped profiles, persist a resolved configuration,
-activate a route, grant runtime access, or authorize production execution.
-Those remain separately reviewed slices.
+independence, transition publication/applicability state, orchestrate
+resolution through projection, compose scoped profiles, persist a resolved
+configuration, activate a route, grant runtime access, or authorize production
+execution. Those remain separately reviewed slices.
