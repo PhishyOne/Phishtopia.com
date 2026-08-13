@@ -6,6 +6,7 @@ import {
   WORKER_REQUEST_TIMEOUT_MS,
   type WorkerContractOperation,
 } from "./worker-contract-policy.js";
+import { ToolOutputSchema } from "../schema.js";
 
 const request = async (operation: WorkerContractOperation): Promise<string> =>
   new Promise<string>((resolve, reject) => {
@@ -63,4 +64,10 @@ assert.deepEqual(preflight.preflight, {
   gcloudIdentity: "passed",
   dnsRollback: "passed",
 });
+const release = JSON.parse(await request("get_release_status")) as {
+  ok?: unknown;
+  releaseStatus?: unknown;
+};
+assert.equal(release.ok, true);
+ToolOutputSchema.parse(release.releaseStatus);
 process.stdout.write("worker_contract_smoke=passed\n");

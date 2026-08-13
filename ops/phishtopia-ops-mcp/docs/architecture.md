@@ -6,7 +6,7 @@
 
 `phishtopia-ops-worker.service` runs as root because the allowlisted actions must control one systemd unit, one PM2 app, local PostgreSQL, fixed release directories, and narrowly scoped cloud resources. The service is filesystem-sandboxed, capacity-limited, has a small capability bounding set, and never listens on TCP.
 
-The recovered nine-tool MCP tunnel remains rooted at
+The recovered ten-tool MCP tunnel remains rooted at
 `/opt/phishtopia-ops-mcp`. The independently installed root worker starts
 through `/opt/phishtopia-ops-worker-code`, whose releases are stored under
 `/opt/phishtopia-ops-worker-controller-releases`. An
@@ -14,6 +14,16 @@ through `/opt/phishtopia-ops-worker-code`, whose releases are stored under
 the worker from it. It does not repoint the recovered MCP tunnel. This keeps a
 later systemd restart on the same verified worker release instead of silently
 falling back to the activation-time sidecar.
+
+The source contract also defines `get_release_status`, an eleventh read-only
+observer. The unprivileged Node process sends one fixed, argument-free request
+over the existing worker socket. The worker resolves only the fixed application
+checkout and fixed deployment-log path, then returns the exact active commit and
+a sanitized correlation summary. No caller-controlled path or raw log content
+crosses either boundary. The tool becomes available only after both the worker
+and the recovered MCP tunnel are activated from a compatible verified release;
+the worker-only `upgrade_ops_release` action intentionally does not accomplish
+that tunnel activation.
 
 The Node and Python validators are deliberately independent implementations. A compromised MCP process cannot introduce new JSON keys or rely on a Node-side validation bug: the root worker requires exact key sets, formats, enum values, hostnames, release identifiers, and action/resource mappings.
 
@@ -61,3 +71,10 @@ Every action captures a count-only fixed application error signal and rejects an
 ## Output boundary
 
 Job output contains a UUID, action enum, state, progress, timestamps, stable result code, and at most 12 short observations. It excludes command output, logs, URLs, IPs except an explicitly requested DNS value (which is not echoed), release archive content, SQL, database rows, principals, environment values, secrets, Cloudflare responses, and rollback snapshots.
+
+Release-observer output is not job output. It is limited to validated commit
+identifiers, fixed status enums, a UTC log timestamp, a bounded-byte count, and
+a commit-match boolean. The worker opens the deployment log without following
+symlinks, accepts only its expected owner and non-writable permissions, reads at
+most the final 65,536 bytes, and fails closed if the file changes during the
+read. It never decodes or returns log lines.

@@ -37,10 +37,12 @@
   exception is directory-scoped because `nginx -t` opens configured log files
   while validating; the `/var/log` parent remains read-only.
 - Count-only post-change error gates; immutable app releases use the fixed external `/var/log/phishtopia` directory and no raw log content enters a job or audit event.
+- The release observer accepts no arguments and resolves only the fixed app and deployment-log paths. It validates the active release or exact Git `HEAD`, opens the log with `O_NOFOLLOW`, requires a regular file with the expected owner and no group/world write bit, verifies the opened inode, reads only the final 65,536 bytes, and fails closed on a concurrent change. Only exact lowercase commit identifiers and sanitized metadata leave the worker; raw bytes never do.
 - General rollback invariants use stable PostgreSQL schema/configuration hashes and exclude mutable database rows and counts; exact data fingerprints remain confined to the tested migration workflow.
 - Ops upgrades disable Python bytecode writes and use a durable reexec checkpoint from the selected release directory so the newly loaded root worker, not the old process, must verify the release before terminal success.
 - Ops upgrades move the persistent worker-sidecar symlink used by systemd and
-  do not repoint the recovered nine-tool MCP tunnel.
+  do not repoint the recovered ten-tool MCP tunnel. Activating a newly defined
+  observer requires an independent verified tunnel release and rollback plan.
 - Audit selection, append, fsync, and database acknowledgement share one lock so concurrent admission and worker transitions cannot duplicate or reorder a flush batch.
 - Production mutations are excluded from tests; fakes and disposable local resources cover the high-impact paths.
 

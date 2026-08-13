@@ -31,6 +31,25 @@ class RuntimePreflightExecutor(NoopExecutor):
     platform = Platform()
 
 
+class ReleaseStatusExecutor(NoopExecutor):
+    class Platform:
+        @staticmethod
+        def release_status() -> dict[str, object]:
+            commit = "a" * 40
+            return {
+                "status": "ok",
+                "checkedAt": "2026-08-13T20:20:00.000Z",
+                "resource": "application_release",
+                "observations": [
+                    {"name": "deployed_commit", "value": commit},
+                    {"name": "last_logged_commit", "value": commit},
+                    {"name": "commit_matches_log", "value": "true"},
+                ],
+            }
+
+    platform = Platform()
+
+
 class DaemonProtocolTests(unittest.TestCase):
     def test_reexec_changes_to_selected_release_before_exec(self) -> None:
         events: list[tuple[str, object]] = []
@@ -81,6 +100,29 @@ class DaemonProtocolTests(unittest.TestCase):
             with self.assertRaises(ValidationError):
                 application.handle(
                     {"operation": "get_runtime_preflight", "payload": {"command": "id"}}
+                )
+
+    def test_release_status_is_fixed_and_accepts_no_input(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            store = JobStore(root / "jobs.sqlite3", root / "audit.jsonl")
+            application = WorkerApplication(store, ReleaseStatusExecutor())  # type: ignore[arg-type]
+            result = application.handle(
+                {"operation": "get_release_status", "payload": {}}
+            )
+            self.assertTrue(result["ok"])
+            self.assertEqual(
+                result["releaseStatus"]["observations"][0],
+                {"name": "deployed_commit", "value": "a" * 40},
+            )
+            with self.assertRaisesRegex(
+                ValidationError, "invalid_release_status_payload"
+            ):
+                application.handle(
+                    {
+                        "operation": "get_release_status",
+                        "payload": {"path": "/etc/shadow"},
+                    }
                 )
 
     def test_bootstrap_gate_blocks_only_new_mutations(self) -> None:

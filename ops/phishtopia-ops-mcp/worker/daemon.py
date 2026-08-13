@@ -72,6 +72,13 @@ class WorkerApplication:
                 "ok": True,
                 "preflight": self.platform.runtime_preflight_contract(),
             }
+        if operation == "get_release_status":
+            if payload != {} or self.platform is None:
+                raise ValidationError("invalid_release_status_payload")
+            return {
+                "ok": True,
+                "releaseStatus": self.platform.release_status(),
+            }
         if operation == "start_job":
             if BOOTSTRAP_ACTIVE.exists():
                 raise ValidationError("bootstrap_not_committed")
