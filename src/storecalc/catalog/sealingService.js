@@ -45,6 +45,12 @@ const CAPABILITY_SQL = `
     WHERE capability_key = 'anonymous.calculation'
     FOR SHARE
 `;
+const LOAD_CAPABILITY_SQL = `
+    /* storecalc:catalog-seal:load-capability */
+    SELECT schema_version, is_available, verified_at, migration_key
+    FROM storecalc.schema_capabilities
+    WHERE capability_key = 'anonymous.calculation'
+`;
 const HEADER_SQL = `
     /* storecalc:catalog-seal:header */
     SELECT
@@ -1139,7 +1145,7 @@ export async function loadSealedCatalogVersionContent(pool, value) {
         await client.query(LOAD_BEGIN_SQL);
         transactionOpen = true;
         await client.query(TIMEOUTS_SQL);
-        assertLoadSchemaCapability(await client.query(CAPABILITY_SQL));
+        assertLoadSchemaCapability(await client.query(LOAD_CAPABILITY_SQL));
 
         const headerRows = rowsFrom(
             await client.query(SEALED_HEADER_SQL, [request.versionId]),

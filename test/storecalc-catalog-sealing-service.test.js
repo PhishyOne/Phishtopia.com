@@ -250,7 +250,12 @@ class FakeClient {
                         : []
             };
         }
-        const responseKey = queryMarker === "load-header" ? "header" : queryMarker;
+        const responseKey =
+            queryMarker === "load-header"
+                ? "header"
+                : queryMarker === "load-capability"
+                  ? "capability"
+                  : queryMarker;
         const rows = this.responses[responseKey];
         assert.ok(rows, `unexpected query marker: ${queryMarker}`);
         return { rows, rowCount: rows.length };
@@ -377,7 +382,7 @@ test("StoreCalc loads one exact sealed catalog in a read-only repeatable snapsho
             "load-migration-lock",
             "BEGIN",
             "timeouts",
-            "capability",
+            "load-capability",
             "load-header",
             "counts",
             "categories",
@@ -396,6 +401,10 @@ test("StoreCalc loads one exact sealed catalog in a read-only repeatable snapsho
         client.calls.some(call => ["lock", "update"].includes(call.marker)),
         false
     );
+    const loadCapability = client.calls.find(
+        call => call.marker === "load-capability"
+    );
+    assert.doesNotMatch(loadCapability.sql, /\bFOR\s+(?:SHARE|UPDATE)\b/i);
     assert.equal(client.released, true);
     assert.equal(client.releaseError, undefined);
 });
