@@ -195,9 +195,36 @@ transaction.
 
 This package still does not create evidence records, decide source
 independence, compose scoped profiles, persist a resolved configuration,
-calculate an order, activate a route, grant runtime access, or authorize
-production execution. Apart from the narrowly bounded publication and
-applicability services below, write orchestration remains deferred.
+activate a route, grant runtime access, or authorize production execution.
+Apart from the narrowly bounded calculation and publication/applicability
+services below, further orchestration remains deferred.
+
+## Inactive catalog-backed calculation orchestration
+
+`orchestrateCatalogCalculation` closes the inactive service-layer gap between
+catalog-request orchestration and the authoritative pure calculation core. It
+accepts exact facility, program, template, audience, and calendar-date context;
+the client-observed resolved-configuration hash; bounded item quantities; and
+optional private funds. It rejects extra fields, malformed or duplicate
+quantities, noncanonical numeric strings, invalid dates and IDs, and stale
+configuration hashes.
+
+Only the five catalog context fields are forwarded to
+`orchestrateCatalogRequest`. Quantities and funds never enter catalog
+resolution. An unavailable catalog returns without invoking calculation. A
+resolved catalog must have the exact reviewed orchestration versions and
+context, and its sealed configuration is verified again before the hash is
+compared and the pure core is called with the server's supported capability
+set. Catalog dependency failures and authoritative calculation errors remain
+distinct so a later boundary can map them without hiding their source.
+
+The calculated result carries bounded catalog lineage and header metadata plus
+the immutable calculation result, but not the resolved configuration itself.
+The service adds no database query or write, transaction, route, registry,
+session state, cache, profile composition, persistence, grant, environment
+dependency, or production activation. The existing anonymous runtime remains
+bound to its closed in-memory production registry and does not import this
+service.
 
 ## Inactive template-publication transitions
 
