@@ -34,6 +34,11 @@ export const PAGE_DEFINITIONS = Object.freeze({
         styles: ["/styles/spencer.css"],
         scripts: ["/js/canvas.js"]
     }),
+    h21Music: definePage({
+        title: "Echoes of the Archipelago | Project H21",
+        bodyClass: "h21-music-page",
+        styles: ["/styles/h21-music.css"]
+    }),
     error: definePage({
         title: "Error | Phishtopia",
         bodyClass: "error-page",

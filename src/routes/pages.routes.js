@@ -37,7 +37,14 @@ export function buildPagesRouter() {
         }));
     });
 
-    router.all(["/", "/archive", "/contact", "/privacy", "/spencer"], pageMethodNotAllowed);
+    router.get("/h21-music", (req, res) => {
+        res.render("h21-music", pageLocals("h21Music", {
+            pageDescription: "A working title-screen and login music concept for Project H21.",
+            robotsContent: "noindex, nofollow"
+        }));
+    });
+
+    router.all(["/", "/archive", "/contact", "/privacy", "/spencer", "/h21-music"], pageMethodNotAllowed);
 
     return router;
 }

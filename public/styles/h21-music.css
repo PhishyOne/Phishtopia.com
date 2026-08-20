@@ -1,0 +1,197 @@
+.h21-music-page {
+    background:
+        radial-gradient(circle at 18% 12%, rgba(35, 102, 102, 0.18), transparent 34rem),
+        radial-gradient(circle at 84% 78%, rgba(116, 72, 40, 0.14), transparent 32rem),
+        linear-gradient(155deg, #060a0a 0%, #0a1110 48%, #070908 100%);
+    color: #e8ece7;
+}
+
+.h21-music-page #bubble-canvas {
+    opacity: 0.12;
+}
+
+.h21-music-shell {
+    position: relative;
+    min-height: calc(100vh - 92px);
+    display: grid;
+    place-items: center;
+    padding: 4.5rem 1rem 5rem;
+    overflow: hidden;
+}
+
+.h21-music-shell::before,
+.h21-music-shell::after {
+    content: "";
+    position: absolute;
+    border: 1px solid rgba(139, 174, 159, 0.08);
+    border-radius: 50%;
+    pointer-events: none;
+}
+
+.h21-music-shell::before {
+    width: min(72vw, 760px);
+    aspect-ratio: 1;
+    left: -28vw;
+    top: 8%;
+    box-shadow: 0 0 0 68px rgba(139, 174, 159, 0.018), 0 0 0 136px rgba(139, 174, 159, 0.012);
+}
+
+.h21-music-shell::after {
+    width: min(58vw, 600px);
+    aspect-ratio: 1;
+    right: -25vw;
+    bottom: -18%;
+    box-shadow: 0 0 0 58px rgba(174, 137, 92, 0.016), 0 0 0 116px rgba(174, 137, 92, 0.01);
+}
+
+.h21-music-card {
+    position: relative;
+    z-index: 1;
+    width: min(760px, 100%);
+    padding: clamp(1.3rem, 4vw, 2.6rem);
+    background: rgba(8, 14, 13, 0.88);
+    border: 1px solid rgba(165, 189, 176, 0.18);
+    border-radius: 20px;
+    box-shadow: 0 30px 90px rgba(0, 0, 0, 0.48), inset 0 1px rgba(255, 255, 255, 0.025);
+    backdrop-filter: blur(12px);
+}
+
+.h21-kicker {
+    margin: 0 0 1.7rem;
+    font: 600 0.72rem/1.2 system-ui, sans-serif;
+    letter-spacing: 0.18em;
+    color: #879c90;
+}
+
+.h21-status {
+    display: flex;
+    align-items: center;
+    gap: 0.55rem;
+    margin: 0 0 0.7rem;
+    font: 500 0.82rem/1.4 system-ui, sans-serif;
+    color: #aab7af;
+}
+
+.h21-status span {
+    width: 0.48rem;
+    height: 0.48rem;
+    border-radius: 50%;
+    background: #b8834f;
+    box-shadow: 0 0 14px rgba(184, 131, 79, 0.65);
+}
+
+.h21-title-block h1 {
+    margin: 0;
+    font-family: "Cormorant Garamond", Georgia, serif;
+    font-size: clamp(2.45rem, 8vw, 4.5rem);
+    font-weight: 500;
+    line-height: 0.95;
+    letter-spacing: -0.025em;
+    color: #f2f0e8;
+}
+
+.h21-subtitle {
+    max-width: 43rem;
+    margin: 1rem 0 2rem;
+    font: 400 clamp(1rem, 2.5vw, 1.14rem)/1.65 system-ui, sans-serif;
+    color: #aab4ad;
+}
+
+.h21-player-frame {
+    overflow: hidden;
+    min-height: 152px;
+    margin: 0 0 1.6rem;
+    background: #050807;
+    border: 1px solid rgba(168, 190, 176, 0.16);
+    border-radius: 14px;
+    box-shadow: 0 16px 38px rgba(0, 0, 0, 0.35);
+}
+
+.h21-player-frame iframe {
+    display: block;
+    width: 100%;
+    height: 152px;
+    border: 0;
+}
+
+.h21-details {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 1px;
+    overflow: hidden;
+    margin: 0 0 1.6rem;
+    border: 1px solid rgba(165, 189, 176, 0.13);
+    border-radius: 12px;
+    background: rgba(165, 189, 176, 0.08);
+}
+
+.h21-details > div {
+    min-width: 0;
+    padding: 1rem;
+    background: rgba(9, 15, 14, 0.92);
+}
+
+.h21-details span,
+.h21-details strong {
+    display: block;
+}
+
+.h21-details span {
+    margin-bottom: 0.35rem;
+    font: 600 0.65rem/1.2 system-ui, sans-serif;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: #74877c;
+}
+
+.h21-details strong {
+    font: 500 0.86rem/1.45 system-ui, sans-serif;
+    color: #d5dbd6;
+}
+
+.h21-note {
+    margin: 0;
+    padding: 1.1rem 0 0;
+    border-top: 1px solid rgba(165, 189, 176, 0.1);
+    font: 400 0.93rem/1.65 system-ui, sans-serif;
+    color: #919e96;
+}
+
+.h21-suno-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    margin-top: 1.2rem;
+    color: #c8d3cc;
+    font: 600 0.86rem/1 system-ui, sans-serif;
+    text-decoration: none;
+    border-bottom: 1px solid rgba(200, 211, 204, 0.28);
+    padding-bottom: 0.18rem;
+}
+
+.h21-suno-link:hover,
+.h21-suno-link:focus-visible {
+    color: #fff;
+    border-bottom-color: rgba(255, 255, 255, 0.7);
+}
+
+@media (max-width: 650px) {
+    .h21-music-shell {
+        align-items: start;
+        padding-top: 2rem;
+    }
+
+    .h21-music-card {
+        border-radius: 16px;
+    }
+
+    .h21-details {
+        grid-template-columns: 1fr;
+    }
+
+    .h21-player-frame,
+    .h21-player-frame iframe {
+        min-height: 168px;
+        height: 168px;
+    }
+}
