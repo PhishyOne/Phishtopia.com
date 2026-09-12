@@ -1,7 +1,7 @@
 {
   "manifest_version": 1,
-  "release_serial": 2,
-  "release": "2026.09.12.2",
+  "release_serial": 3,
+  "release": "2026.09.12.3",
   "min_shell_version": 1,
   "prompt": {
     "id": "nomatoka.semantic_interpreter.v0.1",
@@ -12,8 +12,8 @@
   "schema": {
     "id": "nomatoka.intent_packet.v0.1",
     "url": "https://raw.githubusercontent.com/PhishyOne/Phishtopia.com/nomatoka-local-ai-updates/nomatoka/local-ai-test/stable/schema.json",
-    "sha256": "2d71febdaccd436ccb3a2334186845135eaf9e48c5794441f1d13ea0ccfb927c",
-    "size": 2331
+    "sha256": "62de09e9b7252bed598d8a99d6a9a250c0e6fc0b739b76ef71182b53fb7a638d",
+    "size": 2151
   },
   "ui": {
     "id": "ui.v0.2",
