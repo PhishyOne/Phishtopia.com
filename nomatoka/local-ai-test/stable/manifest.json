@@ -1,0 +1,46 @@
+{
+  "manifest_version": 1,
+  "release_serial": 2,
+  "release": "2026.09.12.2",
+  "min_shell_version": 1,
+  "prompt": {
+    "id": "nomatoka.semantic_interpreter.v0.1",
+    "url": "https://raw.githubusercontent.com/PhishyOne/Phishtopia.com/nomatoka-local-ai-updates/nomatoka/local-ai-test/stable/system.txt",
+    "sha256": "bd782eb6c7d694494e12d3ca340ad94adfe52aefe9f66e425e9948c80259a1d6",
+    "size": 2982
+  },
+  "schema": {
+    "id": "nomatoka.intent_packet.v0.1",
+    "url": "https://raw.githubusercontent.com/PhishyOne/Phishtopia.com/nomatoka-local-ai-updates/nomatoka/local-ai-test/stable/schema.json",
+    "sha256": "2d71febdaccd436ccb3a2334186845135eaf9e48c5794441f1d13ea0ccfb927c",
+    "size": 2331
+  },
+  "ui": {
+    "id": "ui.v0.2",
+    "url": "https://raw.githubusercontent.com/PhishyOne/Phishtopia.com/nomatoka-local-ai-updates/nomatoka/local-ai-test/stable/ui.json",
+    "sha256": "97fccd28ac874f73b1b8e1284e527a10eafa05d6365dad2fae3fcc5e654787cb",
+    "size": 339
+  },
+  "models": [
+    {
+      "id": "qwen3-1.7b-q4_k_m",
+      "min_ram_mb": 3400,
+      "filename": "Qwen_Qwen3-1.7B-Q4_K_M.gguf",
+      "url": "https://huggingface.co/bartowski/Qwen_Qwen3-1.7B-GGUF/resolve/main/Qwen_Qwen3-1.7B-Q4_K_M.gguf",
+      "sha256": "72c5c3cb38fa32d5256e2fe30d03e7a64c6c79e668ad84057e3bd66e250b24fb",
+      "size": 1282439584,
+      "context": 2048,
+      "max_tokens": 360
+    },
+    {
+      "id": "qwen3-0.6b-q4_k_m",
+      "min_ram_mb": 0,
+      "filename": "Qwen_Qwen3-0.6B-Q4_K_M.gguf",
+      "url": "https://huggingface.co/bartowski/Qwen_Qwen3-0.6B-GGUF/resolve/main/Qwen_Qwen3-0.6B-Q4_K_M.gguf",
+      "sha256": "9acfc1e001311f34b4252001b626f2e466d592a42065f66571bff3790d4e1b14",
+      "size": 484220320,
+      "context": 2048,
+      "max_tokens": 360
+    }
+  ]
+}
