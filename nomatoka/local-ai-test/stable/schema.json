@@ -1,0 +1,62 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "input_type", "units", "ambiguities", "unparsed_residue"],
+  "properties": {
+    "schema_version": {
+      "type": "string",
+      "enum": ["nomatoka.intent_packet.v0.1"]
+    },
+    "input_type": {
+      "type": "string",
+      "enum": ["COMMAND", "QUESTION", "CONVERSATION", "CORRECTION", "MIXED", "UNKNOWN"]
+    },
+    "units": {
+      "type": "array",
+      "maxItems": 12,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "kind", "semantic_intent", "actor", "source_text"],
+        "properties": {
+          "id": {"type": "string"},
+          "kind": {
+            "type": "string",
+            "enum": ["WORLD_ACTION", "SPEECH_ACT", "QUESTION", "SYSTEM_ACTION", "META"]
+          },
+          "semantic_intent": {"type": "string"},
+          "actor": {"type": "string"},
+          "addressee": {"type": "string"},
+          "object": {"type": "string"},
+          "target": {"type": "string"},
+          "content": {"type": "string"},
+          "location": {"type": "string"},
+          "timing": {"type": "string"},
+          "purpose": {"type": "string"},
+          "depends_on": {"type": "array", "items": {"type": "string"}},
+          "prerequisites": {"type": "array", "items": {"type": "string"}},
+          "conditions": {"type": "array", "items": {"type": "string"}},
+          "constraints": {"type": "array", "items": {"type": "string"}},
+          "prohibitions": {"type": "array", "items": {"type": "string"}},
+          "source_text": {"type": "string"}
+        }
+      }
+    },
+    "ambiguities": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["scope", "issue", "blocking"],
+        "properties": {
+          "scope": {"type": "string"},
+          "issue": {"type": "string"},
+          "clarification": {"type": "string"},
+          "blocking": {"type": "boolean"}
+        }
+      }
+    },
+    "unparsed_residue": {"type": "string"}
+  }
+}
