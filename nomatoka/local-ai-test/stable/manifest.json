@@ -1,23 +1,23 @@
 {
   "manifest_version": 1,
-  "release_serial": 3,
-  "release": "2026.09.12.3",
+  "release_serial": 5,
+  "release": "2026.09.13.5",
   "min_shell_version": 1,
   "prompt": {
     "id": "nomatoka.semantic_interpreter.v0.1",
-    "url": "https://raw.githubusercontent.com/PhishyOne/Phishtopia.com/nomatoka-local-ai-updates/nomatoka/local-ai-test/stable/system.txt",
+    "url": "https://raw.githubusercontent.com/PhishyOne/Phishtopia.com/nomatoka-local-ai-updates/nomatoka/local-ai-test/releases/2026.09.12.4/system.txt",
     "sha256": "bd782eb6c7d694494e12d3ca340ad94adfe52aefe9f66e425e9948c80259a1d6",
     "size": 2982
   },
   "schema": {
     "id": "nomatoka.intent_packet.v0.1",
-    "url": "https://raw.githubusercontent.com/PhishyOne/Phishtopia.com/nomatoka-local-ai-updates/nomatoka/local-ai-test/stable/schema.json",
+    "url": "https://raw.githubusercontent.com/PhishyOne/Phishtopia.com/nomatoka-local-ai-updates/nomatoka/local-ai-test/releases/2026.09.12.4/schema.json",
     "sha256": "62de09e9b7252bed598d8a99d6a9a250c0e6fc0b739b76ef71182b53fb7a638d",
     "size": 2151
   },
   "ui": {
     "id": "ui.v0.2",
-    "url": "https://raw.githubusercontent.com/PhishyOne/Phishtopia.com/nomatoka-local-ai-updates/nomatoka/local-ai-test/stable/ui.json",
+    "url": "https://raw.githubusercontent.com/PhishyOne/Phishtopia.com/nomatoka-local-ai-updates/nomatoka/local-ai-test/releases/2026.09.12.4/ui.json",
     "sha256": "97fccd28ac874f73b1b8e1284e527a10eafa05d6365dad2fae3fcc5e654787cb",
     "size": 339
   },
@@ -42,5 +42,12 @@
       "context": 2048,
       "max_tokens": 360
     }
-  ]
+  ],
+  "app": {
+    "version_code": 4,
+    "version_name": "1.1.1",
+    "url": "https://github.com/PhishyOne/Nomatoka-Local-AI-Releases/releases/download/v1.1.1/NomatokaLocalAITester.apk",
+    "sha256": "9b0d3c4d851908c888565f84b97507ba10f4e8b464162e8643779b7a7682b6a7",
+    "size": 3233006
+  }
 }
