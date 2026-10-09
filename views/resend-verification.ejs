@@ -1,4 +1,5 @@
 <%- include('partials/header') %>
+<script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
 
 <main class="container auth-page">
     <h2>Resend verification email</h2>
@@ -26,6 +27,8 @@
                 required
             >
         </div>
+        <div class="cf-turnstile" data-sitekey="0x4AAAAAAFSrqWf6L8k8gYxz"
+            data-action="resend_verification" data-size="flexible" data-appearance="interaction-only"></div>
         <button class="btn" type="submit">Send new verification link</button>
     </form>
 
