@@ -323,6 +323,34 @@ http://localhost:3002/health
 
 ---
 
+### Cloudflare Turnstile deployment gate
+
+Registration and verification-email resends use the existing Cloudflare Turnstile widget,
+with Siteverify enforced by the Node/Express backend. The public site key is in
+the EJS form templates; the **private** widget secret must never enter Git.
+
+Before merging Turnstile changes into a deployment that auto-pulls `main`, set these
+in that deployment's existing ignored `.env` (on the Phishtopia VM, normally
+`/home/codespace/phishtopia/.env`):
+
+```dotenv
+TURNSTILE_SECRET=<set privately from Cloudflare>
+TURNSTILE_HOSTNAMES=phishtopia.com
+```
+
+Confirm Cloudflare allows `phishtopia.com` for the widget. Local development
+requires an explicitly configured local hostname and a matching permitted
+widget hostname; **never** put localhost or 127.0.0.1 in production's
+`TURNSTILE_HOSTNAMES`. If the secret or hostname list is missing, email-producing
+routes deliberately reject requests rather than sending verification emails.
+
+After deployment: test one legitimate registration with a fresh Turnstile
+token, verify a replay is rejected, confirm tokenless POSTs return 403,
+and inspect the VM deployment log and health endpoints. No extra Worker
+or backend is needed.
+
+---
+
 ## Private Database Access
 
 Production PostgreSQL listens locally on the VM. Development tools should use an SSH tunnel rather than exposing PostgreSQL publicly.
