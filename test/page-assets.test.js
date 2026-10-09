@@ -39,6 +39,12 @@ const EXPECTED_PAGES = {
         styles: ["/styles/spencer.css"],
         scripts: ["/js/canvas.js"]
     },
+    h21Music: {
+        title: "Echoes of the Archipelago | Project H21",
+        bodyClass: "h21-music-page",
+        styles: ["/styles/h21-music.css"],
+        scripts: []
+    },
     error: {
         title: "Error | Phishtopia",
         bodyClass: "error-page",
