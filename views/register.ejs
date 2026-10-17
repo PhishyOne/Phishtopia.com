@@ -1,4 +1,5 @@
 <%- include('partials/header') %>
+    <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
 
     <div class="container">
         <h2>Register</h2>
@@ -50,6 +51,8 @@
                         <input type="email" autocomplete="email" id="email" class="textbox" name="email"
                             value="<%= email || '' %>" required>
                     </div>
+                    <div class="cf-turnstile" data-sitekey="0x4AAAAAAFSrqWf6L8k8gYxz"
+                        data-action="signup" data-size="flexible" data-appearance="interaction-only"></div>
                     <button class="btn" id="register-btn">Register</button>
                 </form>
                 <div class="alert alert-danger" id="error-box" style="display:none;"></div>

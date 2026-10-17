@@ -11,6 +11,7 @@ import {
     verifyEmail
 } from "../controllers/auth.controller.js";
 import { rateLimitHandler } from "../middleware/errorResponses.js";
+import { requireTurnstile } from "../middleware/requireTurnstile.js";
 
 const router = express.Router();
 
@@ -47,12 +48,12 @@ const verifyEmailLimiter = rateLimit({
 });
 
 router.get("/register", showRegister);
-router.post("/register", registerLimiter, register);
+router.post("/register", registerLimiter, requireTurnstile("signup"), register);
 router.get("/login", showLogin);
 router.post("/login", loginLimiter, login);
 router.get("/verify-email", verifyEmailLimiter, verifyEmail);
 router.get("/resend-verification", showResendVerification);
-router.post("/resend-verification", resendVerificationLimiter, resendVerification);
+router.post("/resend-verification", resendVerificationLimiter, requireTurnstile("resend_verification"), resendVerification);
 router.post("/logout", logout);
 
 export default router;
